@@ -1,6 +1,9 @@
-import multiprocessing
+import multiprocessing as mp
+import re
+import math
 
 import pandas as pd
+import numpy as np
 from joblib import Parallel, delayed
 
 
@@ -10,6 +13,7 @@ from joblib import Parallel, delayed
 class ConstraintBayesianNetwork():
     def __init__(self, num_attrs, k, trace_attr, label_attr_nr, normal_label):
         self.variables = {}
+        self.current_variables = []
         self.num_attrs = num_attrs
         self.label_attr_nr = label_attr_nr
         self.normal_label = normal_label
@@ -17,8 +21,11 @@ class ConstraintBayesianNetwork():
         self.k = k
         self.trace_attr = trace_attr
 
-    def add_variable(self, attr_id, name, new_values):
-        self.variables[name] = Variable(attr_id, name, new_values, self.num_attrs)
+    def add_variable(self, name, new_values):
+        self.variables[name] = Variable(name, new_values, self.num_attrs)
+        m = re.search(r'Prev\d+$', name)
+        if m is None:
+            self.current_variables.append(name)
 
     def remove_variable(self, name):
         del self.variables[name]
@@ -33,10 +40,14 @@ class ConstraintBayesianNetwork():
         for key in self.variables:
             yield (key, self.variables[key])
 
+    def iterate_current_variables(self):
+        for key in self.current_variables:
+            yield (key, self.variables[key])
+
     def train(self, filename, delim, length):
         print("Training Network ...")
 
-        data = pd.read_csv(filename, delimiter=delim, nrows=length, header=0, skiprows=0, dtype=str)
+        data = pd.read_csv(filename, delimiter=delim, nrows=length, header=0, skiprows=0, dtype=int)
         self.log = self.create_k_context(data)
 
         for (_, value) in self.iterate_variables():
@@ -44,25 +55,29 @@ class ConstraintBayesianNetwork():
         print("Training Done")
 
     def create_k_context(self, data):
-        traces = data.groupby([self.trace_attr])
-        contextdata = {}
-        # Get Attributes
-        attributes = list(data.columns)
-        for attribute in attributes:
-            contextdata[attribute] = []
-            for i in range(self.k):
-                contextdata["Prev%i_" % (i) + attribute] = []
-        for trace in traces:
-            datatrace = trace[1]
-            for event in range(len(datatrace)):
-                for attr in range(len(attributes)):
-                    contextdata[attributes[attr]].append(datatrace.iloc[event, attr])
-                    for i in range(self.k):
-                        if event - 1 - i < 0:
-                            contextdata["Prev%i_" % (i) + attributes[attr]].append("0")
-                        else:
-                            contextdata["Prev%i_" % (i) + attributes[attr]].append(datatrace.iloc[event - 1 - i, attr])
-        return pd.DataFrame(data=contextdata)
+        print("Start creating k-context Parallel")
+
+        contextdata = pd.DataFrame()
+        with mp.Pool(mp.cpu_count()) as p:
+            result = p.map(self.create_k_context_trace, data.groupby([self.trace_attr]))
+        for r in result:
+            contextdata = contextdata.append(r, ignore_index=True)
+        return contextdata
+
+    def create_k_context_trace(self, trace):
+        contextdata = pd.DataFrame()
+
+        trace_data = trace[1]
+        shift_data = trace_data.shift().fillna(0).astype(int)
+        shift_data.at[shift_data.first_valid_index(), self.trace_attr] = trace[0]
+        joined_trace = shift_data.join(trace_data, lsuffix="_Prev0")
+        for i in range(1, self.k):
+            shift_data = shift_data.shift().replace(np.nan, int(0))
+            shift_data.at[shift_data.first_valid_index(), "case"] = trace[0]
+            joined_trace = shift_data.join(joined_trace, lsuffix="_Prev%i" % i)
+        contextdata = contextdata.append(joined_trace, ignore_index=True)
+
+        return contextdata
 
     def train_from_data(self, data):
         self.log = data
@@ -79,16 +94,25 @@ class ConstraintBayesianNetwork():
         return var
 
     def row_probability(self, row):
-        prob = 1
-        for (key, value) in self.iterate_variables():
-            prob *= value.test_fdt(row) * value.test_cpt(row) * value.test_value(row)
-        return (prob, row)
+        prob = 0
+        not_zero = True
+        for (key, value) in self.iterate_current_variables():
+            score_fdt = 1
+            fdt_scores = value.test_fdt(row)
+            for fdt_score in fdt_scores:
+                score_fdt *= fdt_scores[fdt_score]
+            prob += math.log10(score_fdt * value.test_cpt(row) * value.test_value(row))
+        return prob
 
     def row_probability_detail(self, row):
         probs = []
-        for (key, value) in self.iterate_variables():
-            probs.append(value.test_fdt(row) * value.test_cpt(row) * value.test_value(row))
-        return (probs, row)
+        for (key, value) in self.iterate_current_variables():
+            score_fdt = 1
+            fdt_scores = value.test_fdt(row)
+            for fdt_score in fdt_scores:
+                score_fdt *= fdt_scores[fdt_score]
+            probs.append(math.log10(score_fdt * value.test_cpt(row) * value.test_value(row)))
+        return probs
 
     def row_scores_detail(self, row_list, labeled = False):
         probs = {}
@@ -106,19 +130,19 @@ class ConstraintBayesianNetwork():
 
     def get_anomalies_sorted(self, filename, delim, length, skip):
         print("Sorting anomalies")
-        data = pd.read_csv(filename, delimiter=delim, nrows=length, header=0, dtype=str, skiprows=skip)
+        data = pd.read_csv(filename, delimiter=delim, nrows=length, header=0, dtype=int, skiprows=skip)
 
         log = self.create_k_context(data)
 
         ranking = []
         for row in log.itertuples():
-            ranking.append(self.row_probability_detail(row))
+            ranking.append((self.row_probability_detail(row), row))
         ranking.sort(key=lambda l: l[0])
         return ranking
 
     def get_anomalies_sorted_parallel(self, filename, delim, length, skip):
         print("Sorting anomalies Parallel")
-        njobs = multiprocessing.cpu_count()
+        njobs = mp.cpu_count()
         if length < njobs:
             part_length = length
             njobs = 1
@@ -143,7 +167,7 @@ class ConstraintBayesianNetwork():
 
     def get_scores_detail_parallel(self, filename, delim, length, skip):
         print("Calculating scores Parallel")
-        njobs = multiprocessing.cpu_count()
+        njobs = mp.cpu_count()
         if length < njobs:
             part_length = length
             njobs = 1
@@ -210,8 +234,7 @@ class ConstraintBayesianNetwork():
 
 
 class Variable:
-    def __init__(self, attr_id, attr_name, new_values, num_attrs):
-        self.attr_id = attr_id
+    def __init__(self, attr_name, new_values, num_attrs):
         self.attr_name = attr_name
         self.new_values = new_values
         self.new_relations = 0
@@ -223,9 +246,10 @@ class Variable:
         self.cpt = dict()
         self.functional_parents = []
         self.fdt = []
+        self.fdt_violations = []
 
     def __repr__(self):
-        return str(self.attr_id) + " - " + self.attr_name
+        return self.attr_name
 
     def add_parent(self, var):
         self.conditional_parents.append(var)
@@ -239,7 +263,10 @@ class Variable:
 
     def set_new_relation(self, log):
         attrs = set()
-        attrs = attrs.union({p.attr_name for p in self.conditional_parents}).union({self.attr_name})
+        if len(self.conditional_parents) == 0:
+            self.new_relations = 1
+            return
+        attrs = {p.attr_name for p in self.conditional_parents}
         grouped = log.groupby([a for a in attrs]).size().reset_index(name='counts')
         self.new_relations = len(grouped) / log.shape[0]
         print("NEW RELATION:", len(grouped), log.shape[0])
@@ -252,6 +279,7 @@ class Variable:
             return
 
         for i in range(len(self.functional_parents)):
+            violations = 0
             log_size = log.shape[0]
             parent = self.functional_parents[i]
             grouped = log.groupby([parent.attr_name, self.attr_name]).size().reset_index(name='counts')
@@ -260,29 +288,35 @@ class Variable:
                 row = list(t)
                 parent_val = row[1]
                 val = row[2]
-                if parent_val not in tmp_mapping or row[-1] > tmp_mapping[parent_val][0]:
+                if parent_val not in tmp_mapping:
                     tmp_mapping[parent_val] = (row[-1], val)
+                elif row[-1] > tmp_mapping[parent_val][0]:
+                    violations += tmp_mapping[parent_val][0] # Add previous number to violations
+                    tmp_mapping[parent_val] = (row[-1], val)
+                else:
+                    violations += row[-1] # Add number to violations
 
             for p in tmp_mapping:
                 self.fdt[i][p] = tmp_mapping[p][1]
+
+            self.fdt_violation.append(violations / log_size)
+            print(self.functional_parents[i].attr_name, violations / log_size)
 
     def train_cpt(self, log):
         if len(self.conditional_parents) == 0:
             return
 
-        log_size = log.shape[0]
-#        print("Training variable", self.attr_id, "with parents", [p.attr_id for p in self.conditional_parents])
-        grouped = log.groupby([p.attr_name for p in self.conditional_parents] + [self.attr_name]).size().reset_index(name='counts')
-        parent_grouped = log.groupby([p.attr_name for p in self.conditional_parents]).size().reset_index(name='counts')
-        for t in grouped.itertuples():
-            row = list(t)
-            parent_size = 0
-            for p_g in parent_grouped.itertuples():
-                p_row = list(p_g)
-                if "-".join(row[1:-2]) == "-".join(p_row[1:-1]):
-                    parent_size = p_row[-1]
-            # Set to probability of getting value when parent configuration is seen: P( X | Parent(X))
-            self.cpt["-".join(row[1:-1])] = row[-1] / parent_size
+        parents = [p.attr_name for p in self.conditional_parents]
+        grouped = log.groupby(parents)[self.attr_name]
+        val_counts = grouped.value_counts()
+        div = grouped.count().to_dict()
+        for t in val_counts.items():
+            parent = t[0][:-1]
+            if len(parent) == 1:
+                parent = parent[0]
+            if parent not in self.cpt:
+                self.cpt[parent] = dict()
+            self.cpt[parent][t[0][-1]] = t[1] / div[parent]
 
     def detailed_score(self, row):
         prob_result = {}
@@ -294,35 +328,37 @@ class Variable:
         return prob_result
 
     def test_fdt(self, row):
+        scores = {}
         if len(self.functional_parents) > 0:
             for i in range(len(self.functional_parents)):
                 parent = self.functional_parents[i]
                 if getattr(row, parent.attr_name) not in self.fdt[i]:
-                    return 1
-                if self.fdt[i][getattr(row, parent.attr_name)] == getattr(row, self.attr_name) or getattr(row, parent.attr_name) == "0":
-                    return 1
+                    scores[parent.attr_name] = 1 - self.fdt_violation[i]
+                elif self.fdt[i][getattr(row, parent.attr_name)] == getattr(row, self.attr_name) or getattr(row, parent.attr_name) == 0:
+                    scores[parent.attr_name] = 1 - self.fdt_violation[i]
                 else:
-                    return 0
-        return 1
-
+                    scores[parent.attr_name] = self.fdt_violation[i]
+        return scores
 
     def test_cpt(self, row):
         if len(self.conditional_parents) > 0:
             parent_vals = []
-            for idx in [p.attr_name for p in self.conditional_parents] + [self.attr_name]:
-                parent_vals.append(str(getattr(row,idx)))
-            parent_config = "-".join(parent_vals)
-
-            if parent_config not in self.cpt:
-                return self.new_relations
-
-            # If CPT -> return value for CPT
+            for p in self.conditional_parents:
+                parent_vals.append(getattr(row, p.attr_name))
+            if len(parent_vals) == 1:
+                parent_vals = parent_vals[0]
             else:
-                return self.cpt[parent_config]
+                parent_vals = tuple(parent_vals)
+            if parent_vals not in self.cpt:
+                return self.new_relations
+            val = getattr(row, self.attr_name)
+            if val not in self.cpt[parent_vals]:
+                return 1#self.new_relations
+            return (1 - self.new_relations) * self.cpt[parent_vals][val]
         return 1
 
     def test_value(self, row):
         if getattr(row, self.attr_name) not in self.values:
             return self.new_values
         else:
-            return 1
+            return 1 - self.new_values

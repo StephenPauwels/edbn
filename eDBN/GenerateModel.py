@@ -12,45 +12,34 @@ def generate_model(data, k, remove_attrs, trace_attr, label_attr, normal_label, 
     for column in data:
         new_vals = uc.calculate_new_values_rate(data[column])
         nodes.append(column)
-        if column not in remove_attrs and new_vals == 1:#(new_vals == 1 / len(data[column])) or new_vals == 1:
-            remove_attrs.append(column)
-        print(column, new_vals)
         i += 1
 
     for remove in remove_attrs:
         nodes.remove(remove)
     data = data[nodes]
 
-    # Combine event in traces TODO: extend for any k
-    traces = data.groupby([trace_attr])
-    contextdata = {}
-    # Get Attributes
+    print("GENERATE: build k-context")
+
+    # Get all normal attributes and remove the trace attribute
     attributes = list(data.columns)
     attributes.remove(trace_attr)
     nodes.remove(trace_attr)
+
+    # Create the k-context of the data
+    data = cbn.create_k_context(data)
+
+    # Add previous-attributes to the model
     for attribute in attributes:
         new_vals = uc.calculate_new_values_rate(data[attribute])
-        contextdata[attribute] = []
-        cbn.add_variable(0, attribute, new_vals)
+        cbn.add_variable(attribute, new_vals)
         for i in range(k):
-            contextdata["Prev%i_" % (i) + attribute] = []
-            nodes.append("Prev%i_" % (i) + attribute)
-            cbn.add_variable(0, "Prev%i_" % (i) + attribute, new_vals)
-    for trace in traces:
-        datatrace = trace[1]
-        for event in range(len(datatrace)):
-            for attr in range(len(attributes)):
-                contextdata[attributes[attr]].append(datatrace.iloc[event, attr])
-                for i in range(k):
-                    if event - 1 - i < 0:
-                        contextdata["Prev%i_" % (i) + attributes[attr]].append(0)
-                    else:
-                        contextdata["Prev%i_" % (i) + attributes[attr]].append(datatrace.iloc[event-1-i, attr])
+            nodes.append(attribute + "_Prev%i" % (i))
+            cbn.add_variable(attribute + "_Prev%i" % (i), new_vals)
 
-    contextdataframe = pd.DataFrame(data=contextdata)
+    print("GENERATE: calculate mappings")
 
     # Calculate Mappings
-    mappings = uc.calculate_mappings(contextdataframe, attributes, k, 0.98, previous_vals)
+    mappings = uc.calculate_mappings(data, attributes, k, 1)
     double_mappings = []
     whitelist = []
     print("MAPPINGS:")
@@ -62,27 +51,37 @@ def generate_model(data, k, remove_attrs, trace_attr, label_attr, normal_label, 
         else:
             whitelist.append((mapping[0], mapping[1]))
 
+    print("GENERATE: removing redundant mappings")
 
     # Remove redundant mappings to improve Bay Net discovery performance
     while True:
-        print("Closure:", double_mappings)
         _, closure = get_max_tranisitive_closure(double_mappings)
-        print(closure)
         if len(closure) == 0:
             break
-        for i in range(0, len(closure)):
-            if i != 0:
-                nodes.remove(closure[i][0])
-            double_mappings.remove(closure[i])
-            double_mappings.remove((closure[i][1], closure[i][0]))
+        keep_node = closure[0][0]
+        for i in closure:
+            if i[0] != keep_node and i[0] in nodes:
+                nodes.remove(i[0])
+            if i[1] != keep_node and i[1] in nodes:
+                nodes.remove(i[1])
+            mappings.remove(i)
+            mappings.remove((i[1], i[0]))
+            double_mappings.remove(i)
+            double_mappings.remove((i[1], i[0]))
     while len(double_mappings) > 0:
-        for m in whitelist[:]:
-            if m[0] == double_mappings[0][0]:
-                whitelist.remove(m)
-        nodes.remove(double_mappings[0][0])
-        print("remove", double_mappings[0][0])
-        double_mappings.remove((double_mappings[0][1], double_mappings[0][0]))
-        double_mappings.remove(double_mappings[0])
+        mapping = double_mappings[0]
+        mappings.remove(mapping)
+        double_mappings.remove(mapping)
+        nodes.remove(mapping[1])
+        mappings.remove((mapping[1], mapping[0]))
+        double_mappings.remove((mapping[1], mapping[0]))
+
+    rem_maps = []
+    for mapping in mappings:
+        if mapping[0] not in nodes or mapping[1] not in nodes:
+            rem_maps.append(mapping)
+    for r in rem_maps:
+        mappings.remove(r)
 
 
     restrictions = None
@@ -93,10 +92,12 @@ def generate_model(data, k, remove_attrs, trace_attr, label_attr, normal_label, 
                 if attr1 != attr2:
                     restrictions.append((attr2, attr1))
                 for i in range(k):
-                    restrictions.append(("Prev%i_" % (i) + attr2, attr1))
+                    restrictions.append((attr2 + "_Prev%i" % (i), attr1))
+
+    print("GENERATE: Learn Bayesian Network")
 
     # Calculate Bayesian Network
-    bay_net = bn.BayesianNetwork(contextdataframe)
+    bay_net = bn.BayesianNetwork(data)
     net = bay_net.hill_climbing_pybn(nodes, restrictions=restrictions, whitelist=whitelist, metric="AIC")
 
     print("Done")
