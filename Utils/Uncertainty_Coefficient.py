@@ -19,9 +19,9 @@ def is_mapping(col1, col2, threshold):
         return True
     return False
 
-def calculate_mappings(data, attributes, k, threshold, previous_vals):
+def calculate_mappings(data, attributes, k, threshold):
     if k > 0:
-        filtered_data = data[data["Prev0_" + attributes[0]] != 0]
+        filtered_data = data[data[attributes[0] + "_Prev0"] != 0]
     else:
         filtered_data = data
 
@@ -33,7 +33,7 @@ def calculate_mappings(data, attributes, k, threshold, previous_vals):
             if attr1 != attr2 and is_mapping(filtered_data[attr1], filtered_data[attr2], threshold):
                 mappings.append((attr2, attr1))
             for i in range(k):
-                prev_attr2 = "Prev%i_" % (i) + attr2
+                prev_attr2 = attr2 + "_Prev%i" % (i)
                 # Check attr2 -> attr1
                 if is_mapping(filtered_data[attr1], filtered_data[prev_attr2], threshold):
                     mappings.append((prev_attr2, attr1))

@@ -19,17 +19,17 @@ def test(test_file, output_file, model, label, normal_val, delim, length, skip=0
         if getattr(anoms[i][1], label) != normal_val:
             anomalies.add(seqID)
         if seqID not in accum_scores:
-            accum_scores[seqID] = 1
+            accum_scores[seqID] = 0
             accum_length[seqID] = 0
-        anom_score = 1
+        anom_score = 0
         for score in anoms[i][0]:
-            anom_score *= score
-        accum_scores[seqID] *= anom_score
+            anom_score += score
+        accum_scores[seqID] += anom_score
         accum_length[seqID] += 1
     scores = []
 
     for seqs in accum_scores:
-        scores.append((seqs, math.pow(accum_scores[seqs], 1 / accum_length[seqs]), seqs in anomalies))
+        scores.append((seqs, accum_scores[seqs] / accum_length[seqs], seqs in anomalies))
     scores.sort(key=lambda l:l[1])
     with open(output_file, "w") as fout:
         for s in scores:
