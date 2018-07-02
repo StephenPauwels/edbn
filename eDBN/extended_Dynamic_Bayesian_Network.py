@@ -51,7 +51,7 @@ def process_detail(trace):
 # Constraint Bayesian Networks (CBN)
 # Open-Domain: new values may be encountered
 # Constraint: some of the mappings can be more strict (always map to the same values etc)
-class ConstraintBayesianNetwork():
+class extendedDynamicBayesianNetwork():
     def __init__(self, num_attrs, k, trace_attr, label_attr_nr, normal_label):
         self.variables = {}
         self.current_variables = []

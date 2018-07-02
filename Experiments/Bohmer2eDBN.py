@@ -21,7 +21,7 @@ def compare_bpics(path):
         utils.convert2ints(train, train + "_ints", True, dict_dict)
         test_length = utils.convert2ints(test, test + "_ints", True, dict_dict)
 
-        edbn_model = edbn.train(train + "_ints", "Case", -1, 1, header = 0, length = 500000, ignore = ["Anomaly"])
+        edbn_model = edbn.train(train + "_ints", "Case", "Anomaly", 1, header = 0, length = 500000, ignore = ["Anomaly"])
         edbn.test(test + "_ints", output_edbn, edbn_model, "Anomaly", 1, ",", min(test_length, 500000), skip=0)
 
         plt.plot_compare_prec_recall_curve([output, output_edbn], ["Likelihood Graph", "eDBN"], save_file=prec_recall)

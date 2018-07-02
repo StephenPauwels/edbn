@@ -1,11 +1,11 @@
 from Utils import Uncertainty_Coefficient as uc, BayesianNet as bn
-from eDBN.Constraint_Bayesian_Network import ConstraintBayesianNetwork
+from eDBN.extended_Dynamic_Bayesian_Network import extendedDynamicBayesianNetwork
 
 import pandas as pd
 
 
 def generate_model(data, k, remove_attrs, trace_attr, label_attr, normal_label, previous_vals = False):
-    cbn = ConstraintBayesianNetwork(len(data.columns), k, trace_attr, label_attr, normal_label)
+    cbn = extendedDynamicBayesianNetwork(len(data.columns), k, trace_attr, label_attr, normal_label)
     nodes = []
 
     i = 0
