@@ -84,15 +84,13 @@ def generate_model(data, k, remove_attrs, trace_attr, label_attr, normal_label, 
         mappings.remove(r)
 
 
-    restrictions = None
-    if previous_vals:
-        restrictions = []
-        for attr1 in attributes:
-            for attr2 in attributes:
-                if attr1 != attr2:
-                    restrictions.append((attr2, attr1))
-                for i in range(k):
-                    restrictions.append((attr2 + "_Prev%i" % (i), attr1))
+    restrictions = []
+    for attr1 in attributes:
+        for attr2 in attributes:
+            if attr1 != attr2:
+                restrictions.append((attr2, attr1))
+            for i in range(k):
+                restrictions.append((attr2 + "_Prev%i" % (i), attr1))
 
     print("GENERATE: Learn Bayesian Network")
 

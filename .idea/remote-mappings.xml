@@ -6,7 +6,7 @@
         <remote-mappings server-id="python@ssh://spauwels@div.cmi.uantwerpen.be:22/usr/bin/python3">
           <settings>
             <list>
-              <mapping local-root="$PROJECT_DIR$" remote-root="/home/spauwels/PyCharm/anomaly_ecml repo" />
+              <mapping local-root="$PROJECT_DIR$" remote-root="/home/spauwels/PyCharm/edbn" />
             </list>
           </settings>
         </remote-mappings>

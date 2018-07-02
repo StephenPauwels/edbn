@@ -6,6 +6,47 @@ import pandas as pd
 import numpy as np
 from joblib import Parallel, delayed
 
+def process(trace):
+    k_contexts = model.create_k_context_trace(trace)
+    result = {}
+    for row in k_contexts.itertuples():
+        prob = model.row_probability(row)
+        case = int(getattr(row, "case"))
+        if case not in result:
+            result[case] = []
+        result[case].append(prob)
+    return result
+
+def process_detail(trace):
+    def product(l):
+        score = 1
+        for e in l:
+            score *= e
+        return score
+
+    k_contexts = model.create_k_context_trace(trace)
+    result = {}
+    for row in k_contexts.itertuples():
+        prob = model.row_scores_detail(row)
+        for a in prob:
+            score = prob[a].get("cpt", 1) * prob[a].get("value", 1)
+            for f in prob[a].get("fdt", {}):
+                score *= prob[a]["fdt"][f]
+            if a not in result:
+                result[a] = []
+            result[a].append(score)
+
+    return_result = []
+    for a in sorted(result.keys()):
+        #s = sum(result[a])
+        #if s != 0:
+        #    return_result.append(math.log10(s / len(result[a])))
+        prod = product(result[a])
+        if prod != 0:
+            return_result.append(math.log10(math.pow(prod, 1 / len(result[a]))))
+        else:
+            return_result.append(-5)
+    return np.asarray(return_result)
 
 # Constraint Bayesian Networks (CBN)
 # Open-Domain: new values may be encountered
@@ -54,6 +95,49 @@ class ConstraintBayesianNetwork():
             self.train_var(value)
         print("Training Done")
 
+    def train_data(self, data):
+        self.log = self.create_k_context(data)
+
+        for (_, value) in self.iterate_variables():
+            self.train_var(value)
+        print("Training Done")
+
+    def calculate_scores(self, data, accum_attr = None):
+        def initializer(init_model):
+            global model
+            model = init_model
+
+        if accum_attr is None:
+            accum_attr = self.trace_attr
+        with mp.Pool(mp.cpu_count(), initializer, (self,)) as p:
+            scores = p.map(process, data.groupby([accum_attr]))
+        return_scores = {}
+        for x in scores:
+            return_scores.update(x)
+        return return_scores
+
+    def calculate_scores_detail(self, data, accum_attr = None):
+        def initializer(init_model):
+            global model
+            model = init_model
+
+        print("EVALUATION: calculate score details")
+        if accum_attr is None:
+            accum_attr = self.trace_attr
+        trace_data = data.groupby([accum_attr])
+        #chunks = len(trace_data) // 10
+        with mp.Pool(mp.cpu_count(), initializer, (self,)) as p:
+            result = p.map(process_detail, trace_data)
+        print("EVALUATION: Done")
+        scores = {}
+        attributes = sorted([attr for attr in data.columns if attr != accum_attr])
+        for trace_scores in result:
+            for a_ix in range(len(attributes)):
+                if attributes[a_ix] not in scores:
+                    scores[attributes[a_ix]] = []
+                scores[attributes[a_ix]].append(trace_scores[a_ix])
+        return scores
+
     def create_k_context(self, data):
         print("Start creating k-context Parallel")
 
@@ -94,14 +178,14 @@ class ConstraintBayesianNetwork():
         return var
 
     def row_probability(self, row):
-        prob = 0
+        prob = 1
         not_zero = True
         for (key, value) in self.iterate_current_variables():
             score_fdt = 1
             fdt_scores = value.test_fdt(row)
             for fdt_score in fdt_scores:
                 score_fdt *= fdt_scores[fdt_score]
-            prob += math.log10(score_fdt * value.test_cpt(row) * value.test_value(row))
+            prob *= score_fdt * value.test_cpt(row) * value.test_value(row)
         return prob
 
     def row_probability_detail(self, row):
@@ -116,7 +200,7 @@ class ConstraintBayesianNetwork():
 
     def row_scores_detail(self, row_list, labeled = False):
         probs = {}
-        for (key, value) in self.iterate_variables():
+        for (key, value) in self.iterate_current_variables():
             probs[key] = value.detailed_score(row_list)
         if labeled:
             probs["Total"] = {}
@@ -246,7 +330,7 @@ class Variable:
         self.cpt = dict()
         self.functional_parents = []
         self.fdt = []
-        self.fdt_violations = []
+        self.fdt_violation = []
 
     def __repr__(self):
         return self.attr_name
@@ -259,7 +343,7 @@ class Variable:
         self.fdt.append({})
 
     def test_consistency(self):
-        print("Consistent?", self.attr_id,":", len(self.cpt), len(self.fdt))
+        print("Consistent?", self.attr_name,":", len(self.cpt), len(self.fdt))
 
     def set_new_relation(self, log):
         attrs = set()

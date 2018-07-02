@@ -5,7 +5,7 @@ import Utils.BPIPreProcess as preprocess
 import Utils.PlotResults as plt
 
 def compare_bpics(path):
-    for i in range(1,2):
+    for i in range(1,6):
         # Input Files
         train = path + "BPIC15_train_%i.csv" % (i)
         test = path + "BPIC15_test_%i.csv" % (i)

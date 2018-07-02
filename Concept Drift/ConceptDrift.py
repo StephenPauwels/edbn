@@ -170,20 +170,20 @@ def plot_attribute_graph(scores, attributes):
     plt.plot(x_median, y_median_mad_up, "o")
     plt.plot(x_median, y_median_mad_down, "o")
     plt.xticks(rotation='vertical')
-    plt.ylim([-12.1,0.1])
+    #plt.ylim([-12.1,0.1])
     plt.show()
 
 
 def experiment_standard():
-
+    """
     data = pd.read_csv("../Data/bpic2018_ints.csv", delimiter=",", header=0, dtype=int, nrows=30000)
-    data_str = pd.read_csv("../Data/bpic2018_ints.csv", delimiter=",", header=0, dtype=int, nrows=30000)
+    #data_str = pd.read_csv("../Data/bpic2018_ints.csv", delimiter=",", header=0, dtype=int, nrows=3000)
     data = filter_attributes(data, ["eventid", "identity_id", "event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
-    model = create_model(data, data_str, "case")
+    model = create_model(data, data, "case")
 
     with open("model_30000b", "wb") as fout:
         pickle.dump(model, fout)
-
+    """
     with open("model_30000b", "rb") as fin:
         model = pickle.load(fin)
 
@@ -204,22 +204,22 @@ def experiment_attributes_standard():
         pickle.dump(model, fout)
     print("Done")
     """
-    with open("model_30000", "rb") as fin:
+    with open("model_30000b", "rb") as fin:
         model = pickle.load(fin)
 
     input_data = pd.read_csv("../Data/bpic2018_ints.csv", delimiter=",", header=0, dtype=int)
     data = input_data[input_data.year == 1]
-    data = filter_attributes(data, ["event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
+    data = filter_attributes(data, ["eventid", "identity_id", "event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
     scores_year1 = get_event_detailed_scores(data, model)
     plot_attribute_graph(scores_year1, model.current_variables)
 
     data = input_data[input_data.year == 2]
-    data = filter_attributes(data, ["event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
+    data = filter_attributes(data, ["eventid", "identity_id", "event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
     scores_year2 = get_event_detailed_scores(data, model)
     plot_attribute_graph(scores_year2, model.current_variables)
 
     data = input_data[input_data.year == 3]
-    data = filter_attributes(data, ["event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
+    data = filter_attributes(data, ["eventid", "identity_id", "event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
     scores_year3 = get_event_detailed_scores(data, model)
     plot_attribute_graph(scores_year3, model.current_variables)
 
@@ -401,8 +401,8 @@ def convert2ints(file_in, file_out, header = True, dict = None):
     return cnt
 
 if __name__ == "__main__":
-    #experiment_standard()
-    #experiment_attributes_standard()
+    experiment_standard()
+    experiment_attributes_standard()
     #experiment_department()
     #experiment_clusters()
     #experiment_outliers()
