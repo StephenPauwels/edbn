@@ -15,6 +15,7 @@ def generate_model(data, k, remove_attrs, trace_attr, label_attr, normal_label, 
         i += 1
 
     for remove in remove_attrs:
+        print(remove)
         nodes.remove(remove)
     data = data[nodes]
 

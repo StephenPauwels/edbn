@@ -43,8 +43,8 @@ def mutual_information(data):
     elif cols > 2:
         data = data.astype('str')
         for i in range(len(data)):
-            data[i,1] = '-'.join(data[i,1:cols]) # TODO Anders verschil tussen 1 en 11 en 11 en 1 niet duidelijk -> Alles naar Strings omzetten
-        return skm.mutual_info_score(data[:,0], data[:,1])
+            data[i,1] = data[i,1:cols].tostring()
+        return skm.mutual_info_score(data[:,0].astype('str'), data[:,1])
 
 if __name__ == "__main__":
     print("Testing mutual information")

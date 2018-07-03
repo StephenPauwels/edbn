@@ -195,7 +195,7 @@ class extendedDynamicBayesianNetwork():
             fdt_scores = value.test_fdt(row)
             for fdt_score in fdt_scores:
                 score_fdt *= fdt_scores[fdt_score]
-            probs.append(math.log10(score_fdt * value.test_cpt(row) * value.test_value(row)))
+            probs.append(score_fdt * value.test_cpt(row) * value.test_value(row))
         return probs
 
     def row_scores_detail(self, row_list, labeled = False):

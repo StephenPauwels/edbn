@@ -38,6 +38,8 @@ from pyBN.classes.bayesnet import BayesNet
 from pyBN.utils.graph import would_cause_cycle
 from pyBN.utils.independence_tests import mutual_information
 
+import time
+
 
 # from heapq import *
 
@@ -206,10 +208,11 @@ class hill_climbing:
 
         man = Manager()
 
-        mut_inf_cache = {} #man.dict()
-        configs_cache = {} #man.dict()
+        mut_inf_cache = man.dict()
+        configs_cache = man.dict()
 
         while improvement:
+            start_t = time.time()
             improvement = False
             max_delta = 0
             max_operation = None
@@ -273,6 +276,7 @@ class hill_climbing:
             else:
                 if debug:
                     print('No Improvement on Iter: ' , _iter)
+            print("Time for iteration:", time.time() - start_t)
 
             ### TEST FOR MAX ITERATION ###
             _iter += 1
@@ -437,7 +441,6 @@ class hill_climbing:
                     max_arc = (u, v)
                     max_qi = qi_new
         result_queue.put((max_arc, max_delta, max_operation, max_qi))
-
 
 
 

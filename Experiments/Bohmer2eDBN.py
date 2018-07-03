@@ -35,15 +35,15 @@ def compare_bpic_total(path):
     prec_recall = path + "Output/prec_recall_total.png"
     roc = path + "Output/roc_total.png"
 
-    bohmer_model = bmr.train(train, header = 0, length = 5000000)
-    bmr.test(train, test, output, bohmer_model, ",", 5000000, skip=0)
+    #bohmer_model = bmr.train(train, header = 0, length = 5000000)
+    #bmr.test(train, test, output, bohmer_model, ",", 5000000, skip=0)
 
     dict_dict = []
     utils.convert2ints(train, train + "_ints", True, dict_dict)
     test_length = utils.convert2ints(test, test + "_ints", True, dict_dict)
 
-    edbn_model = edbn.train(train + "_ints", "Case", -1, "0", header=0, length=500000, ignore=["Anomaly"])
-    edbn.test(test + "_ints", output_edbn, edbn_model, "Anomaly", "1", ",", min(test_length, 500000), skip=0)
+    edbn_model = edbn.train(train + "_ints", "Case", "Anomaly", 1, header=0, length=500000, ignore=["Anomaly"])
+    edbn.test(test + "_ints", output_edbn, edbn_model, "Anomaly", 1, ",", min(test_length, 500000), skip=0)
 
     plt.plot_compare_prec_recall_curve([output, output_edbn], ["Likelihood Graph", "eDBN"], save_file=prec_recall)
     plt.plot_compare_roc_curve([output, output_edbn], ["Likelihood Graph", "eDBN"], roc)
@@ -54,5 +54,5 @@ if __name__  == "__main__":
     #preprocess.preProcessData(path)
     #preprocess.preProcessData_total(path)
 
-    compare_bpics(path)
-    #compare_bpic_total(path)
+    #compare_bpics(path)
+    compare_bpic_total(path)
