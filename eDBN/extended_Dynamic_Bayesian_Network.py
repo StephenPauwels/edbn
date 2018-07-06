@@ -91,14 +91,14 @@ class extendedDynamicBayesianNetwork():
         data = pd.read_csv(filename, delimiter=delim, nrows=length, header=0, skiprows=0, dtype=int)
         self.log = self.create_k_context(data)
 
-        for (_, value) in self.iterate_variables():
+        for (_, value) in self.iterate_current_variables():
             self.train_var(value)
         print("Training Done")
 
     def train_data(self, data):
         self.log = self.create_k_context(data)
 
-        for (_, value) in self.iterate_variables():
+        for (_, value) in self.iterate_current_variables():
             self.train_var(value)
         print("Training Done")
 
@@ -125,7 +125,6 @@ class extendedDynamicBayesianNetwork():
         if accum_attr is None:
             accum_attr = self.trace_attr
         trace_data = data.groupby([accum_attr])
-        #chunks = len(trace_data) // 10
         with mp.Pool(mp.cpu_count(), initializer, (self,)) as p:
             result = p.map(process_detail, trace_data)
         print("EVALUATION: Done")
@@ -141,11 +140,9 @@ class extendedDynamicBayesianNetwork():
     def create_k_context(self, data):
         print("Start creating k-context Parallel")
 
-        contextdata = pd.DataFrame()
         with mp.Pool(mp.cpu_count()) as p:
             result = p.map(self.create_k_context_trace, data.groupby([self.trace_attr]))
-        for r in result:
-            contextdata = contextdata.append(r, ignore_index=True)
+        contextdata = pd.concat(result)
         return contextdata
 
     def create_k_context_trace(self, trace):
@@ -156,11 +153,10 @@ class extendedDynamicBayesianNetwork():
         shift_data.at[shift_data.first_valid_index(), self.trace_attr] = trace[0]
         joined_trace = shift_data.join(trace_data, lsuffix="_Prev0")
         for i in range(1, self.k):
-            shift_data = shift_data.shift().replace(np.nan, int(0))
-            shift_data.at[shift_data.first_valid_index(), "case"] = trace[0]
+            shift_data = shift_data.shift().fillna(0).astype(int)
+            shift_data.at[shift_data.first_valid_index(), self.trace_attr] = trace[0]
             joined_trace = shift_data.join(joined_trace, lsuffix="_Prev%i" % i)
         contextdata = contextdata.append(joined_trace, ignore_index=True)
-
         return contextdata
 
     def train_from_data(self, data):
@@ -353,7 +349,6 @@ class Variable:
         attrs = {p.attr_name for p in self.conditional_parents}
         grouped = log.groupby([a for a in attrs]).size().reset_index(name='counts')
         self.new_relations = len(grouped) / log.shape[0]
-        print("NEW RELATION:", len(grouped), log.shape[0])
 
     def train_variable(self, log):
         self.values = set(log[self.attr_name].unique())

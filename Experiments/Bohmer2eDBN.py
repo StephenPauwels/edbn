@@ -14,8 +14,8 @@ def compare_bpics(path):
         prec_recall = path + "Output/prec_recall_%i.png" % (i)
         roc = path + "Output/roc_%i.png" % (i)
 
-        bohmer_model = bmr.train(train, header = 0, length = 500000)
-        bmr.test(train, test, output, bohmer_model, ",", 500000, skip=0)
+        #bohmer_model = bmr.train(train, header = 0, length = 500000)
+        #bmr.test(train, test, output, bohmer_model, ",", 500000, skip=0)
 
         dict_dict = []
         utils.convert2ints(train, train + "_ints", True, dict_dict)

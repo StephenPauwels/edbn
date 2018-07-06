@@ -5,21 +5,14 @@ import pandas as pd
 
 
 def generate_model(data, k, remove_attrs, trace_attr, label_attr, normal_label, previous_vals = False):
+    print("GENERATE: initialize")
     cbn = extendedDynamicBayesianNetwork(len(data.columns), k, trace_attr, label_attr, normal_label)
     nodes = []
 
-    i = 0
     for column in data:
-        new_vals = uc.calculate_new_values_rate(data[column])
-        nodes.append(column)
-        i += 1
-
-    for remove in remove_attrs:
-        print(remove)
-        nodes.remove(remove)
+        if column not in remove_attrs:
+            nodes.append(column)
     data = data[nodes]
-
-    print("GENERATE: build k-context")
 
     # Get all normal attributes and remove the trace attribute
     attributes = list(data.columns)
@@ -27,6 +20,8 @@ def generate_model(data, k, remove_attrs, trace_attr, label_attr, normal_label, 
     nodes.remove(trace_attr)
 
     # Create the k-context of the data
+    print("GENERATE: build k-context")
+
     data = cbn.create_k_context(data)
 
     # Add previous-attributes to the model
@@ -40,7 +35,7 @@ def generate_model(data, k, remove_attrs, trace_attr, label_attr, normal_label, 
     print("GENERATE: calculate mappings")
 
     # Calculate Mappings
-    mappings = uc.calculate_mappings(data, attributes, k, 1)
+    mappings = uc.calculate_mappings(data, attributes, k, 0.98)
     double_mappings = []
     whitelist = []
     print("MAPPINGS:")
@@ -99,8 +94,6 @@ def generate_model(data, k, remove_attrs, trace_attr, label_attr, normal_label, 
     bay_net = bn.BayesianNetwork(data)
     net = bay_net.hill_climbing_pybn(nodes, restrictions=restrictions, whitelist=whitelist, metric="AIC")
 
-    print("Done")
-
     relations = []
     for edge in net.edges():
         relations.append((edge[0], edge[1]))
@@ -123,7 +116,6 @@ def get_max_tranisitive_closure(relations, closure = None, size = 0, prefix = ""
     if len(closure) > 0 and closure[0][0] == closure[-1][1]:
         return size, closure
 
-    print(closure, relations)
     for r in relations:
         if len(closure) == 0 or (r[0] == closure[-1][1] and r not in closure and (r[1], r[0]) not in closure):
             max, found_closure = get_max_tranisitive_closure(relations, closure + [r], size + 1, prefix + "  ")

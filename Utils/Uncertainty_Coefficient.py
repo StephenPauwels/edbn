@@ -82,8 +82,6 @@ def calculate_mappings(data, attributes, k, threshold):
     return named_mappings
 
 def calculate_new_values_rate(col):
-    #return len(col[int(len(col)*0.75):].unique()) / len(col.unique())
-    print(len(col.unique()), len(col))
     return len(col.unique()) / len(col)
 
 
