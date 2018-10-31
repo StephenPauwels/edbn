@@ -102,6 +102,8 @@ def plot_single_scores(scores):
 
     #plt.scatter(x,y)
     plt.scatter(range(len(y)), y)
+    plt.xlabel("Traces")
+    plt.ylabel("Log Scores")
     plt.show()
 
 def plot_pvalues(scores, window):
@@ -137,6 +139,8 @@ def plot_pvalues(scores, window):
 
         pvals.append(result)
     plt.plot(range(window, window + len(pvals)), pvals)
+    plt.xlabel("Traces")
+    plt.ylabel("Log p-values")
     plt.show()
 
 
@@ -175,15 +179,15 @@ def plot_attribute_graph(scores, attributes):
 
 
 def experiment_standard():
-    """
+
     data = pd.read_csv("../Data/bpic2018_ints.csv", delimiter=",", header=0, dtype=int, nrows=30000)
     #data_str = pd.read_csv("../Data/bpic2018_ints.csv", delimiter=",", header=0, dtype=int, nrows=3000)
     data = filter_attributes(data, ["eventid", "identity_id", "event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
-    model = create_model(data, data, "case")
+    #model = create_model(data, data, "case")
 
-    with open("model_30000b", "wb") as fout:
-        pickle.dump(model, fout)
-    """
+    #with open("model_30000b", "wb") as fout:
+    #    pickle.dump(model, fout)
+
     with open("model_30000b", "rb") as fin:
         model = pickle.load(fin)
 
@@ -263,6 +267,8 @@ def experiment_attributes_standard():
     plt.plot(x, y_2, "o")
     plt.plot(x, y_3, "o")
     plt.xticks(rotation='vertical')
+    plt.xlabel("Attributes")
+    plt.ylabel("Median Score")
     plt.legend(["2015", "2016", "2017"])
     plt.show()
 
@@ -294,17 +300,17 @@ def experiment_attributes_standard():
     plt.show()
 
 def experiment_department():
-    """
+
     data = pd.read_csv("../Data/bpic2018_ints.csv", delimiter=",", header=0, dtype=int)
     data = data[data.department == 1]
-    data = filter_attributes(data, ["event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
+    data = filter_attributes(data, ["eventid", "identity_id", "event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
     model = create_model(data, data, "case")
 
     print("Starting writing model to file")
     with open("model_department", "wb") as fout:
         pickle.dump(model, fout)
     print("Done")
-    """
+
     with open("model_department", "rb") as fin:
         model = pickle.load(fin)
 

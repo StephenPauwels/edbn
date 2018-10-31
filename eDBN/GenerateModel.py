@@ -35,7 +35,7 @@ def generate_model(data, k, remove_attrs, trace_attr, label_attr, normal_label, 
     print("GENERATE: calculate mappings")
 
     # Calculate Mappings
-    mappings = uc.calculate_mappings(data, attributes, k, 0.98)
+    mappings = uc.calculate_mappings(data, attributes, k, 0.99)
     double_mappings = []
     whitelist = []
     print("MAPPINGS:")

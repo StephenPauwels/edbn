@@ -413,6 +413,7 @@ class Variable:
                 parent = self.functional_parents[i]
                 if getattr(row, parent.attr_name) not in self.fdt[i]:
                     scores[parent.attr_name] = 1 - self.fdt_violation[i]
+                    self.fdt[i][getattr(row, parent.attr_name)] = getattr(row, self.attr_name)
                 elif self.fdt[i][getattr(row, parent.attr_name)] == getattr(row, self.attr_name) or getattr(row, parent.attr_name) == 0:
                     scores[parent.attr_name] = 1 - self.fdt_violation[i]
                 else:
@@ -432,7 +433,7 @@ class Variable:
                 return self.new_relations
             val = getattr(row, self.attr_name)
             if val not in self.cpt[parent_vals]:
-                return 1#self.new_relations
+                return (1 - self.new_relations) * self.new_relations
             return (1 - self.new_relations) * self.cpt[parent_vals][val]
         return 1
 

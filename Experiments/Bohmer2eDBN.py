@@ -14,12 +14,12 @@ def compare_bpics(path):
         prec_recall = path + "Output/prec_recall_%i.png" % (i)
         roc = path + "Output/roc_%i.png" % (i)
 
-        #bohmer_model = bmr.train(train, header = 0, length = 500000)
-        #bmr.test(train, test, output, bohmer_model, ",", 500000, skip=0)
-
         dict_dict = []
         utils.convert2ints(train, train + "_ints", True, dict_dict)
         test_length = utils.convert2ints(test, test + "_ints", True, dict_dict)
+
+        #bohmer_model = bmr.train(train + "_ints", header = 0, length = 500000)
+        #bmr.test(train + "_ints", test + "_ints", output, bohmer_model, ",", 500000, skip=0)
 
         edbn_model = edbn.train(train + "_ints", "Case", "Anomaly", 1, header = 0, length = 500000, ignore = ["Anomaly"])
         edbn.test(test + "_ints", output_edbn, edbn_model, "Anomaly", 1, ",", min(test_length, 500000), skip=0)
@@ -35,12 +35,12 @@ def compare_bpic_total(path):
     prec_recall = path + "Output/prec_recall_total.png"
     roc = path + "Output/roc_total.png"
 
-    #bohmer_model = bmr.train(train, header = 0, length = 5000000)
-    #bmr.test(train, test, output, bohmer_model, ",", 5000000, skip=0)
-
     dict_dict = []
     utils.convert2ints(train, train + "_ints", True, dict_dict)
     test_length = utils.convert2ints(test, test + "_ints", True, dict_dict)
+
+    #bohmer_model = bmr.train(train, header = 0, length = 5000000)
+    #bmr.test(train, test, output, bohmer_model, ",", 5000000, skip=0)
 
     edbn_model = edbn.train(train + "_ints", "Case", "Anomaly", 1, header=0, length=500000, ignore=["Anomaly"])
     edbn.test(test + "_ints", output_edbn, edbn_model, "Anomaly", 1, ",", min(test_length, 500000), skip=0)

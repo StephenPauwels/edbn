@@ -59,6 +59,10 @@ def plot_single_roc_curve(result_file, save_file=None):
         plt.savefig(save_file)
     plt.show()
 
+def get_roc_auc(result_file):
+    fpr, tpr = calc_roc(read_file(result_file))
+    return auc(fpr, tpr)
+
 def plot_compare_prec_recall_curve(result_files, labels, save_file=None):
     prec_recall_vals = []
     auc_vals = []
@@ -98,8 +102,8 @@ def plot_compare_roc_curve(result_files, labels, save_file=None):
     plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
     plt.xlim([0.0, 1.0])
     plt.ylim([0.0, 1.0])
-    plt.xlabel('Recall')
-    plt.ylabel('Precision')
+    plt.xlabel('FPR')
+    plt.ylabel('TPR')
     plt.title('ROC Curve')
     plt.legend(loc="lower right")
     if save_file:
