@@ -190,7 +190,7 @@ def mapEvents(graph, logs, lst_v, lst_va, f, lst_l, punAct, punOth):
                 cLkly = 1 - classLkly(logs, f, lst_va, lst_v)
                 likly = gLkli * cLkly * pun
         else:
-            likly = lst_l + pun
+            likly = lst_l * pun
     if isActivity(f):
         matchingActivities = [x for x in graph[0] if global_dict_to_value[x] == f]
         if len(matchingActivities) > 0:
