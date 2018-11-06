@@ -157,6 +157,8 @@ class extendedDynamicBayesianNetwork():
             shift_data.at[shift_data.first_valid_index(), self.trace_attr] = trace[0]
             joined_trace = shift_data.join(joined_trace, lsuffix="_Prev%i" % i)
         contextdata = contextdata.append(joined_trace, ignore_index=True)
+        # TODO: add duration to every timestep
+
         return contextdata
 
     def train_from_data(self, data):
