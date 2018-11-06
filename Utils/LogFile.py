@@ -58,6 +58,31 @@ class LogFile:
                         break
         return cnt
 
+
+    def attributes(self):
+        return self.data.columns
+
+    def keep_attributes(self, keep_attrs):
+        self.data = self.data[keep_attrs]
+
+    def remove_attributes(self, remove_attrs):
+        """
+        Remove attributes with the given prefixes from the data
+
+        :param remove_attrs: a list of prefixes of attributes that should be removed from the data
+        :return: None
+        """
+        remove_attrs = []
+        for attr in self.data:
+            for prefix in remove_attrs:
+                if attr.startswith(prefix):
+                    remove_attrs.append(attr)
+                    break
+        self.data = self.data.drop(remove_attrs, axis=1)
+
+    def get_column(self, attribute):
+        return self.data[attribute]
+
     def create_k_context(self):
         """
         Create the k-context from the current LogFile

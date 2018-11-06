@@ -6,9 +6,12 @@ from statsmodels import robust
 import pickle
 from scipy import stats
 
+# Import LogFile for representing the data
+from LogFile import LogFile
+
 import eDBN.GenerateModel as gm
 
-def create_model(training_structure_data, training_params_data, trace_attr, ignore_attrs=[]):
+def create_model(training_structure_data, training_params_data, ignore_attrs=[]):
     """
     Create an eDBN model from the given data
 
@@ -18,7 +21,7 @@ def create_model(training_structure_data, training_params_data, trace_attr, igno
     :param ignore_attrs: attributes that have to be ignored when learning the model
     :return: the learned model
     """
-    cbn = gm.generate_model(training_structure_data, 1, ignore_attrs, trace_attr, None, None)
+    cbn = gm.generate_model(training_structure_data, 1, ignore_attrs, None, None)
     cbn.train_data(training_params_data)
     return cbn
 
@@ -179,11 +182,10 @@ def plot_attribute_graph(scores, attributes):
 
 
 def experiment_standard():
-
-    data = pd.read_csv("../Data/bpic2018_ints.csv", delimiter=",", header=0, dtype=int, nrows=30000)
+    data = LogFile("../Data/bpic2018.csv", ",", 0, 3000, "startTime", "case")
     #data_str = pd.read_csv("../Data/bpic2018_ints.csv", delimiter=",", header=0, dtype=int, nrows=3000)
-    data = filter_attributes(data, ["eventid", "identity_id", "event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
-    #model = create_model(data, data, "case")
+    data.remove_attributes(["eventid", "identity_id", "event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
+    model = create_model(data, data)
 
     #with open("model_30000b", "wb") as fout:
     #    pickle.dump(model, fout)
@@ -408,7 +410,7 @@ def convert2ints(file_in, file_out, header = True, dict = None):
 
 if __name__ == "__main__":
     experiment_standard()
-    experiment_attributes_standard()
+    #experiment_attributes_standard()
     #experiment_department()
     #experiment_clusters()
     #experiment_outliers()

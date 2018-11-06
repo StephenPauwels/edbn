@@ -4,29 +4,31 @@ from eDBN.extended_Dynamic_Bayesian_Network import extendedDynamicBayesianNetwor
 import pandas as pd
 
 
-def generate_model(data, k, remove_attrs, trace_attr, label_attr, normal_label, previous_vals = False):
+def generate_model(data, k, remove_attrs, label_attr, normal_label, previous_vals = False):
     print("GENERATE: initialize")
-    cbn = extendedDynamicBayesianNetwork(len(data.columns), k, trace_attr, label_attr, normal_label)
+    # Initialize empty eDBN datastructure
+    cbn = extendedDynamicBayesianNetwork(len(data.attributes()), data.k, data.trace, label_attr, normal_label)
     nodes = []
 
-    for column in data:
+    # Remove attributes
+    for column in data.attributes():
         if column not in remove_attrs:
             nodes.append(column)
-    data = data[nodes]
+    data.keep_attributes(nodes)
 
     # Get all normal attributes and remove the trace attribute
-    attributes = list(data.columns)
-    attributes.remove(trace_attr)
-    nodes.remove(trace_attr)
+    attributes = list(data.attributes())
+    attributes.remove(data.trace)
+    nodes.remove(data.trace)
 
     # Create the k-context of the data
     print("GENERATE: build k-context")
 
-    data = cbn.create_k_context(data)
+    data.create_k_context()
 
     # Add previous-attributes to the model
     for attribute in attributes:
-        new_vals = uc.calculate_new_values_rate(data[attribute])
+        new_vals = uc.calculate_new_values_rate(data.get_column(attribute))
         cbn.add_variable(attribute, new_vals)
         for i in range(k):
             nodes.append(attribute + "_Prev%i" % (i))
@@ -35,7 +37,7 @@ def generate_model(data, k, remove_attrs, trace_attr, label_attr, normal_label, 
     print("GENERATE: calculate mappings")
 
     # Calculate Mappings
-    mappings = uc.calculate_mappings(data, attributes, k, 0.99)
+    mappings = uc.calculate_mappings(data.contextdata, attributes, k, 0.99)
     double_mappings = []
     whitelist = []
     print("MAPPINGS:")
@@ -79,7 +81,7 @@ def generate_model(data, k, remove_attrs, trace_attr, label_attr, normal_label, 
     for r in rem_maps:
         mappings.remove(r)
 
-
+    # Create list with allowed edges (only from previous -> current and current -> current)
     restrictions = []
     for attr1 in attributes:
         for attr2 in attributes:
@@ -91,7 +93,7 @@ def generate_model(data, k, remove_attrs, trace_attr, label_attr, normal_label, 
     print("GENERATE: Learn Bayesian Network")
 
     # Calculate Bayesian Network
-    bay_net = bn.BayesianNetwork(data)
+    bay_net = bn.BayesianNetwork(data.contextdata)
     net = bay_net.hill_climbing_pybn(nodes, restrictions=restrictions, whitelist=whitelist, metric="AIC")
 
     relations = []
