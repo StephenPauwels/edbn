@@ -1,7 +1,6 @@
 import pandas as pd
 import multiprocessing as mp
 from dateutil.parser import parse
-import swifter
 
 class LogFile:
 
