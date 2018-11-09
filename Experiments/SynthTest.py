@@ -2,13 +2,14 @@ import eDBN.Execute as edbn
 import Utils.DataGenerator as generator
 import Utils.PlotResults as plt
 import Utils.Utils as utils
+from Utils.LogFile import LogFile
 
 import numpy as np
 
 if __name__ == "__main__":
     path = "../Data/Experiments/"
-    train_rates = [0,5,10,25]
-    test_rates = [1,5,10,25,50,100,250,500]
+    train_rates = [0]#,5,10,25]
+    test_rates = [1]#,5,10,25,50,100,250,500]
     anoms_rates = []
     for train_rate in train_rates:
         for test_rate in test_rates:
@@ -23,12 +24,16 @@ if __name__ == "__main__":
             test_file = path + "%i_test_%i.csv" %(i, anoms_rates[i][1])
             generator.create_shipment_data(10000, 10000, anoms_rates[i][0], anoms_rates[i][1], train_file, test_file)
 
-            dict_dict = []
-            utils.convert2ints(train_file, train_file + "_ints", True, dict_dict)
-            test_length = utils.convert2ints(test_file, test_file + "_ints", True, dict_dict)
+            #dict_dict = []
+            #utils.convert2ints(train_file, train_file + "_ints", True, dict_dict)
+            #test_length = utils.convert2ints(test_file, test_file + "_ints", True, dict_dict)
 
-            model = edbn.train(train_file + "_ints", "Case", "Anomaly", 1, 0, 1000000, ignore=["Anomaly"])
-            edbn.test(test_file + "_ints", path + "Output_%i_%i.csv" % anoms_rates[i], model, "Anomaly", 1, ",", test_length, skip=0)
+            train_date = LogFile(train_file, ",", 0, 1000000, None, "Case")
+            train_date.remove_attributes(["Anomaly"])
+            test_date = LogFile(test_file, ",", 0, 1000000, None, "Case",
+                                string_2_int=train_date.string_2_int, int_2_string=train_date.int_2_string)
+            model = edbn.train(train_date)
+            edbn.test(test_date, path + "Output_%i_%i.csv" % anoms_rates[i], model, "Anomaly", 1)
 
             output_file = path + "Output_%i_%i.csv" % anoms_rates[i]
             output_roc = path + "roc_%i_%i.png" % anoms_rates[i]

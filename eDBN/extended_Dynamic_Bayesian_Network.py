@@ -52,12 +52,10 @@ def process_detail(trace):
 # Open-Domain: new values may be encountered
 # Constraint: some of the mappings can be more strict (always map to the same values etc)
 class extendedDynamicBayesianNetwork():
-    def __init__(self, num_attrs, k, trace_attr, label_attr_nr, normal_label):
+    def __init__(self, num_attrs, k, trace_attr):
         self.variables = {}
         self.current_variables = []
         self.num_attrs = num_attrs
-        self.label_attr_nr = label_attr_nr
-        self.normal_label = normal_label
         self.log = None
         self.k = k
         self.trace_attr = trace_attr
@@ -96,7 +94,7 @@ class extendedDynamicBayesianNetwork():
         print("Training Done")
 
     def train_data(self, data):
-        self.log = self.create_k_context(data)
+        self.log = data.contextdata
 
         for (_, value) in self.iterate_current_variables():
             self.train_var(value)
@@ -210,11 +208,11 @@ class extendedDynamicBayesianNetwork():
         for (key, value) in self.iterate_variables():
             vars.append(value)
 
-    def get_anomalies_sorted(self, filename, delim, length, skip):
+    def get_anomalies_sorted(self, data):
         print("Sorting anomalies")
-        data = pd.read_csv(filename, delimiter=delim, nrows=length, header=0, dtype=int, skiprows=skip)
 
-        log = self.create_k_context(data)
+        data.create_k_context()
+        log = data.contextdata
 
         ranking = []
         for row in log.itertuples():

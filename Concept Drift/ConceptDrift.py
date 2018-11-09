@@ -11,7 +11,7 @@ from LogFile import LogFile
 
 import eDBN.GenerateModel as gm
 
-def create_model(training_structure_data, training_params_data, ignore_attrs=[]):
+def create_model(training_structure_data, training_params_data):
     """
     Create an eDBN model from the given data
 
@@ -21,7 +21,7 @@ def create_model(training_structure_data, training_params_data, ignore_attrs=[])
     :param ignore_attrs: attributes that have to be ignored when learning the model
     :return: the learned model
     """
-    cbn = gm.generate_model(training_structure_data, 1, ignore_attrs, None, None)
+    cbn = gm.generate_model(training_structure_data)
     cbn.train_data(training_params_data)
     return cbn
 

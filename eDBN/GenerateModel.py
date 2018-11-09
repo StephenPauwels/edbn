@@ -4,10 +4,10 @@ from eDBN.extended_Dynamic_Bayesian_Network import extendedDynamicBayesianNetwor
 import pandas as pd
 
 
-def generate_model(data, k, remove_attrs, label_attr, normal_label, previous_vals = False):
+def generate_model(data, remove_attrs = []):
     print("GENERATE: initialize")
     # Initialize empty eDBN datastructure
-    cbn = extendedDynamicBayesianNetwork(len(data.attributes()), data.k, data.trace, label_attr, normal_label)
+    cbn = extendedDynamicBayesianNetwork(len(data.attributes()), data.k, data.trace)
     nodes = []
 
     # Remove attributes
@@ -30,14 +30,14 @@ def generate_model(data, k, remove_attrs, label_attr, normal_label, previous_val
     for attribute in attributes:
         new_vals = uc.calculate_new_values_rate(data.get_column(attribute))
         cbn.add_variable(attribute, new_vals)
-        for i in range(k):
+        for i in range(data.k):
             nodes.append(attribute + "_Prev%i" % (i))
             cbn.add_variable(attribute + "_Prev%i" % (i), new_vals)
 
     print("GENERATE: calculate mappings")
 
     # Calculate Mappings
-    mappings = uc.calculate_mappings(data.contextdata, attributes, k, 0.99)
+    mappings = uc.calculate_mappings(data.contextdata, attributes, data.k, 0.99)
     double_mappings = []
     whitelist = []
     print("MAPPINGS:")
@@ -87,7 +87,7 @@ def generate_model(data, k, remove_attrs, label_attr, normal_label, previous_val
         for attr2 in attributes:
             if attr1 != attr2:
                 restrictions.append((attr2, attr1))
-            for i in range(k):
+            for i in range(data.k):
                 restrictions.append((attr2 + "_Prev%i" % (i), attr1))
 
     print("GENERATE: Learn Bayesian Network")

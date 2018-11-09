@@ -4,12 +4,16 @@ from dateutil.parser import parse
 
 class LogFile:
 
-    def __init__(self, filename, delim, header, rows, time_attr, trace_attr):
+    def __init__(self, filename, delim, header, rows, time_attr, trace_attr, string_2_int = None, int_2_string = None):
         self.filename = filename
         self.time = time_attr
         self.trace = trace_attr
-        self.string_2_int = {}
-        self.int_2_string = {}
+        if string_2_int is not None:
+            self.string_2_int = string_2_int
+            self.int_2_string = int_2_string
+        else:
+            self.string_2_int = {}
+            self.int_2_string = {}
         self.convert2ints("../converted_ints.csv", delim, rows, header=True)
         self.data = pd.read_csv("../converted_ints.csv", delimiter=delim, header=header, nrows=rows, dtype=int)
         self.contextdata = None
@@ -36,8 +40,9 @@ class LogFile:
                     fout.write(header_line)
                     header_list = header_line.replace('"', '').replace("\n", "").split(delimiter)
                     for attr in header_list:
-                        self.string_2_int[attr] = {}
-                        self.int_2_string[attr] = {}
+                        if attr not in self.string_2_int:
+                            self.string_2_int[attr] = {}
+                            self.int_2_string[attr] = {}
 
                 for line in fin:
                     cnt += 1
@@ -72,13 +77,14 @@ class LogFile:
         :param remove_attrs: a list of prefixes of attributes that should be removed from the data
         :return: None
         """
-        remove_attrs = []
+        remove = []
         for attr in self.data:
             for prefix in remove_attrs:
                 if attr.startswith(prefix):
-                    remove_attrs.append(attr)
+                    remove.append(attr)
                     break
-        self.data = self.data.drop(remove_attrs, axis=1)
+
+        self.data = self.data.drop(remove, axis=1)
 
     def get_column(self, attribute):
         return self.data[attribute]
@@ -89,11 +95,12 @@ class LogFile:
 
         :return: None
         """
-        print("Start creating k-context Parallel")
+        if self.contextdata is None:
+            print("Start creating k-context Parallel")
 
-        with mp.Pool(mp.cpu_count()) as p:
-            result = p.map(self.create_k_context_trace, self.data.groupby([self.trace]))
-        self.contextdata = pd.concat(result)
+            with mp.Pool(mp.cpu_count()) as p:
+                result = p.map(self.create_k_context_trace, self.data.groupby([self.trace]))
+            self.contextdata = pd.concat(result, ignore_index=True)
 
     def create_k_context_trace(self, trace):
         contextdata = pd.DataFrame()

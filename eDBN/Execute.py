@@ -3,17 +3,26 @@ import pandas as pd
 
 import eDBN.GenerateModel as gm
 
-def train(data_file, trace_attr, label, normal_val, header = 0, length = 100000, ignore = None):
+# TODO : Add use of LogFile
+
+
+def train(data):
+    cbn = gm.generate_model(data)
+    cbn.train_data(data)
+    return cbn
+
+def train2(data_file, trace_attr, header = 0, length = 100000, ignore = None):
     data = pd.read_csv(data_file, delimiter=",", nrows=length, header=header, dtype=int, skiprows=0)
-    cbn = gm.generate_model(data, 1, ignore, trace_attr, label, normal_val, True)
+    cbn = gm.generate_model(data, 1, ignore, trace_attr, True)
     cbn.train(data_file, ",", length)
     return cbn
 
-def test(test_file, output_file, model, label, normal_val, delim, length, skip=0):
-    anoms = model.get_anomalies_sorted(test_file, delim, length, skip)
+def test(test_data, output_file, model, label, normal_val):
+    anoms = model.get_anomalies_sorted(test_data)
     accum_scores = {}
     accum_length = {}
     anomalies = set()
+    normal_val = test_data.string_2_int[label][normal_val]
     for i in range(len(anoms)):
         seqID = getattr(anoms[i][1], model.trace_attr)
         if getattr(anoms[i][1], label) != normal_val:

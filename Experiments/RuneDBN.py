@@ -2,19 +2,31 @@
 import Utils.Utils as utils
 
 import pandas as pd
-import extended_Dynamic_Bayesian_Network as edbn
+import eDBN.Execute as edbn
+from Utils.LogFile import LogFile
+from Utils.BPIPreProcess import preProcessData
+import Utils.PlotResults as plot
 
 if __name__ == "__main__":
-    file = "../Data/bpic2018_ints.csv"
+    # Use the BPIC15_x_sorted.csv to generate new training and test datafiles with anomalies introduced
+    # After running this once you can comment this line out
+    preProcessData("../Data/")
 
-    #output_edbn = "../Data/Output_2/BPIC15_edbn_output_1.csv"
-    #ignore_attrs = ["eventid", "identity_id", "event_identity_id", "year", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"]
+    # Indicate which are the training and test files
+    train_file = "../Data/BPIC15_train_1.csv"
+    test_file = "../Data/BPIC15_test_1.csv"
 
-    #edbn_model = edbn.train(file, "case", "Anomaly", 1, header=0, length=30000, ignore=ignore_attrs)
-    #edbn.test(file, output_edbn, edbn_model, "Anomaly", 1, ",", length=100000, skip=0)
+    # Load logfile to use as training data
+    train_data = LogFile(train_file, ",", header=0, rows=100000, time_attr=None, trace_attr="Case")
+    train_data.remove_attributes(["Anomaly"])
 
-    data = pd.read_csv(file, delimiter=",", nrows=100000000, header=0, dtype=int, skiprows=0)
-    model = edbn.extendedDynamicBayesianNetwork(len(data.columns), 1, "case", "Anomaly", 1)
-    context = model.create_k_context(data)
+    # Train the model
+    model = edbn.train(train_data)
 
-    print(context)
+    # Test the model and save the scores in ../Data/output.csv
+    test_data = LogFile(test_file, ",", header=0, rows=100000, time_attr=None, trace_attr="Case",
+                        string_2_int=train_data.string_2_int, int_2_string=train_data.int_2_string)
+    edbn.test(test_data, "../Data/output.csv", model, label = "Anomaly", normal_val = "0")
+
+    # Plot the ROC curve based on the results
+    plot.plot_single_roc_curve("../Data/output.csv")
