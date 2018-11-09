@@ -18,7 +18,7 @@ def compare_bpics(path):
         #bmr.test(train + "_ints", test + "_ints", output, bohmer_model, ",", 500000, skip=0)
 
         train_data = LogFile(train, ",", 0, 500000, None, "Case")
-        train_data.remove_attributes("Anomaly")
+        train_data.remove_attributes(["Anomaly"])
         test_data = LogFile(test, ",", 0, 500000, None, "Case", train_data.string_2_int, train_data.int_2_string)
 
         edbn_model = edbn.train(train_data)
@@ -39,7 +39,7 @@ def compare_bpic_total(path):
     #bmr.test(train, test, output, bohmer_model, ",", 5000000, skip=0)
 
     train_data = LogFile(train, ",", 0, 500000, None, "Case")
-    train_data.remove_attributes("Anomaly")
+    train_data.remove_attributes(["Anomaly"])
     test_data = LogFile(test, ",", 0, 500000, None, "Case", train_data.string_2_int, train_data.int_2_string)
 
     edbn_model = edbn.train(train_data)
@@ -54,5 +54,5 @@ if __name__  == "__main__":
     #preprocess.preProcessData(path)
     #preprocess.preProcessData_total(path)
 
-    compare_bpics(path)
+   # compare_bpics(path)
     compare_bpic_total(path)
