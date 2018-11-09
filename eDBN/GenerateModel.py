@@ -52,7 +52,7 @@ def generate_model(data, remove_attrs = []):
     print("GENERATE: removing redundant mappings")
 
     # Remove redundant mappings to improve Bay Net discovery performance
-    while True:
+    while False: # Disabled this step for now
         _, closure = get_max_tranisitive_closure(double_mappings)
         if len(closure) == 0:
             break
