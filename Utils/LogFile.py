@@ -1,23 +1,30 @@
 import pandas as pd
 import multiprocessing as mp
 from dateutil.parser import parse
+from sklearn import preprocessing
+from collections import defaultdict
+import numpy as np
 
 class LogFile:
 
-    def __init__(self, filename, delim, header, rows, time_attr, trace_attr, string_2_int = None, int_2_string = None):
+    def __init__(self, filename, delim, header, rows, time_attr, trace_attr, values = None):
         self.filename = filename
         self.time = time_attr
         self.trace = trace_attr
-        if string_2_int is not None:
-            self.string_2_int = string_2_int
-            self.int_2_string = int_2_string
+        if values is not None:
+            self.values = values
         else:
-            self.string_2_int = {}
-            self.int_2_string = {}
-        self.convert2ints("../converted_ints.csv", delim, rows, header=True)
-        self.data = pd.read_csv("../converted_ints.csv", delimiter=delim, header=header, nrows=rows, dtype=int)
+            self.values = {}
+
+        self.data = pd.read_csv(self.filename, header=header, nrows=rows, delimiter=delim, dtype="str")
+
+        self.convert2ints("../converted_ints.csv", delim, rows)
+
+        #self.data = pd.read_csv("../converted_ints.csv", delimiter=delim, header=header, nrows=rows, dtype=int)
         self.contextdata = None
         self.k = 1
+
+
 
     def convert2ints(self, file_out, delimiter, rows, header=True):
         """
@@ -30,38 +37,34 @@ class LogFile:
         :param header: header present in the input?
         :return: number of lines converted
         """
-        cnt = 0
+        # TODO: fix issue as first column is processed twice
+        self.data = self.data.apply(lambda x: self.convert_column2ints(x))
+        self.data.to_csv(file_out, index=False)
 
-        with open(self.filename, "r") as fin:
-            with open(file_out, "w") as fout:
-                header_list = None
-                if header:
-                    header_line = fin.readline()
-                    fout.write(header_line)
-                    header_list = header_line.replace('"', '').replace("\n", "").split(delimiter)
-                    for attr in header_list:
-                        if attr not in self.string_2_int:
-                            self.string_2_int[attr] = {}
-                            self.int_2_string[attr] = {}
+    def convert_column2ints(self, x):
+        if x.name not in self.values:
+            self.values[x.name], y = np.unique(x, return_inverse=True)
+            return y
+        else:
+            self.values[x.name] = np.append(self.values[x.name], np.setdiff1d(np.unique(x), self.values[x.name]))
 
-                for line in fin:
-                    cnt += 1
-                    input = line.replace('"', '').replace("\n", "").split(delimiter)
-                    output = []
-                    attr = 0
-                    for i in input:
-                        attribute = header_list[attr]
-                        if i not in self.string_2_int[attribute]:
-                            int_val = len(self.string_2_int[attribute]) + 1
-                            self.string_2_int[attribute][i] = int_val
-                            self.int_2_string[attribute][int_val] = i
-                        output.append(str(self.string_2_int[attribute][i]))
-                        attr += 1
-                    fout.write(delimiter.join(output))
-                    fout.write("\n")
-                    if cnt > rows:
-                        break
-        return cnt
+            xsorted = np.argsort(self.values[x.name])
+            ypos = np.searchsorted(self.values[x.name][xsorted], x)
+            indices = xsorted[ypos]
+
+            return indices
+
+    def convert_string2int(self, column, value):
+        vals = self.values[column]
+        found = np.where(vals==value)
+        if len(found[0]) == 0:
+            return None
+        else:
+            return found[0][0]
+
+    def convert_int2string(self, column, int_val):
+        return self.values[column][int_val]
+
 
 
     def attributes(self):
@@ -136,7 +139,7 @@ class LogFile:
         else:
             return 0
 
-
+"""
 def convert(col):
     string_2_int = {}
     new_col = []
@@ -146,10 +149,16 @@ def convert(col):
             string_2_int[value] = len(string_2_int) + 1
         new_col.append(string_2_int[value])
     return pd.Series(new_col)
-
+"""
 
 if __name__ == "__main__":
-    log = LogFile("../Data/bpic2018.csv", ",", 0, 3000, "startTime", "case")
+    #log = LogFile("../Data/bpic2018.csv", ",", 0, 100, "startTime", "case")
+    log = LogFile("../Data/BPIC15_train_1.csv", ",", 0, 100, "time", "Case")
+    print(log.data)
+
+    log2 = LogFile("../Data/BPIC15_test_1.csv", ",", 0, 100, "time", "Case", values=log.values)
+    print(log2.data)
+
     #log.create_k_context()
     #log.add_duration_to_k_context()
     #data = pd.read_csv("../Data/bpic2018.csv", delimiter=",", header=0, nrows=3000, dtype=str)

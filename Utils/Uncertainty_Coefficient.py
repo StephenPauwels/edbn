@@ -61,3 +61,17 @@ def plot_new_values_rate(col):
     plt.plot(freq_new_values)
     plt.show()
 
+
+if __name__ == "__main__":
+    import pandas as pd
+    data = pd.read_csv("../Data/BPIC15_1_sorted.csv", dtype='str')
+    cols = data.columns
+    candidates = []
+    for col in cols:
+        candidates.append([col])
+    while (len(candidates) > 0):
+        for cand in candidates:
+            for col in cols:
+                if col not in cand:
+                    new_cand = cand + [col]
+

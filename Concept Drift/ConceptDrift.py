@@ -182,10 +182,10 @@ def plot_attribute_graph(scores, attributes):
 
 
 def experiment_standard():
-    data = LogFile("../Data/bpic2018.csv", ",", 0, 3000, "startTime", "case")
+    #data = LogFile("../Data/bpic2018.csv", ",", 0, 30000, "startTime", "case")
     #data_str = pd.read_csv("../Data/bpic2018_ints.csv", delimiter=",", header=0, dtype=int, nrows=3000)
-    data.remove_attributes(["eventid", "identity_id", "event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
-    model = create_model(data, data)
+    #data.remove_attributes(["eventid", "identity_id", "event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
+    #model = create_model(data, data)
 
     #with open("model_30000b", "wb") as fout:
     #    pickle.dump(model, fout)
@@ -195,9 +195,19 @@ def experiment_standard():
 
     data = pd.read_csv("../Data/bpic2018_ints.csv", delimiter=",", header=0, dtype=int)
     data = filter_attributes(data, ["eventid", "identity_id", "event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
+    print("Get Scores")
     scores = get_event_scores(data, model)
     plot_single_scores(scores)
     plot_pvalues(scores, 800)
+
+    y = []
+    for key in sorted(scores.keys()):
+        if sum(scores[key]) != 0:
+            y.append(math.log10(sum(scores[key]) / len(scores[key])))
+    kernel = stats.gaussian_kde(y)
+    plt.plot(np.linspace(0, max(y), 1000), kernel(np.linspace(0, max(y), 1000)))
+    plt.show()
+
 
 def experiment_attributes_standard():
     """

@@ -25,7 +25,7 @@ if __name__ == "__main__":
 
     # Test the model and save the scores in ../Data/output.csv
     test_data = LogFile(test_file, ",", header=0, rows=500000, time_attr=None, trace_attr="Case",
-                        string_2_int=train_data.string_2_int, int_2_string=train_data.int_2_string)
+                        values=train_data.values)
     edbn.test(test_data, "../Data/output.csv", model, label = "Anomaly", normal_val = "0")
 
     # Plot the ROC curve based on the results

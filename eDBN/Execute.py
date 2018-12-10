@@ -1,6 +1,6 @@
 import math
 import pandas as pd
-
+import numpy as np
 import eDBN.GenerateModel as gm
 
 # TODO : Add use of LogFile
@@ -22,7 +22,7 @@ def test(test_data, output_file, model, label, normal_val):
     accum_scores = {}
     accum_length = {}
     anomalies = set()
-    normal_val = test_data.string_2_int[label][normal_val]
+    normal_val = test_data.convert_string2int(label, normal_val)
     for i in range(len(anoms)):
         seqID = getattr(anoms[i][1], model.trace_attr)
         if getattr(anoms[i][1], label) != normal_val:
@@ -40,6 +40,7 @@ def test(test_data, output_file, model, label, normal_val):
     for seqs in accum_scores:
         scores.append((seqs, math.pow(accum_scores[seqs], 1 / accum_length[seqs]), seqs in anomalies))
     scores.sort(key=lambda l:l[1])
+
     with open(output_file, "w") as fout:
         for s in scores:
             fout.write(",".join([str(i) for i in s]))
