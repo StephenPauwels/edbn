@@ -3,8 +3,6 @@
        [1] Böhmer, Kristof, and Stefanie Rinderle-Ma. "Multi-perspective anomaly detection in business process execution events."
              OTM Confederated International Conferences" On the Move to Meaningful Internet Systems". Springer, Cham, 2016.
 """
-import multiprocessing as md
-
 import pandas as pd
 
 class LikelihoodModel:
@@ -156,7 +154,6 @@ class LikelihoodModel:
         return ec / tc
 
     def mapEvents(self, lst_v, lst_va, f, lst_l, punAct, punOth):
-        logs = self.data.data
         D = {x for x in self.graph[1] if x[0] == lst_v}
         fnd = False
         likly = 0
@@ -224,7 +221,7 @@ class LikelihoodModel:
                 else:
                     l_wd2a = (0,1)
                 l_c = l_c * l_a2r[1] * l_r2wd[1] * l_wd2a[1]
-                if a in global_dict_to_value and e[0] == global_dict_to_value[a] and s_c == s_max:
+                if a in self.dict_to_value and e[0] == self.dict_to_value[a] and s_c == s_max:
                     found_a = True
                     break
                 elif s_c > s_max:
@@ -253,8 +250,6 @@ class LikelihoodModel:
         E_extend = E.extend
 
         fnd_fs = set()
-        fnd_fs_add = fnd_fs.add
-        fnd_fs_diff = fnd_fs.difference
         kwn_e = set()
         kwn_e_add = kwn_e.add
         i = 0
@@ -271,7 +266,6 @@ class LikelihoodModel:
                     fnd_fs.add((fnd_f[0][0], fnd_f[0][1] + e[1]))
             else:
                 E_extend([(x, e[1] * x[2]) for x in self.graph[1] if x[0] == e[0][1] and x not in kwn_e])
-          #      i = 0
         self.dict_evntTypLkly[(f, lst_va)] = fnd_fs
         return fnd_fs
 
@@ -284,24 +278,18 @@ class LikelihoodModel:
             return "Weekday"
 
     def classLkly(self, f, lst_a, lst_v):
-        tc = 0
-        ec = 0
-
         logs = self.data.data
 
         if self.isRes(f):
-            #print("ClassLkly - Resource")
             tc = len(logs.Resource.unique()) # total amount of resources
             ec = len(logs.loc[logs["Activity"] == self.dict_to_value[lst_a]].Resource.unique()) # total amount of resources with given activity
         elif self.isWeekday(f):
-            #print("ClassLkly - Weekday")
             tc = len(logs.Weekday.unique()) # total amount of weekdays
             if self.isRes(self.dict_to_value[lst_v]):
                 ec = len(logs.loc[(logs["Activity"] == self.dict_to_value[lst_a]) & (logs["Resource"] == self.dict_to_value[lst_v])]) # total amount of weekdays with given activity and resource
             else:
                 ec = len(logs.loc[logs["Activity"] == self.dict_to_value[lst_a]].Weekday.unique())
         else:
-            #print("ClassLkly - Else")
             filtered = logs.loc[logs["Activity"] == self.dict_to_value[lst_a]]
             tc = len({logs.at[idx + 1, "Activity"] for idx in filtered.index if idx + 1 in logs.index and logs.at[idx, "Case"] == logs.at[idx + 1, "Case"]})
 
@@ -339,16 +327,14 @@ class LikelihoodModel:
         punOth = 0.95
         min_prob = 1
 
-        logs = self.data.data
-
         i = 0
         for idx, row in trace.iterrows():
             i += 1
             for attr in ["Activity", "Resource", "Weekday"]:
                 f = row[attr]
                 lst_v, lst_va, lst_l = self.mapEvents(lst_v, lst_va, f, lst_l, punAct, punOth)
-          #  min_lik = minLike(graph, logs, lst_va, i)
-          #  prob = lst_l - min_lik
+            #min_lik = minLike(graph, logs, lst_va, i)
+            #prob = lst_l - min_lik
             prob = lst_l
             if prob < min_prob:
                 min_prob = prob
@@ -359,29 +345,9 @@ class LikelihoodModel:
         """
         Return score for a trace given the graph and log
 
-        :param graph: Trained Event graph to use
-        :param log: Log file used for training
         :param trace: Current trace to score
-        :param unused_attrs: Number of attributes to skip
         :return:
         """
         print("Testing")
         return self.ongoingLikelihoodDiff(trace)
 
-    def test_trace_parallel(self, trace, results):
-        """
-        Same function as test_trace_get_diff but can be used in a parallel setting (multiple processes)
-        """
-        print("Testing")
-        results.put((self.ongoingLikelihoodDiff(trace), trace[-1][-1] == '1'))
-
-    def test_trace_parallel_for(self, trace, dict_to_value = None):
-        """
-        Same function as test_trace_get_diff but can be used in a parallel setting (multiple processes)
-        """
-        print("Testing")
-        if dict_to_value is not None:
-            global global_dict_to_value
-            global_dict_to_value = dict_to_value
-        trace = list(trace.itertuples(index=False))
-        return (trace[-1][-2], self.ongoingLikelihoodDiff(trace,), trace[-1][-1] == '1')

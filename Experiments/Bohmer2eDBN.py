@@ -19,7 +19,7 @@ def compare_bpics(path):
         test_data = LogFile(test, ",", 0, 500000, "Time", "Case", activity_attr="Activity", values=train_data.values, convert2integers=False)
 
         bohmer_model = bmr.train(train_data)
-        bmr.test(train_data, test_data, output, bohmer_model)
+        bmr.test(test_data, output, bohmer_model, label = "Anomaly", normal_val = "0")
 
         train_data.convert2int()
         test_data.convert2int()
@@ -43,13 +43,13 @@ def compare_bpic_total(path):
     test_data = LogFile(test, ",", 0, 500000, "Time", "Case", activity_attr="Activity", values=train_data.values, convert2integers=False)
 
     bohmer_model = bmr.train(train_data)
-    bmr.test(train_data, test_data, output, bohmer_model)
+    bmr.test(test_data, output, bohmer_model, label = "Anomaly", normal_val = "0")
 
     train_data.convert2int()
     test_data.convert2int()
 
     edbn_model = edbn.train(train_data)
-    edbn.test(test_data, output_edbn, edbn_model, label="Anomaly", normal_val="0")
+    edbn.test(test_data, output_edbn, edbn_model, label = "Anomaly", normal_val = "0")
 
     plt.plot_compare_prec_recall_curve([output, output_edbn], ["Likelihood Graph", "eDBN"], save_file=prec_recall)
     plt.plot_compare_roc_curve([output, output_edbn], ["Likelihood Graph", "eDBN"], roc)
