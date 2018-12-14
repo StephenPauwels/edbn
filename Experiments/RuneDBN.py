@@ -17,16 +17,17 @@ if __name__ == "__main__":
     test_file = "../Data/BPIC15_test_1.csv"
 
     # Load logfile to use as training data
-    train_data = LogFile(train_file, ",", 0, 500000, None, "Case")
-    train_data.remove_attributes(["Anomaly"])
+    train_data = LogFile(train_file, ",", 0, 500000, "Time", "Case")
+    train_data.remove_attributes(["Anomaly", "Type"])
 
     # Train the model
     model = edbn.train(train_data)
 
     # Test the model and save the scores in ../Data/output.csv
-    test_data = LogFile(test_file, ",", header=0, rows=500000, time_attr=None, trace_attr="Case",
+    test_data = LogFile(test_file, ",", header=0, rows=500000, time_attr="Time", trace_attr="Case",
                         values=train_data.values)
     edbn.test(test_data, "../Data/output.csv", model, label = "Anomaly", normal_val = "0")
 
     # Plot the ROC curve based on the results
     plot.plot_single_roc_curve("../Data/output.csv")
+    plot.plot_single_prec_recall_curve("../Data/output.csv")

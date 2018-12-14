@@ -14,15 +14,18 @@ def compare_bpics(path):
         prec_recall = path + "Output/prec_recall_%i.png" % (i)
         roc = path + "Output/roc_%i.png" % (i)
 
-        #bohmer_model = bmr.train(train + "_ints", header = 0, length = 500000)
-        #bmr.test(train + "_ints", test + "_ints", output, bohmer_model, ",", 500000, skip=0)
+        train_data = LogFile(train, ",", 0, 500000, "Time", "Case", activity_attr="Activity", convert2integers=False)
+        train_data.remove_attributes(["Anomaly", "Type", "Time"])
+        test_data = LogFile(test, ",", 0, 500000, "Time", "Case", activity_attr="Activity", values=train_data.values, convert2integers=False)
 
-        train_data = LogFile(train, ",", 0, 500000, None, "Case")
-        train_data.remove_attributes(["Anomaly"])
-        test_data = LogFile(test, ",", 0, 500000, None, "Case", train_data.string_2_int, train_data.int_2_string)
+        bohmer_model = bmr.train(train_data)
+        bmr.test(train_data, test_data, output, bohmer_model)
+
+        train_data.convert2int()
+        test_data.convert2int()
 
         edbn_model = edbn.train(train_data)
-        edbn.test(test_data, output_edbn, edbn_model, "Anomaly", "0")
+        edbn.test(test_data, output_edbn, edbn_model, label = "Anomaly", normal_val = "0")
 
         plt.plot_compare_prec_recall_curve([output, output_edbn], ["Likelihood Graph", "eDBN"], save_file=prec_recall)
         plt.plot_compare_roc_curve([output, output_edbn], ["Likelihood Graph", "eDBN"], roc)
@@ -35,15 +38,18 @@ def compare_bpic_total(path):
     prec_recall = path + "Output/prec_recall_total.png"
     roc = path + "Output/roc_total.png"
 
-    #bohmer_model = bmr.train(train, header = 0, length = 5000000)
-    #bmr.test(train, test, output, bohmer_model, ",", 5000000, skip=0)
+    train_data = LogFile(train, ",", 0, 500000, "Time", "Case", activity_attr="Activity", convert2integers=False)
+    train_data.remove_attributes(["Anomaly", "Type", "Time"])
+    test_data = LogFile(test, ",", 0, 500000, "Time", "Case", activity_attr="Activity", values=train_data.values, convert2integers=False)
 
-    train_data = LogFile(train, ",", 0, 500000, None, "Case")
-    train_data.remove_attributes(["Anomaly"])
-    test_data = LogFile(test, ",", 0, 500000, None, "Case", train_data.string_2_int, train_data.int_2_string)
+    bohmer_model = bmr.train(train_data)
+    bmr.test(train_data, test_data, output, bohmer_model)
+
+    train_data.convert2int()
+    test_data.convert2int()
 
     edbn_model = edbn.train(train_data)
-    edbn.test(test_data, output_edbn, edbn_model, "Anomaly", "0")
+    edbn.test(test_data, output_edbn, edbn_model, label="Anomaly", normal_val="0")
 
     plt.plot_compare_prec_recall_curve([output, output_edbn], ["Likelihood Graph", "eDBN"], save_file=prec_recall)
     plt.plot_compare_roc_curve([output, output_edbn], ["Likelihood Graph", "eDBN"], roc)
@@ -54,5 +60,5 @@ if __name__  == "__main__":
     #preprocess.preProcessData(path)
     #preprocess.preProcessData_total(path)
 
-   # compare_bpics(path)
+    compare_bpics(path)
     compare_bpic_total(path)

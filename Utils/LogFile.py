@@ -7,10 +7,11 @@ import numpy as np
 
 class LogFile:
 
-    def __init__(self, filename, delim, header, rows, time_attr, trace_attr, values = None):
+    def __init__(self, filename, delim, header, rows, time_attr, trace_attr, activity_attr = None, values = None, convert2integers = True):
         self.filename = filename
         self.time = time_attr
         self.trace = trace_attr
+        self.activity = activity_attr
         if values is not None:
             self.values = values
         else:
@@ -18,23 +19,21 @@ class LogFile:
 
         self.data = pd.read_csv(self.filename, header=header, nrows=rows, delimiter=delim, dtype="str")
 
-        self.convert2ints("../converted_ints.csv", delim, rows)
+        if convert2integers:
+            self.convert2ints("../converted_ints.csv")
 
-        #self.data = pd.read_csv("../converted_ints.csv", delimiter=delim, header=header, nrows=rows, dtype=int)
         self.contextdata = None
         self.k = 1
 
+    def convert2int(self):
+        self.convert2ints("../converted_ints.csv")
 
-
-    def convert2ints(self, file_out, delimiter, rows, header=True):
+    def convert2ints(self, file_out):
         """
         Convert csv file with string values to csv file with integer values.
         (File/string operations more efficient than pandas operations)
 
         :param file_out: filename for newly created file
-        :param delimiter: delimiter of input file, gets used by output file
-        :param rows: number of rows to convert
-        :param header: header present in the input?
         :return: number of lines converted
         """
         # TODO: fix issue as first column is processed twice
@@ -133,11 +132,13 @@ class LogFile:
 
     def calc_duration(self, row, k):
         if row[self.time + "_Prev%i" % (k)] != 0:
-            startTime = parse(self.int_2_string[self.time][row[self.time + "_Prev%i" % (k)]])
-            endTime = parse(self.int_2_string[self.time][row[self.time]])
+            startTime = parse(self.convert_int2string(self.time, row[self.time + "_Prev%i" % (k)]))
+            endTime = parse(self.convert_int2string(self.time,row[self.time]))
             return (endTime - startTime).total_seconds()
         else:
             return 0
+
+
 
 """
 def convert(col):

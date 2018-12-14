@@ -1,7 +1,7 @@
 import sys
-sys.path.append("/home/spauwels/PyCharm/anomaly-detection/")
+#sys.path.append("/home/spauwels/PyCharm/anomaly-detection/")
 import matplotlib
-matplotlib.use('Agg')
+#matplotlib.use('Agg')
 import math
 
 import multiprocessing as mp
@@ -13,21 +13,24 @@ from joblib import Parallel, delayed
 import Bohmer.LikelihoodGraph as lg
 
 
-def train(data_file, header = 0, length = 100000):
-    lg.clear_variables()
-    data = pd.read_csv(data_file, delimiter=",", nrows=length, header=header, dtype=int)
-    graph = lg.basicLikelihoodGraph(data, 0)
-    V, D = lg.extendLikelihoodGraph(graph, data, 0)
-    return (V,D)
+def train(data):
 
-def test(train_file, test_file, output_file, model, delim, length, skip=0):
-    log = pd.read_csv(train_file, delimiter=",", nrows=length, header=0, dtype=int)
-    data = pd.read_csv(test_file, delimiter=delim, nrows=length, header=0, dtype=int, skiprows=skip)
-    data.columns = ["Activity", "Resource", "Weekday", "Case", "Anomaly"]
-    test_cases = list(data.groupby("Case"))
+    model = lg.LikelihoodModel(data)
 
-    scores = Parallel(n_jobs=mp.cpu_count())(
-        delayed(lg.test_trace_parallel_for)(model, log, case, 2) for name, case in test_cases)
+    model.basicLikelihoodGraph()
+    model.extendLikelihoodGraph()
+    return model
+
+def test(train, test, output_file, model):
+
+    test_cases = list(test.data.groupby("Case"))
+
+    #scores = Parallel(n_jobs=mp.cpu_count())(
+    #    delayed(lg.test_trace_parallel_for)(model, log, case, 2, lg.global_dict_to_value) for name, case in test_cases)
+    scores = []
+    for name, case in test_cases:
+        scores.append((name, model.test_trace(case), case.iloc[0]["Anomaly"] == "1"))
+
     scores.sort(key=lambda l: l[1])
     with open(output_file, "w") as fout:
         for s in scores:

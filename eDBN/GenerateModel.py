@@ -21,6 +21,11 @@ def generate_model(data, remove_attrs = []):
     attributes.remove(data.trace)
     nodes.remove(data.trace)
 
+    if data.time in attributes:
+        attributes.remove(data.time)
+        nodes.remove(data.time)
+
+
     # Create the k-context of the data
     print("GENERATE: build k-context")
 
@@ -99,6 +104,10 @@ def generate_model(data, remove_attrs = []):
     relations = []
     for edge in net.edges():
         relations.append((edge[0], edge[1]))
+
+    # TODO: make following more general
+    if ("Activity_Prev0", "Activity") not in relations:
+        relations.append(("Activity_Prev0", "Activity"))
 
     print("Relations:")
     for relation in relations:

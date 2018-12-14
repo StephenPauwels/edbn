@@ -9,6 +9,9 @@ from joblib import Parallel, delayed
 
 import Bohmer.LikelihoodGraph as lg
 
+ACTIVITY_INDEX = 1
+RESOURCE_INDEX = 2
+WEEKDAY_INDEX = 3
 
 def read_raw_file(file):
     """
@@ -25,7 +28,7 @@ def read_raw_file(file):
         for line in fin:
             line_split = line.split(",")
             date = datetime.datetime.strptime(line_split[3], "%m/%d/%y %H:%M:%S")
-            line = ["a_" + line_split[1], "r_" + line_split[2], "wd_" + str(date.weekday())]
+            line = [str(date), "a_" + line_split[1], "r_" + line_split[2], "wd_" + str(date.weekday())]
             if eval(line_split[0]) not in output:
                 output[eval(line_split[0])] = []
             output[eval(line_split[0])].append(line)
@@ -49,28 +52,28 @@ def write_to_file(train_file, test_file, log_dict):
         trace = log_dict[key]
         if random.randint(0,1) == 0: # Add file to training set with 50% chance
             for e_idx in range(len(trace)):
-                train_events.append(",".join([str(x) for x in trace[e_idx]]) + "," + str(key) + ",0")
+                train_events.append(",".join([str(x) for x in trace[e_idx]]) + "," + str(key) + ",0,None")
         else: # Add file to test set
             if random.randint(0,100) > 50: # No anomaly injection with 50% chance
                 for e_idx in range(len(trace)):
-                    test_events.append(",".join([str(x) for x in trace[e_idx]]) + "," + str(key) + ",0")
+                    test_events.append(",".join([str(x) for x in trace[e_idx]]) + "," + str(key) + ",0,None")
             else: # Anomaly injection
-                trace = introduce_anomaly(trace)
+                trace, types = introduce_anomaly(trace, single=False)
                 for e_idx in range(len(trace)):
-                    test_events.append(",".join([str(x) for x in trace[e_idx]]) + "," + str(key) + ",1")
+                    test_events.append(",".join([str(x) for x in trace[e_idx]]) + "," + str(key) + ",1,\"" + str(types) + "\"")
 
     with open(train_file, "w") as fout:
-        fout.write(",".join(["Activity", "Resource", "Weekday", "Case", "Anomaly"]) + "\n")
+        fout.write(",".join(["Time", "Activity", "Resource", "Weekday", "Case", "Anomaly", "Type"]) + "\n")
         for e in train_events:
             fout.write(e + "\n")
 
     with open(test_file, "w") as fout:
-        fout.write(",".join(["Activity", "Resource", "Weekday", "Case", "Anomaly"]) + "\n")
+        fout.write(",".join(["Time", "Activity", "Resource", "Weekday", "Case", "Anomaly", "Type"]) + "\n")
         for e in test_events:
             fout.write(e + "\n")
 
 
-def introduce_anomaly(trace):
+def introduce_anomaly(trace, single = False):
     """
     Add anomaly to the input trace
 
@@ -94,7 +97,7 @@ def introduce_anomaly(trace):
                 new_trace.append(trace[i])
             elif i == insert:
                 new_trace.append(trace[i-1][:])
-                new_trace[-1][0] = "a_NEW_ACTIVITY"
+                new_trace[-1][ACTIVITY_INDEX] = "a_NEW_ACTIVITY"
             else:
                 new_trace.append(trace[i-1])
         return new_trace
@@ -104,16 +107,36 @@ def introduce_anomaly(trace):
         new_date_generated = trace[alter][2]
         while new_date_generated == trace[alter][2]:
             new_date_generated = random.randint(0, 7)
-        trace[alter][2] = "wd_" + str(new_date_generated)
+        trace[alter][WEEKDAY_INDEX] = "wd_" + str(new_date_generated)
         return trace
 
     def new_resource(trace):
         alter = random.randint(0, len(trace) - 1)
-        trace[alter][1] = "r_NEW_RESOURCE"
+        trace[alter][RESOURCE_INDEX] = "r_NEW_RESOURCE"
         return trace
+
+    def generate_Anomay_single(trace):
+        anomaly = random.randint(0,3)
+        anomaly_types = []
+
+        if anomaly == 0:
+            trace = alter_activity_order(trace)
+            anomaly_types.append("alter_order")
+        elif anomaly == 1:
+            trace = new_activity(trace)
+            anomaly_types.append("new_activity")
+        elif anomaly == 2:
+            trace = new_date(trace)
+            anomaly_types.append("new_date")
+        elif anomaly == 3:
+            trace = new_resource(trace)
+            anomaly_types.append("new_resource")
+
+        return (trace, anomaly_types)
 
     def generate_Anomaly(trace, num_diff_anoms, from_nums, to_nums):
         anoms = set()
+        anomaly_types = []
         for i in range(num_diff_anoms):
             anomaly = random.randint(0,3)
             while anomaly in anoms: # Ensure each type of anomaly is only choosen once
@@ -121,26 +144,34 @@ def introduce_anomaly(trace):
             for j in range(from_nums, to_nums + 1):
                 if anomaly == 0:
                     trace = alter_activity_order(trace)
+                    anomaly_types.append("alter_order")
                 elif anomaly == 1:
                     trace = new_activity(trace)
+                    anomaly_types.append("new_activity")
                 elif anomaly == 2:
                     trace = new_date(trace)
+                    anomaly_types.append("new_date")
                 elif anomaly == 3:
                     trace = new_resource(trace)
+                    anomaly_types.append("new_resource")
+        return (trace, anomaly_types)
+
+    if single:
+        return generate_Anomay_single(trace)
+    else:
+        density = random.randint(1,3)
+        if density == 1:
+            trace = generate_Anomaly(trace, 1, 2, 4)
+        elif density == 2:
+            trace = generate_Anomaly(trace, 2, 1, 3)
+        elif density == 3:
+            if random.randint(0,1) == 0:
+                trace = generate_Anomaly(trace, 3, 1, 2)
+            else:
+                trace = generate_Anomaly(trace, 4, 1, 2)
+
         return trace
 
-    density = random.randint(1,3)
-    if density == 1:
-        trace = generate_Anomaly(trace, 1, 2, 4)
-    elif density == 2:
-        trace = generate_Anomaly(trace, 2, 1, 3)
-    elif density == 3:
-        if random.randint(0,1) == 0:
-            trace = generate_Anomaly(trace, 3, 1, 2)
-        else:
-            trace = generate_Anomaly(trace, 4, 1, 2)
-
-    return trace
 
 
 def preProcessData(path_to_data):

@@ -5,6 +5,7 @@ import math
 import pandas as pd
 import numpy as np
 from joblib import Parallel, delayed
+# from pyfigtree import figtree
 
 def process(trace):
     k_contexts = model.create_k_context_trace(trace)
@@ -48,7 +49,7 @@ def process_detail(trace):
             return_result.append(-5)
     return np.asarray(return_result)
 
-# Constraint Bayesian Networks (CBN)
+# extended Dynamic Bayesian Networks (eDBN)
 # Open-Domain: new values may be encountered
 # Constraint: some of the mappings can be more strict (always map to the same values etc)
 class extendedDynamicBayesianNetwork():
@@ -59,6 +60,7 @@ class extendedDynamicBayesianNetwork():
         self.log = None
         self.k = k
         self.trace_attr = trace_attr
+        self.durations = None
 
     def add_variable(self, name, new_values):
         self.variables[name] = Variable(name, new_values, self.num_attrs)
@@ -94,10 +96,15 @@ class extendedDynamicBayesianNetwork():
         print("Training Done")
 
     def train_data(self, data):
+        #data.add_duration_to_k_context()
         self.log = data.contextdata
 
         for (_, value) in self.iterate_current_variables():
             self.train_var(value)
+
+        #print("Training duration")
+        #print(self.log.columns)
+        #self.durations = self.log["duration_0"].values
         print("Training Done")
 
     def calculate_scores(self, data, accum_attr = None):
@@ -163,6 +170,10 @@ class extendedDynamicBayesianNetwork():
         self.log = data
         for (_, value) in self.iterate_variables():
             self.train_var(value)
+
+        print("Training durations")
+
+
         print("Training Done")
 
     def train_var(self, var):
@@ -212,12 +223,27 @@ class extendedDynamicBayesianNetwork():
         print("Sorting anomalies")
 
         data.create_k_context()
+        data.add_duration_to_k_context()
         log = data.contextdata
 
+        """
+        duration_probs = figtree(self.durations, log["duration_0"].values, weights = np.ones(len(self.durations)) / len(self.durations), bandwidth=0.5)
+        x = np.linspace(0, 100, 200)
+        y = figtree(self.durations, x, weights=np.ones(len(self.durations)) / len(self.durations), bandwidth=0.5)
+        import matplotlib.pyplot as plt
+        plt.plot(x,y)
+        plt.show()
+        print("Mean:", np.mean(self.durations))
+        print(duration_probs)
+        """
+
         ranking = []
+        i = 0
         for row in log.itertuples():
             ranking.append((self.row_probability_detail(row), row))
-        ranking.sort(key=lambda l: l[0])
+            i += 1
+        # TODO: Is this needed? No... ?
+        #ranking.sort(key=lambda l: l[0])
         return ranking
 
     def get_anomalies_sorted_parallel(self, filename, delim, length, skip):
