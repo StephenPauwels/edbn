@@ -1,6 +1,10 @@
 
 def convert2ints(file_in, file_out, header = True, dict = None):
     cnt = 0
+
+    if dict is None:
+        dict = []
+
     with open(file_in, "r") as fin:
         with open(file_out, "w") as fout:
             if header:
