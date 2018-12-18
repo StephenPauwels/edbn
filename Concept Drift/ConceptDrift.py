@@ -22,7 +22,7 @@ def create_model(training_structure_data, training_params_data):
     :return: the learned model
     """
     cbn = gm.generate_model(training_structure_data)
-    cbn.train_data(training_params_data)
+    cbn.train(training_params_data)
     return cbn
 
 def filter_attributes(data, filter_prefixes):
@@ -50,7 +50,7 @@ def get_event_scores(data, model):
     :param model: model to be used to score
     :return: all scores grouped by trace
     """
-    return model.calculate_scores(data)
+    return model.calculate_scores_per_trace(data)
 
 def get_event_detailed_scores(data, model):
     """
@@ -60,7 +60,7 @@ def get_event_detailed_scores(data, model):
     :param model: model to be used to score
     :return: all detailed scores grouped by trace
     """
-    return model.calculate_scores_detail(data)
+    return model.calculate_scores_per_attribute(data)
 
 def get_attribute_detailed_scores(data, model, attribute):
     """
@@ -87,23 +87,12 @@ def plot_single_scores(scores):
 
     y = []
     x = []
-    for key in sorted(scores.keys()):
-        #if product(scores[key]) != 0:
-        #    y.append(math.log10(math.pow(product(scores[key]), 1/len(scores[key]))))
-        #else:
-        #    y.append(-10)
+    for trace_result in sorted(scores, key=lambda l: l.id):
 
-        if sum(scores[key]) != 0:
-            y.append(math.log10(sum(scores[key]) / len(scores[key])))
+        score = trace_result.get_total_score() / trace_result.get_nr_events()
+        if score != 0:
+            y.append(score)
 
-        #for s in scores[key]:
-        #    if s != 0:
-        #        y.append(math.log10(s))
-        #    else:
-        #        y.append(-10)
-        #    x.append(key)
-
-    #plt.scatter(x,y)
     plt.scatter(range(len(y)), y)
     plt.xlabel("Traces")
     plt.ylabel("Log Scores")
@@ -124,11 +113,12 @@ def plot_pvalues(scores, window):
         return windows
 
     case_scores = []
-    for k in sorted(scores.keys()):
-        if sum(scores[k]) != 0:
-            case_scores.append(math.log10(sum(scores[k]) / len(scores[k])))
+    for trace_score in sorted(scores, key=lambda l: l.id):
+        score = trace_score.get_total_score() / trace_score.get_nr_events()
+        if score != 0:
+            case_scores.append(score)
         else:
-            case_scores.append(-50)
+            case_scores.append(-5)
 
     windows = createSlidingWindows(case_scores, window)
 
@@ -162,11 +152,12 @@ def plot_attribute_graph(scores, attributes):
     y_median_mad_up = []
     y_median_mad_down = []
     for a in sorted(attributes):
-        for score in scores[a]:
-            x_vals.append(a)
-            y_vals.append(score)
+        x_vals.extend([a] * len(scores[a]))
+        y_vals.extend(scores[a])
+
         median = np.median(scores[a])
         mad = robust.mad(scores[a])
+
         x_median.append(a)
         y_median.append(median)
         y_median_mad_up.append(median + mad)
@@ -182,31 +173,22 @@ def plot_attribute_graph(scores, attributes):
 
 
 def experiment_standard():
-    #data = LogFile("../Data/bpic2018.csv", ",", 0, 30000, "startTime", "case")
-    #data_str = pd.read_csv("../Data/bpic2018_ints.csv", delimiter=",", header=0, dtype=int, nrows=3000)
-    #data.remove_attributes(["eventid", "identity_id", "event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
-    #model = create_model(data, data)
-
-    #with open("model_30000b", "wb") as fout:
-    #    pickle.dump(model, fout)
+    # train = LogFile("../Data/bpic2018_ints.csv", ",", 0, 30000, "startTime", "case", activity_attr=None, convert2integers=False)
+    # train.remove_attributes(["eventid", "identity_id", "event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
+    # model = create_model(train, train)
+    #
+    # with open("model_30000b", "wb") as fout:
+    #      pickle.dump(model, fout)
 
     with open("model_30000b", "rb") as fin:
         model = pickle.load(fin)
 
-    data = pd.read_csv("../Data/bpic2018_ints.csv", delimiter=",", header=0, dtype=int)
-    data = filter_attributes(data, ["eventid", "identity_id", "event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
     print("Get Scores")
+    data = LogFile("../Data/bpic2018_ints.csv", ",", 0, 1000000, "startTime", "case", convert2integers=False)
+    data.remove_attributes(["eventid", "identity_id", "event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
     scores = get_event_scores(data, model)
     plot_single_scores(scores)
     plot_pvalues(scores, 800)
-
-    y = []
-    for key in sorted(scores.keys()):
-        if sum(scores[key]) != 0:
-            y.append(math.log10(sum(scores[key]) / len(scores[key])))
-    kernel = stats.gaussian_kde(y)
-    plt.plot(np.linspace(0, max(y), 1000), kernel(np.linspace(0, max(y), 1000)))
-    plt.show()
 
 
 def experiment_attributes_standard():
@@ -223,19 +205,21 @@ def experiment_attributes_standard():
     with open("model_30000b", "rb") as fin:
         model = pickle.load(fin)
 
-    input_data = pd.read_csv("../Data/bpic2018_ints.csv", delimiter=",", header=0, dtype=int)
-    data = input_data[input_data.year == 1]
-    data = filter_attributes(data, ["eventid", "identity_id", "event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
+    data = LogFile("../Data/bpic2018_ints.csv", ",", 0, 1000000, "startTime", "case", convert2integers=False)
+    data.filter("self.data.year == 1")
+    data.remove_attributes(["eventid", "identity_id", "event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
     scores_year1 = get_event_detailed_scores(data, model)
     plot_attribute_graph(scores_year1, model.current_variables)
 
-    data = input_data[input_data.year == 2]
-    data = filter_attributes(data, ["eventid", "identity_id", "event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
+    data = LogFile("../Data/bpic2018_ints.csv", ",", 0, 1000000, "startTime", "case", convert2integers=False)
+    data.filter("self.data.year == 2")
+    data.remove_attributes(["eventid", "identity_id", "event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
     scores_year2 = get_event_detailed_scores(data, model)
     plot_attribute_graph(scores_year2, model.current_variables)
 
-    data = input_data[input_data.year == 3]
-    data = filter_attributes(data, ["eventid", "identity_id", "event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
+    data = LogFile("../Data/bpic2018_ints.csv", ",", 0, 1000000, "startTime", "case", convert2integers=False)
+    data.filter("self.data.year == 3")
+    data.remove_attributes(["eventid", "identity_id", "event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
     scores_year3 = get_event_detailed_scores(data, model)
     plot_attribute_graph(scores_year3, model.current_variables)
 
@@ -419,8 +403,8 @@ def convert2ints(file_in, file_out, header = True, dict = None):
     return cnt
 
 if __name__ == "__main__":
-    experiment_standard()
-    #experiment_attributes_standard()
+    #experiment_standard()
+    experiment_attributes_standard()
     #experiment_department()
     #experiment_clusters()
     #experiment_outliers()

@@ -403,6 +403,7 @@ class hill_climbing:
 
         while not result_queue.empty():
             results = result_queue.get()
+
             if results[1] - max_delta > 10 ** (-10):
                 max_arc = results[0]
                 max_delta = results[1]

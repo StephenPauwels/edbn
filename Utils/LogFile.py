@@ -17,7 +17,10 @@ class LogFile:
         else:
             self.values = {}
 
-        self.data = pd.read_csv(self.filename, header=header, nrows=rows, delimiter=delim, dtype="str")
+        type = "str"
+        if not convert2integers:
+            type = "int"
+        self.data = pd.read_csv(self.filename, header=header, nrows=rows, delimiter=delim, dtype=type)
 
         if convert2integers:
             self.convert2ints("../converted_ints.csv")
@@ -42,10 +45,19 @@ class LogFile:
 
     def convert_column2ints(self, x):
         if x.name not in self.values:
-            self.values[x.name], y = np.unique(x, return_inverse=True)
+            try:
+                self.values[x.name], y = np.unique(x, return_inverse=True)
+            except TypeError:
+                x = x.astype("str")
+                self.values[x.name], y = np.unique(x, return_inverse=True)
             return y
         else:
-            self.values[x.name] = np.append(self.values[x.name], np.setdiff1d(np.unique(x), self.values[x.name]))
+            try:
+                self.values[x.name] = np.append(self.values[x.name], np.setdiff1d(np.unique(x), self.values[x.name]))
+            except TypeError:
+                x = x.astype("str")
+                self.values[x.name] = np.append(self.values[x.name], np.setdiff1d(np.unique(x), self.values[x.name]))
+
 
             xsorted = np.argsort(self.values[x.name])
             ypos = np.searchsorted(self.values[x.name][xsorted], x)
@@ -63,7 +75,6 @@ class LogFile:
 
     def convert_int2string(self, column, int_val):
         return self.values[column][int_val]
-
 
 
     def attributes(self):
@@ -87,6 +98,9 @@ class LogFile:
                     break
 
         self.data = self.data.drop(remove, axis=1)
+
+    def filter(self, filter_condition):
+        self.data = self.data[eval(filter_condition)]
 
     def get_column(self, attribute):
         return self.data[attribute]

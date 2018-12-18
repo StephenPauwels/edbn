@@ -105,9 +105,9 @@ def generate_model(data, remove_attrs = []):
     for edge in net.edges():
         relations.append((edge[0], edge[1]))
 
-    # TODO: make following more general
-    if ("Activity_Prev0", "Activity") not in relations:
-        relations.append(("Activity_Prev0", "Activity"))
+    # TODO: make more general for other k values
+    if data.activity is not None and (data.activity + "_Prev0", data.activity) not in relations:
+        relations.append((data.activity + "_Prev0", data.activity))
 
     print("Relations:")
     for relation in relations:

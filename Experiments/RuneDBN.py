@@ -17,7 +17,7 @@ if __name__ == "__main__":
     test_file = "../Data/BPIC15_test_1.csv"
 
     # Load logfile to use as training data
-    train_data = LogFile(train_file, ",", 0, 500000, "Time", "Case")
+    train_data = LogFile(train_file, ",", 0, 500000, "Time", "Case", activity_attr="Activity")
     train_data.remove_attributes(["Anomaly", "Type"])
 
     # Train the model

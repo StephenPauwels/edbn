@@ -1,58 +1,18 @@
 import multiprocessing as mp
 import re
-import math
 
-import pandas as pd
 import numpy as np
 from joblib import Parallel, delayed
-# from pyfigtree import figtree
+from sklearn.neighbors.kde import KernelDensity
 
-def process(trace):
-    k_contexts = model.create_k_context_trace(trace)
-    result = {}
-    for row in k_contexts.itertuples():
-        prob = model.row_probability(row)
-        case = int(getattr(row, "case"))
-        if case not in result:
-            result[case] = []
-        result[case].append(prob)
-    return result
+import Result
 
-def process_detail(trace):
-    def product(l):
-        score = 1
-        for e in l:
-            score *= e
-        return score
 
-    k_contexts = model.create_k_context_trace(trace)
-    result = {}
-    for row in k_contexts.itertuples():
-        prob = model.row_scores_detail(row)
-        for a in prob:
-            score = prob[a].get("cpt", 1) * prob[a].get("value", 1)
-            for f in prob[a].get("fdt", {}):
-                score *= prob[a]["fdt"][f]
-            if a not in result:
-                result[a] = []
-            result[a].append(score)
-
-    return_result = []
-    for a in sorted(result.keys()):
-        #s = sum(result[a])
-        #if s != 0:
-        #    return_result.append(math.log10(s / len(result[a])))
-        prod = product(result[a])
-        if prod != 0:
-            return_result.append(math.log10(math.pow(prod, 1 / len(result[a]))))
-        else:
-            return_result.append(-5)
-    return np.asarray(return_result)
-
-# extended Dynamic Bayesian Networks (eDBN)
-# Open-Domain: new values may be encountered
-# Constraint: some of the mappings can be more strict (always map to the same values etc)
 class extendedDynamicBayesianNetwork():
+    """
+    Class for representing an extended Dynamic Bayesian Network (eDBN)
+    """
+
     def __init__(self, num_attrs, k, trace_attr):
         self.variables = {}
         self.current_variables = []
@@ -85,95 +45,11 @@ class extendedDynamicBayesianNetwork():
         for key in self.current_variables:
             yield (key, self.variables[key])
 
-    def train(self, filename, delim, length):
-        print("Training Network ...")
-
-        data = pd.read_csv(filename, delimiter=delim, nrows=length, header=0, skiprows=0, dtype=int)
-        self.log = self.create_k_context(data)
-
-        for (_, value) in self.iterate_current_variables():
-            self.train_var(value)
-        print("Training Done")
-
-    def train_data(self, data):
-        #data.add_duration_to_k_context()
+    def train(self, data):
         self.log = data.contextdata
 
         for (_, value) in self.iterate_current_variables():
             self.train_var(value)
-
-        #print("Training duration")
-        #print(self.log.columns)
-        #self.durations = self.log["duration_0"].values
-        print("Training Done")
-
-    def calculate_scores(self, data, accum_attr = None):
-        def initializer(init_model):
-            global model
-            model = init_model
-
-        if accum_attr is None:
-            accum_attr = self.trace_attr
-        with mp.Pool(mp.cpu_count(), initializer, (self,)) as p:
-            scores = p.map(process, data.groupby([accum_attr]))
-        return_scores = {}
-        for x in scores:
-            return_scores.update(x)
-        return return_scores
-
-    def calculate_scores_detail(self, data, accum_attr = None):
-        def initializer(init_model):
-            global model
-            model = init_model
-
-        print("EVALUATION: calculate score details")
-        if accum_attr is None:
-            accum_attr = self.trace_attr
-        trace_data = data.groupby([accum_attr])
-        with mp.Pool(mp.cpu_count(), initializer, (self,)) as p:
-            result = p.map(process_detail, trace_data)
-        print("EVALUATION: Done")
-        scores = {}
-        attributes = sorted([attr for attr in data.columns if attr != accum_attr])
-        for trace_scores in result:
-            for a_ix in range(len(attributes)):
-                if attributes[a_ix] not in scores:
-                    scores[attributes[a_ix]] = []
-                scores[attributes[a_ix]].append(trace_scores[a_ix])
-        return scores
-
-    def create_k_context(self, data):
-        print("Start creating k-context Parallel")
-
-        with mp.Pool(mp.cpu_count()) as p:
-            result = p.map(self.create_k_context_trace, data.groupby([self.trace_attr]))
-        contextdata = pd.concat(result)
-        return contextdata
-
-    def create_k_context_trace(self, trace):
-        contextdata = pd.DataFrame()
-
-        trace_data = trace[1]
-        shift_data = trace_data.shift().fillna(0).astype(int)
-        shift_data.at[shift_data.first_valid_index(), self.trace_attr] = trace[0]
-        joined_trace = shift_data.join(trace_data, lsuffix="_Prev0")
-        for i in range(1, self.k):
-            shift_data = shift_data.shift().fillna(0).astype(int)
-            shift_data.at[shift_data.first_valid_index(), self.trace_attr] = trace[0]
-            joined_trace = shift_data.join(joined_trace, lsuffix="_Prev%i" % i)
-        contextdata = contextdata.append(joined_trace, ignore_index=True)
-        # TODO: add duration to every timestep
-
-        return contextdata
-
-    def train_from_data(self, data):
-        self.log = data
-        for (_, value) in self.iterate_variables():
-            self.train_var(value)
-
-        print("Training durations")
-
-
         print("Training Done")
 
     def train_var(self, var):
@@ -184,159 +60,102 @@ class extendedDynamicBayesianNetwork():
         var.set_new_relation(self.log)
         return var
 
-    def row_probability(self, row):
-        prob = 1
-        not_zero = True
-        for (key, value) in self.iterate_current_variables():
-            score_fdt = 1
-            fdt_scores = value.test_fdt(row)
-            for fdt_score in fdt_scores:
-                score_fdt *= fdt_scores[fdt_score]
-            prob *= score_fdt * value.test_cpt(row) * value.test_value(row)
-        return prob
+    def train_durations(self):
+        self.durations = {}
+        groups = self.log.groupby(["Activity_Prev0", "Activity"])
+        for group in groups:
+            self.durations[group[0]] =  KernelDensity(kernel='gaussian', bandwidth=0.2, rtol=1E-2).fit(group[1]["duration_0"].values[:, np.newaxis])
 
-    def row_probability_detail(self, row):
-        probs = []
-        for (key, value) in self.iterate_current_variables():
-            score_fdt = 1
-            fdt_scores = value.test_fdt(row)
-            for fdt_score in fdt_scores:
-                score_fdt *= fdt_scores[fdt_score]
-            probs.append(score_fdt * value.test_cpt(row) * value.test_value(row))
-        return probs
+    def calculate_scores_per_trace(self, data, accum_attr=None):
+        """
+        Return the result for all traces in the data
+        """
+        def initializer(init_model):
+            global model
+            model = init_model
 
-    def row_scores_detail(self, row_list, labeled = False):
-        probs = {}
-        for (key, value) in self.iterate_current_variables():
-            probs[key] = value.detailed_score(row_list)
-        if labeled:
-            probs["Total"] = {}
-            probs["Total"]["anom"] = row_list[-1]
-        return probs
-
-    def get_variables(self):
-        vars = []
-        for (key, value) in self.iterate_variables():
-            vars.append(value)
-
-    def get_anomalies_sorted(self, data):
-        print("Sorting anomalies")
+        def calculate(trace):
+            case = trace[0]
+            data = trace[1]
+            result = Result.Trace_result(case)
+            for row in data.itertuples():
+                e_result = model.test_row(row)
+                result.add_event(e_result)
+            return result
 
         data.create_k_context()
-        data.add_duration_to_k_context()
+        data = data.contextdata
+
+        print("EVALUATION: calculate scores")
+        if accum_attr is None:
+            accum_attr = self.trace_attr
+        with mp.Pool(mp.cpu_count(), initializer, (self,)) as p:
+            scores = p.map(calculate, data.groupby([accum_attr]))
+        print("EVALUATION: Done")
+
+        return scores
+
+
+    def calculate_scores_per_attribute(self, data, accum_attr = None):
+        """
+        Return the results for all traces per attribute
+        """
+        result = self.calculate_scores_per_trace(data, accum_attr)
+        scores = {}
+
+        print("EVALUATION: Combine by attribute")
+        for attribute in [x for x in self.current_variables]:
+            for trace_result in result:
+                if attribute not in scores:
+                    scores[attribute] = []
+                scores[attribute].append(trace_result.get_attribute_score(attribute))
+
+        return scores
+
+    def test_data(self, data):
+        """
+        Compute the score for all events in the k-context of the data
+        """
+        print("EVALUATION: calculate scores")
+        data.create_k_context()
         log = data.contextdata
 
-        """
-        duration_probs = figtree(self.durations, log["duration_0"].values, weights = np.ones(len(self.durations)) / len(self.durations), bandwidth=0.5)
-        x = np.linspace(0, 100, 200)
-        y = figtree(self.durations, x, weights=np.ones(len(self.durations)) / len(self.durations), bandwidth=0.5)
-        import matplotlib.pyplot as plt
-        plt.plot(x,y)
-        plt.show()
-        print("Mean:", np.mean(self.durations))
-        print(duration_probs)
-        """
-
-        ranking = []
-        i = 0
-        for row in log.itertuples():
-            ranking.append((self.row_probability_detail(row), row))
-            i += 1
-        # TODO: Is this needed? No... ?
-        #ranking.sort(key=lambda l: l[0])
-        return ranking
-
-    def get_anomalies_sorted_parallel(self, filename, delim, length, skip):
-        print("Sorting anomalies Parallel")
         njobs = mp.cpu_count()
-        if length < njobs:
-            part_length = length
+        size = len(log)
+        if size < njobs:
             njobs = 1
-        else:
-            part_length = int(length / njobs)
-        skips = [int((i * part_length)) + skip for i in range(0, njobs)]
-        print(skips)
+
         results = []
-        print(length, njobs, part_length)
-        for r in Parallel(n_jobs=njobs)(delayed(self.get_anomalies_sorted)(filename, delim, part_length, s) for s in skips):
+        chunks = np.array_split(log, njobs)
+
+        for r in Parallel(n_jobs=njobs)(delayed(self.test)(d) for d in chunks):
             results.extend(r)
-        results.sort(key=lambda l: l[0])
+        results.sort(key=lambda l: l[0].get_total_score())
         return results
 
-    def get_scores_detail(self, filename, delim, length, skip):
-        print("Sorting anomalies")
-        log = pd.read_csv(filename, delimiter=delim, nrows=length, header=0, dtype=str, skiprows=skip)
+    def test(self, data):
+        """
+        Compute the scores for all events in the data
+        :param data:
+        :return:
+        """
         ranking = []
-        for row in log.itertuples():
-            ranking.append(self.row_scores_detail(list(row)[1:]))
+        for row in data.itertuples():
+            ranking.append((self.test_row(row), row))
         return ranking
 
-    def get_scores_detail_parallel(self, filename, delim, length, skip):
-        print("Calculating scores Parallel")
-        njobs = mp.cpu_count()
-        if length < njobs:
-            part_length = length
-            njobs = 1
-        else:
-            part_length = int(length / njobs)
-        skips = [int((i * part_length)) + skip for i in range(0, njobs)]
-        print(skips)
-        results = []
-        print(length, njobs, part_length)
-        for r in Parallel(n_jobs=njobs)(delayed(self.get_scores_detail)(filename, delim, part_length, s) for s in skips):
-            results.extend(r)
-        return results
-
-
-    def check_top_k(self, anomalies, k):
-        false_errors = 0
-        true_errors = 0
-        k = min(k, len(anomalies))
-        for i in range(k):
-            if anomalies[i][1][self.label_attr_nr] == self.normal_label:
-                false_errors += 1
-            else:
-                true_errors += 1
-        print("Top-" + str(k) + " | True Errors found:", true_errors, "% | False Errors found:", false_errors, "%")
-        print("Top-" + str(k) + " | True Errors found:", (true_errors/k)*100, "% | False Errors found:", (false_errors/k)*100, "%")
-
-
-    def write_to_file(self, filename):
-        with open(filename, "w") as fout:
-            fout.write(str(self.num_attrs) + ";" + str(self.label_attr_nr) + ";" + str(self.normal_label) + "\n")
-            for (key,value) in self.iterate_variables():
-                fout.write(str(key) + ";" + str(value.attr_id) + ";" + str(value.new_values) + ";" + str([a.attr_name for a in value.conditional_parents]) + ";" + str([a.attr_name for a in value.functional_parents]) + "\n")
-
-    def load_from_file(self, filename):
-        conditional_parents = {}
-        functional_parents = {}
-        with open(filename, "r") as fin:
-            # Read Model
-            model_desc = fin.readline().split(";")
-            self.num_attrs = int(model_desc[0])
-            self.label_attr_nr = int(model_desc[1])
-            self.normal_label = model_desc[2]
-            for l in fin:
-                var_desc = l.split(";")
-                name = var_desc[0]
-                self.add_variable(int(var_desc[1]), name, float(var_desc[2]))
-                cond_parents = eval(var_desc[3])
-                print("Cond:", cond_parents)
-                conditional_parents[name] = []
-                for p in cond_parents:
-                    conditional_parents[name].append(p)
-
-                func_parents = eval(var_desc[4])
-                functional_parents[name] = []
-                for p in func_parents:
-                    functional_parents[name].append(p)
-
-        for k in conditional_parents:
-            for p in conditional_parents[k]:
-                self.add_parent(p, k)
-        for k in functional_parents:
-            for p in functional_parents[k]:
-                self.add_mapping(p, k)
+    def test_row(self, row):
+        """
+        Return the score for the k-context of a single event
+        """
+        result = Result.Event_result(row.Index)
+        for (key, value) in self.iterate_current_variables():
+            score_fdt = 1
+            fdt_scores = value.test_fdt(row)
+            for fdt_score in fdt_scores:
+                score_fdt *= fdt_scores[fdt_score]
+            result.set_attribute_score(value.attr_name, score_fdt * value.test_cpt(row) * value.test_value(row))
+        return result
 
 
 class Variable:
