@@ -7,7 +7,7 @@ import numpy as np
 
 class LogFile:
 
-    def __init__(self, filename, delim, header, rows, time_attr, trace_attr, activity_attr = None, values = None, convert2integers = True):
+    def __init__(self, filename, delim, header, rows, time_attr, trace_attr, activity_attr = None, values = None, integer_input = False, convert = True):
         self.filename = filename
         self.time = time_attr
         self.trace = trace_attr
@@ -18,12 +18,12 @@ class LogFile:
             self.values = {}
 
         type = "str"
-        if not convert2integers:
+        if integer_input:
             type = "int"
         self.data = pd.read_csv(self.filename, header=header, nrows=rows, delimiter=delim, dtype=type)
 
-        if convert2integers:
-            self.convert2ints("../converted_ints.csv")
+        if convert:
+            self.convert2int()
 
         self.contextdata = None
         self.k = 1
@@ -44,10 +44,12 @@ class LogFile:
         self.data.to_csv(file_out, index=False)
 
     def convert_column2ints(self, x):
+        print("PREPROCESSING: Converting", x.name)
         if x.name not in self.values:
             try:
                 self.values[x.name], y = np.unique(x, return_inverse=True)
             except TypeError:
+                print("PREPROCESSING: TypeError: converting items to str")
                 x = x.astype("str")
                 self.values[x.name], y = np.unique(x, return_inverse=True)
             return y
@@ -55,15 +57,16 @@ class LogFile:
             try:
                 self.values[x.name] = np.append(self.values[x.name], np.setdiff1d(np.unique(x), self.values[x.name]))
             except TypeError:
+                print("PREPROCESSING: TypeError: converting items to str")
                 x = x.astype("str")
                 self.values[x.name] = np.append(self.values[x.name], np.setdiff1d(np.unique(x), self.values[x.name]))
 
+        print("PREPROCESSING: Substituting values with ints")
+        xsorted = np.argsort(self.values[x.name])
+        ypos = np.searchsorted(self.values[x.name][xsorted], x)
+        indices = xsorted[ypos]
 
-            xsorted = np.argsort(self.values[x.name])
-            ypos = np.searchsorted(self.values[x.name][xsorted], x)
-            indices = xsorted[ypos]
-
-            return indices
+        return indices
 
     def convert_string2int(self, column, value):
         vals = self.values[column]
@@ -151,31 +154,3 @@ class LogFile:
             return (endTime - startTime).total_seconds()
         else:
             return 0
-
-
-
-"""
-def convert(col):
-    string_2_int = {}
-    new_col = []
-    for i in range(len(col)):
-        value = col.iloc[i]
-        if value not in string_2_int:
-            string_2_int[value] = len(string_2_int) + 1
-        new_col.append(string_2_int[value])
-    return pd.Series(new_col)
-"""
-
-if __name__ == "__main__":
-    #log = LogFile("../Data/bpic2018.csv", ",", 0, 100, "startTime", "case")
-    log = LogFile("../Data/BPIC15_train_1.csv", ",", 0, 100, "time", "Case")
-    print(log.data)
-
-    log2 = LogFile("../Data/BPIC15_test_1.csv", ",", 0, 100, "time", "Case", values=log.values)
-    print(log2.data)
-
-    #log.create_k_context()
-    #log.add_duration_to_k_context()
-    #data = pd.read_csv("../Data/bpic2018.csv", delimiter=",", header=0, nrows=3000, dtype=str)
-    #print(data.swifter.apply(convert))
-    #print(data.apply(convert, axis=0))

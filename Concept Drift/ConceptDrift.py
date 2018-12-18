@@ -173,29 +173,33 @@ def plot_attribute_graph(scores, attributes):
 
 
 def experiment_standard():
-    # train = LogFile("../Data/bpic2018_ints.csv", ",", 0, 30000, "startTime", "case", activity_attr=None, convert2integers=False)
-    # train.remove_attributes(["eventid", "identity_id", "event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
-    # model = create_model(train, train)
-    #
-    # with open("model_30000b", "wb") as fout:
-    #      pickle.dump(model, fout)
+    train = LogFile("../Data/bpic2018.csv", ",", 0, 30000, "startTime", "case", activity_attr=None, convert=False)
+    train.remove_attributes(["eventid", "identity_id", "event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
+    train.convert2int()
+    model = create_model(train, train)
 
-    with open("model_30000b", "rb") as fin:
-        model = pickle.load(fin)
+    with open("model_30000b", "wb") as fout:
+         pickle.dump(model, fout)
+
+    # with open("model_30000b", "rb") as fin:
+    #     model = pickle.load(fin)
 
     print("Get Scores")
-    data = LogFile("../Data/bpic2018_ints.csv", ",", 0, 1000000, "startTime", "case", convert2integers=False)
+    data = LogFile("../Data/bpic2018.csv", ",", 0, 5000000, "startTime", "case", convert=False)
     data.remove_attributes(["eventid", "identity_id", "event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
+    data.convert2int()
+
     scores = get_event_scores(data, model)
     plot_single_scores(scores)
-    plot_pvalues(scores, 800)
+    plot_pvalues(scores, 400)
 
 
 def experiment_attributes_standard():
     """
-    data = pd.read_csv("../Data/bpic2018_ints.csv", delimiter=",", header=0, dtype=int, nrows=30000)
-    data = filter_attributes(data, ["event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
-    model = create_model(data, data, "case")
+    train = LogFile("../Data/bpic2018_ints.csv", ",", 0, 30000, "startTime", "case", activity_attr=None, convert=False)
+    train.remove_attributes(["eventid", "identity_id", "event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
+    train.convert2int()
+    model = create_model(train, train)
 
     print("Starting writing model to file")
     with open("model_30000", "wb") as fout:
@@ -205,21 +209,24 @@ def experiment_attributes_standard():
     with open("model_30000b", "rb") as fin:
         model = pickle.load(fin)
 
-    data = LogFile("../Data/bpic2018_ints.csv", ",", 0, 1000000, "startTime", "case", convert2integers=False)
-    data.filter("self.data.year == 1")
+    data = LogFile("../Data/bpic2018_ints.csv", ",", 0, 1000000, "startTime", "case", convert=False)
     data.remove_attributes(["eventid", "identity_id", "event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
+    data.convert2int()
+    data.filter("self.data.year == 1")
     scores_year1 = get_event_detailed_scores(data, model)
     plot_attribute_graph(scores_year1, model.current_variables)
 
-    data = LogFile("../Data/bpic2018_ints.csv", ",", 0, 1000000, "startTime", "case", convert2integers=False)
-    data.filter("self.data.year == 2")
+    data = LogFile("../Data/bpic2018_ints.csv", ",", 0, 1000000, "startTime", "case", convert=False)
     data.remove_attributes(["eventid", "identity_id", "event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
+    data.convert2int()
+    data.filter("self.data.year == 2")
     scores_year2 = get_event_detailed_scores(data, model)
     plot_attribute_graph(scores_year2, model.current_variables)
 
-    data = LogFile("../Data/bpic2018_ints.csv", ",", 0, 1000000, "startTime", "case", convert2integers=False)
-    data.filter("self.data.year == 3")
+    data = LogFile("../Data/bpic2018_ints.csv", ",", 0, 1000000, "startTime", "case", convert=False)
     data.remove_attributes(["eventid", "identity_id", "event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
+    data.convert2int()
+    data.filter("self.data.year == 3")
     scores_year3 = get_event_detailed_scores(data, model)
     plot_attribute_graph(scores_year3, model.current_variables)
 
@@ -403,8 +410,8 @@ def convert2ints(file_in, file_out, header = True, dict = None):
     return cnt
 
 if __name__ == "__main__":
-    #experiment_standard()
-    experiment_attributes_standard()
+    experiment_standard()
+    #experiment_attributes_standard()
     #experiment_department()
     #experiment_clusters()
     #experiment_outliers()

@@ -7,6 +7,14 @@ from sklearn.neighbors.kde import KernelDensity
 
 import Result
 
+def calculate(trace):
+    case = trace[0]
+    data = trace[1]
+    result = Result.Trace_result(case)
+    for row in data.itertuples():
+        e_result = model.test_row(row)
+        result.add_event(e_result)
+    return result
 
 class extendedDynamicBayesianNetwork():
     """
@@ -73,15 +81,6 @@ class extendedDynamicBayesianNetwork():
         def initializer(init_model):
             global model
             model = init_model
-
-        def calculate(trace):
-            case = trace[0]
-            data = trace[1]
-            result = Result.Trace_result(case)
-            for row in data.itertuples():
-                e_result = model.test_row(row)
-                result.add_event(e_result)
-            return result
 
         data.create_k_context()
         data = data.contextdata
