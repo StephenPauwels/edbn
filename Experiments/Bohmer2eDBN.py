@@ -14,9 +14,9 @@ def compare_bpics(path):
         prec_recall = path + "Output/prec_recall_%i.png" % (i)
         roc = path + "Output/roc_%i.png" % (i)
 
-        train_data = LogFile(train, ",", 0, 500000, "Time", "Case", activity_attr="Activity", convert2integers=False)
+        train_data = LogFile(train, ",", 0, 500000, "Time", "Case", activity_attr="Activity", convert=False)
         train_data.remove_attributes(["Anomaly", "Type", "Time"])
-        test_data = LogFile(test, ",", 0, 500000, "Time", "Case", activity_attr="Activity", values=train_data.values, convert2integers=False)
+        test_data = LogFile(test, ",", 0, 500000, "Time", "Case", activity_attr="Activity", values=train_data.values, convert=False)
 
         bohmer_model = bmr.train(train_data)
         bmr.test(test_data, output, bohmer_model, label = "Anomaly", normal_val = "0")
@@ -38,9 +38,9 @@ def compare_bpic_total(path):
     prec_recall = path + "Output/prec_recall_total.png"
     roc = path + "Output/roc_total.png"
 
-    train_data = LogFile(train, ",", 0, 500000, "Time", "Case", activity_attr="Activity", convert2integers=False)
+    train_data = LogFile(train, ",", 0, 500000, "Time", "Case", activity_attr="Activity", convert=False)
     train_data.remove_attributes(["Anomaly", "Type", "Time"])
-    test_data = LogFile(test, ",", 0, 500000, "Time", "Case", activity_attr="Activity", values=train_data.values, convert2integers=False)
+    test_data = LogFile(test, ",", 0, 500000, "Time", "Case", activity_attr="Activity", values=train_data.values, convert=False)
 
     bohmer_model = bmr.train(train_data)
     bmr.test(test_data, output, bohmer_model, label = "Anomaly", normal_val = "0")
@@ -57,8 +57,8 @@ def compare_bpic_total(path):
 if __name__  == "__main__":
     path = "../Data/"
 
-    #preprocess.preProcessData(path)
+    preprocess.preProcessData(path)
     #preprocess.preProcessData_total(path)
 
     compare_bpics(path)
-    compare_bpic_total(path)
+    #compare_bpic_total(path)

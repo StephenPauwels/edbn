@@ -127,7 +127,6 @@ class extendedDynamicBayesianNetwork():
 
         results = []
         chunks = np.array_split(log, njobs)
-
         for r in Parallel(n_jobs=njobs)(delayed(self.test)(d) for d in chunks):
             results.extend(r)
         results.sort(key=lambda l: l[0].get_total_score())

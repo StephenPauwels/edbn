@@ -78,6 +78,8 @@ def plot_compare_prec_recall_curve(result_files, labels, save_file=None):
         plt.plot(prec_recall_vals[i][1], prec_recall_vals[i][0],
              lw=lw, label='%s (area = %0.2f)' % (labels[i], auc_vals[i]))
 
+    print("Prec_recall auc:", labels, auc_vals)
+
     plt.xlim([0.0, 1.0])
     plt.ylim([0.0, 1.0])
     plt.xlabel('Recall')
@@ -100,6 +102,7 @@ def plot_compare_roc_curve(result_files, labels, save_file=None):
     for i in range(len(roc_vals)):
         plt.plot(roc_vals[i][0], roc_vals[i][1],
              lw=lw, label='%s (area = %0.2f)' % (labels[i], auc_vals[i]))
+    print("Roc auc:", labels, auc_vals)
 
     plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
     plt.xlim([0.0, 1.0])

@@ -141,7 +141,8 @@ def introduce_anomaly(trace, single = False):
             anomaly = random.randint(0,3)
             while anomaly in anoms: # Ensure each type of anomaly is only choosen once
                 anomaly = random.randint(0,3)
-            for j in range(from_nums, to_nums + 1):
+            #for j in range(from_nums, to_nums + 1):
+            for j in range(random.randint(from_nums, to_nums)):
                 if anomaly == 0:
                     trace = alter_activity_order(trace)
                     anomaly_types.append("alter_order")

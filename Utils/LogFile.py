@@ -65,20 +65,12 @@ class LogFile:
 
         print("PREPROCESSING: Converting", x.name)
         if x.name not in self.values:
-            try:
-                self.values[x.name], y = np.unique(x, return_inverse=True)
-            except TypeError:
-                print("PREPROCESSING: TypeError: converting items to str")
-                x = x.astype("str")
-                self.values[x.name], y = np.unique(x, return_inverse=True)
+            x = x.astype("str")
+            self.values[x.name], y = np.unique(x, return_inverse=True)
             return y + 1
         else:
-            try:
-                self.values[x.name] = np.append(self.values[x.name], test(np.unique(x), self.values[x.name]))
-            except TypeError:
-                print("PREPROCESSING: TypeError: converting items to str")
-                x = x.astype("str")
-                self.values[x.name] = np.append(self.values[x.name], test(np.unique(x), self.values[x.name]))
+            x = x.astype("str")
+            self.values[x.name] = np.append(self.values[x.name], test(np.unique(x), self.values[x.name]))
 
             print("PREPROCESSING: Substituting values with ints")
             xsorted = np.argsort(self.values[x.name])

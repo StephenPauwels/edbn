@@ -96,6 +96,7 @@ def plot_single_scores(scores):
     plt.scatter(range(len(y)), y)
     plt.xlabel("Traces")
     plt.ylabel("Log Scores")
+    plt.savefig("../Data/scores.png")
     plt.show()
 
 def plot_pvalues(scores, window):
@@ -134,6 +135,7 @@ def plot_pvalues(scores, window):
     plt.plot(range(window, window + len(pvals)), pvals)
     plt.xlabel("Traces")
     plt.ylabel("Log p-values")
+    plt.savefig("../Data/pvals.png")
     plt.show()
 
 

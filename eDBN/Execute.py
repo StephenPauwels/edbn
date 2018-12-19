@@ -16,7 +16,7 @@ def test(test_data, output_file, model, label, normal_val):
     normal_val = test_data.convert_string2int(label, normal_val)
     for i in range(len(anoms)):
         seqID = getattr(anoms[i][1], model.trace_attr)
-        seq_anom_type[seqID] = test_data.convert_int2string("Type", int(getattr(anoms[i][1], "Type")))
+        #seq_anom_type[seqID] = test_data.convert_int2string("Type", int(getattr(anoms[i][1], "Type")))
         if getattr(anoms[i][1], label) != normal_val:
             anomalies.add(seqID)
         if seqID not in accum_scores:
@@ -28,7 +28,7 @@ def test(test_data, output_file, model, label, normal_val):
     scores = []
 
     for seqs in accum_scores:
-        scores.append((seqs, accum_scores[seqs] / accum_length[seqs], seqs in anomalies, seq_anom_type[seqs]))
+        scores.append((seqs, accum_scores[seqs] / accum_length[seqs], seqs in anomalies))#, seq_anom_type[seqs]))
     scores.sort(key=lambda l:l[1])
 
     with open(output_file, "w") as fout:
