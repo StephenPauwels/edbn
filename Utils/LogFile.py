@@ -39,11 +39,30 @@ class LogFile:
         :param file_out: filename for newly created file
         :return: number of lines converted
         """
-        # TODO: fix issue as first column is processed twice
         self.data = self.data.apply(lambda x: self.convert_column2ints(x))
         self.data.to_csv(file_out, index=False)
 
     def convert_column2ints(self, x):
+
+        def test(a, b):
+            # Return all elements from a that are not in b, make use of the fact that both a and b are unique and sorted
+            a_ix = 0
+            b_ix = 0
+            new_uniques = []
+            while a_ix < len(a) and b_ix < len(b):
+                if a[a_ix] < b[b_ix]:
+                    new_uniques.append(a[a_ix])
+                    a_ix += 1
+                elif a[a_ix] > b[b_ix]:
+                    b_ix += 1
+                else:
+                    a_ix += 1
+                    b_ix += 1
+            if a_ix < len(a):
+                new_uniques.extend(a[a_ix:])
+            return new_uniques
+
+
         print("PREPROCESSING: Converting", x.name)
         if x.name not in self.values:
             try:
@@ -52,21 +71,21 @@ class LogFile:
                 print("PREPROCESSING: TypeError: converting items to str")
                 x = x.astype("str")
                 self.values[x.name], y = np.unique(x, return_inverse=True)
-            return y
+            return y + 1
         else:
             try:
-                self.values[x.name] = np.append(self.values[x.name], np.setdiff1d(np.unique(x), self.values[x.name]))
+                self.values[x.name] = np.append(self.values[x.name], test(np.unique(x), self.values[x.name]))
             except TypeError:
                 print("PREPROCESSING: TypeError: converting items to str")
                 x = x.astype("str")
-                self.values[x.name] = np.append(self.values[x.name], np.setdiff1d(np.unique(x), self.values[x.name]))
+                self.values[x.name] = np.append(self.values[x.name], test(np.unique(x), self.values[x.name]))
 
-        print("PREPROCESSING: Substituting values with ints")
-        xsorted = np.argsort(self.values[x.name])
-        ypos = np.searchsorted(self.values[x.name][xsorted], x)
-        indices = xsorted[ypos]
+            print("PREPROCESSING: Substituting values with ints")
+            xsorted = np.argsort(self.values[x.name])
+            ypos = np.searchsorted(self.values[x.name][xsorted], x)
+            indices = xsorted[ypos]
 
-        return indices
+        return indices + 1
 
     def convert_string2int(self, column, value):
         vals = self.values[column]
@@ -74,10 +93,10 @@ class LogFile:
         if len(found[0]) == 0:
             return None
         else:
-            return found[0][0]
+            return found[0][0] + 1
 
     def convert_int2string(self, column, int_val):
-        return self.values[column][int_val]
+        return self.values[column][int_val - 1]
 
 
     def attributes(self):
@@ -154,3 +173,26 @@ class LogFile:
             return (endTime - startTime).total_seconds()
         else:
             return 0
+
+if __name__ == "__main__":
+    import Uncertainty_Coefficient as uc
+
+    print("Read train")
+    train = LogFile("../Data/bpic2018.csv", ",", 0, 30000, "startTime", "case", convert=False)
+    train.remove_attributes(["eventid", "identity_id", "event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
+    train.convert2int()
+
+    print("Read converted")
+    converted_data = LogFile("../Data/bpic2018.csv", ",", 0, 5000000, "startTime", "case", convert=False, values=train.values)
+    converted_data.remove_attributes(["eventid", "identity_id", "event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
+    converted_data.convert2int()
+
+    print("Read int")
+    int_data = LogFile("../Data/bpic2018_ints.csv", ",", 0, 5000000, "startTime", "case", convert=False, integer_input=True)
+    int_data.remove_attributes(["eventid", "identity_id", "event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
+
+    for attr in converted_data.data:
+        print("ATTRIBUTE", attr)
+        print(uc.calculate_mutual_information(converted_data.data[attr], int_data.data[attr]))
+        print(uc.calculate_entropy(converted_data.data[attr]),uc.calculate_entropy(int_data.data[attr]))
+        print(uc.is_mapping(converted_data.data["case"], int_data.data["case"], 0.99))

@@ -87,7 +87,7 @@ def plot_single_scores(scores):
 
     y = []
     x = []
-    for trace_result in sorted(scores, key=lambda l: l.id):
+    for trace_result in scores:
 
         score = trace_result.get_total_score() / trace_result.get_nr_events()
         if score != 0:
@@ -113,7 +113,7 @@ def plot_pvalues(scores, window):
         return windows
 
     case_scores = []
-    for trace_score in sorted(scores, key=lambda l: l.id):
+    for trace_score in scores:
         score = trace_score.get_total_score() / trace_score.get_nr_events()
         if score != 0:
             case_scores.append(score)
@@ -173,7 +173,7 @@ def plot_attribute_graph(scores, attributes):
 
 
 def experiment_standard():
-    train = LogFile("../Data/bpic2018.csv", ",", 0, 30000, "startTime", "case", activity_attr=None, convert=False)
+    train = LogFile("../Data/bpic2018.csv", ",", 0, 30000, "startTime", "case", activity_attr=None, integer_input=False, convert=False)
     train.remove_attributes(["eventid", "identity_id", "event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
     train.convert2int()
     model = create_model(train, train)
@@ -185,7 +185,7 @@ def experiment_standard():
     #     model = pickle.load(fin)
 
     print("Get Scores")
-    data = LogFile("../Data/bpic2018.csv", ",", 0, 5000000, "startTime", "case", convert=False)
+    data = LogFile("../Data/bpic2018.csv", ",", 0, 5000000, "startTime", "case", convert=False, values=train.values, integer_input=False)
     data.remove_attributes(["eventid", "identity_id", "event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
     data.convert2int()
 

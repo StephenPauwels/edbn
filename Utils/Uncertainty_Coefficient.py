@@ -16,7 +16,7 @@ def calculate_mutual_information(col1, col2):
 def is_mapping(col1, col2, threshold):
     if calculate_entropy(col1) == 0:
         return False
-    if calculate_mutual_information(col1, col2) / calculate_entropy(col1) > threshold:
+    if calculate_mutual_information(col1, col2) / calculate_entropy(col1) >= threshold:
         return True
     return False
 

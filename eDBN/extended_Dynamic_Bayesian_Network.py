@@ -10,7 +10,7 @@ import Result
 def calculate(trace):
     case = trace[0]
     data = trace[1]
-    result = Result.Trace_result(case)
+    result = Result.Trace_result(case, data[time_attribute].iloc[0])
     for row in data.itertuples():
         e_result = model.test_row(row)
         result.add_event(e_result)
@@ -78,20 +78,21 @@ class extendedDynamicBayesianNetwork():
         """
         Return the result for all traces in the data
         """
-        def initializer(init_model):
+        def initializer(init_model, time_attr):
             global model
             model = init_model
+            global time_attribute
+            time_attribute = time_attr
 
         data.create_k_context()
-        data = data.contextdata
 
         print("EVALUATION: calculate scores")
         if accum_attr is None:
             accum_attr = self.trace_attr
-        with mp.Pool(mp.cpu_count(), initializer, (self,)) as p:
-            scores = p.map(calculate, data.groupby([accum_attr]))
+        with mp.Pool(mp.cpu_count(), initializer, (self, data.time)) as p:
+            scores = p.map(calculate, data.contextdata.groupby([accum_attr]))
         print("EVALUATION: Done")
-
+        scores.sort(key=lambda l:l.time)
         return scores
 
 

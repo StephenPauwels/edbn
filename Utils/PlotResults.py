@@ -28,6 +28,7 @@ def plot_single_prec_recall_curve(result_file, prec_recall=None, save_file=None)
     lw = 2
     plt.plot(recall, precision, color='darkorange',
              lw=lw, label='Precision-Recall curve (area = %0.2f)' % prec_recall_auc)
+    print("Prec-Recall auc:", prec_recall_auc)
     if prec_recall:
         plt.plot([prec_recall[1]], [prec_recall[0]], marker='o', markersize=3, color="red")
     plt.xlim([0.0, 1.0])
@@ -48,6 +49,7 @@ def plot_single_roc_curve(result_file, save_file=None):
     lw = 2
     plt.plot(fpr, tpr, color='darkorange',
              lw=lw, label='ROC curve (area = %0.2f)' % roc_auc)
+    print("ROC auc:", roc_auc)
     plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
     plt.xlim([0.0, 1])
     plt.ylim([0.0, 1])

@@ -11,9 +11,10 @@ class Result:
 
 class Trace_result:
 
-    def __init__(self, id):
+    def __init__(self, id, time = None):
         self.events = []
         self.id = id
+        self.time = time
 
     def add_event(self, event):
         self.events.append(event)
