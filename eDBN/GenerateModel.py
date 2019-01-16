@@ -34,6 +34,7 @@ def generate_model(data, remove_attrs = []):
     # Add previous-attributes to the model
     for attribute in attributes:
         new_vals = uc.calculate_new_values_rate(data.get_column(attribute))
+        print(attribute, new_vals)
         cbn.add_variable(attribute, new_vals)
         for i in range(data.k):
             nodes.append(attribute + "_Prev%i" % (i))
@@ -43,48 +44,34 @@ def generate_model(data, remove_attrs = []):
 
     # Calculate Mappings
     mappings = uc.calculate_mappings(data.contextdata, attributes, data.k, 0.99)
-    double_mappings = []
+
+    tmp_mappings = mappings[:]
+    print("GENERATE: removing redundant mappings")
+    ignore_nodes = []
+    while True:
+        cycle = get_max_closure(tmp_mappings)
+        if len(cycle) == 0:
+            break
+        print("GENERATE: found cycle:", cycle)
+        cycle_nodes = [c[0] for c in cycle]
+        ignore_nodes.extend(cycle_nodes[1:])
+        remove_mappings = []
+        for m in tmp_mappings:
+            if m[0] in cycle_nodes:
+                remove_mappings.append(m)
+        for rem in remove_mappings:
+            tmp_mappings.remove(rem)
+
+    for n in ignore_nodes:
+        nodes.remove(n)
+
     whitelist = []
     print("MAPPINGS:")
     for mapping in mappings:
         cbn.add_mapping(mapping[0], mapping[1])
         print(mapping[0], "=>", mapping[1])
-        if (mapping[1], mapping[0]) in mappings and False:
-            double_mappings.append(mapping)
-        else:
+        if (mapping[0], mapping[1]) in tmp_mappings:
             whitelist.append((mapping[0], mapping[1]))
-
-    print("GENERATE: removing redundant mappings")
-
-    # Remove redundant mappings to improve Bay Net discovery performance
-    while False: # Disabled this step for now
-        _, closure = get_max_tranisitive_closure(double_mappings)
-        if len(closure) == 0:
-            break
-        keep_node = closure[0][0]
-        for i in closure:
-            if i[0] != keep_node and i[0] in nodes:
-                nodes.remove(i[0])
-            if i[1] != keep_node and i[1] in nodes:
-                nodes.remove(i[1])
-            mappings.remove(i)
-            mappings.remove((i[1], i[0]))
-            double_mappings.remove(i)
-            double_mappings.remove((i[1], i[0]))
-    while len(double_mappings) > 0:
-        mapping = double_mappings[0]
-        mappings.remove(mapping)
-        double_mappings.remove(mapping)
-        nodes.remove(mapping[1])
-        mappings.remove((mapping[1], mapping[0]))
-        double_mappings.remove((mapping[1], mapping[0]))
-
-    rem_maps = []
-    for mapping in mappings:
-        if mapping[0] not in nodes or mapping[1] not in nodes:
-            rem_maps.append(mapping)
-    for r in rem_maps:
-        mappings.remove(r)
 
     # Create list with allowed edges (only from previous -> current and current -> current)
     restrictions = []
@@ -105,10 +92,6 @@ def generate_model(data, remove_attrs = []):
     for edge in net.edges():
         relations.append((edge[0], edge[1]))
 
-    # TODO: make more general for other k values
-    if data.activity is not None and (data.activity + "_Prev0", data.activity) not in relations:
-        relations.append((data.activity + "_Prev0", data.activity))
-
     print("Relations:")
     for relation in relations:
         if relation not in mappings:
@@ -118,6 +101,7 @@ def generate_model(data, remove_attrs = []):
     return cbn
 
 def get_max_tranisitive_closure(relations, closure = None, size = 0, prefix = ""):
+    print(prefix, relations, closure, size)
     if not closure:
         closure = []
 
@@ -128,7 +112,7 @@ def get_max_tranisitive_closure(relations, closure = None, size = 0, prefix = ""
         return size, closure
 
     for r in relations:
-        if len(closure) == 0 or (r[0] == closure[-1][1] and r not in closure and (r[1], r[0]) not in closure):
+        if len(closure) == 0 or (r[0] == closure[-1][1] and r not in closure):
             max, found_closure = get_max_tranisitive_closure(relations, closure + [r], size + 1, prefix + "  ")
             if max > max_size:
                 max_size = max
@@ -136,3 +120,38 @@ def get_max_tranisitive_closure(relations, closure = None, size = 0, prefix = ""
 
     return max_size, max_closure
 
+
+def get_max_closure(relations, nodes = None, closure = None):
+    if nodes is None:
+        nodes = []
+
+        for r in relations:
+            if r[0] not in nodes:
+                nodes.append(r[0])
+            if r[1] not in nodes:
+                nodes.append(r[1])
+
+    if closure is None:
+        closure = []
+
+    if len(closure) > 0 and closure[0][0] == closure[-1][1]:
+        return closure
+
+    max_closure = []
+
+    for r in relations:
+        if len(closure) == 0 or (r[0] == closure[-1][1] and r[1] in nodes):
+            found_closure = get_max_closure(relations, [n for n in nodes if n != r[1]], closure + [r])
+            if len(found_closure) > len(max_closure):
+                max_closure = found_closure
+    return max_closure
+
+
+
+
+
+if __name__ == "__main__":
+    doubles = [('action_code', 'Activity'), ('concept_name', 'Activity'), ('Activity', 'action_code'), ('concept_name', 'action_code'), ('activityNameNL', 'activityNameEN'), ('activityNameEN', 'activityNameNL'), ('Activity', 'concept_name'), ('action_code', 'concept_name')]
+    print(get_max_closure(doubles))
+    doubles = [('activityNameNL', 'activityNameEN'), ('activityNameEN', 'activityNameNL')]
+    print(get_max_closure(doubles))

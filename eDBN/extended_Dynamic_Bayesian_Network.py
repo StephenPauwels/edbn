@@ -241,6 +241,13 @@ class Variable:
                 self.cpt[parent] = dict()
             self.cpt[parent][t[0][-1]] = t[1] / div[parent]
 
+        if self.attr_name == "case_Includes_subCases":
+            print("CPT for", self.attr_name)
+            for parent in self.cpt:
+                for child in self.cpt[parent]:
+                    print(parent, "\t", child, "\t", self.cpt[parent][child])
+                print("---------------------------------------------")
+
     def detailed_score(self, row):
         prob_result = {}
         prob_result["value"] = self.test_value(row)

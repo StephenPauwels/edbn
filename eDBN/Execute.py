@@ -1,6 +1,5 @@
 import eDBN.GenerateModel as gm
 
-
 def train(data):
     cbn = gm.generate_model(data)
     cbn.train(data)
@@ -16,9 +15,11 @@ def test(test_data, output_file, model, label, normal_val):
     normal_val = test_data.convert_string2int(label, normal_val)
     for i in range(len(anoms)):
         seqID = getattr(anoms[i][1], model.trace_attr)
-        #seq_anom_type[seqID] = test_data.convert_int2string("Type", int(getattr(anoms[i][1], "Type")))
+
+        #seq_anom_type[seqID] = test_data.convert_int2string("anom_types", int(getattr(anoms[i][1], "anom_types")))
         if getattr(anoms[i][1], label) != normal_val:
             anomalies.add(seqID)
+
         if seqID not in accum_scores:
             accum_scores[seqID] = 0
             accum_length[seqID] = 0

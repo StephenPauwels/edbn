@@ -13,7 +13,9 @@ def calculate_mutual_information(col1, col2):
 
 
 # Check if uncertainty coefficient between col1 and col2 is above a given threshold (ie. there exists a mapping between them)
-def is_mapping(col1, col2, threshold):
+def is_mapping(col1, col2, threshold, debug = False):
+    if debug:
+        print("DEBUG is mapping:", calculate_mutual_information(col1, col2) / calculate_entropy(col1))
     if calculate_entropy(col1) == 0:
         return False
     if calculate_mutual_information(col1, col2) / calculate_entropy(col1) >= threshold:
@@ -37,7 +39,10 @@ def calculate_mappings(data, attributes, k, threshold):
             # Check attr2_PrevX -> attr1
             for i in range(k):
                 prev_attr2 = attr2 + "_Prev%i" % (i)
-                if is_mapping(filtered_data[attr1], filtered_data[prev_attr2], threshold):
+                debug = False
+                if attr1 == "planned" and prev_attr2 == "planned_Prev0":
+                    debug = True
+                if is_mapping(filtered_data[attr1], filtered_data[prev_attr2], threshold, debug):
                     mappings.append((prev_attr2, attr1))
 
     return mappings

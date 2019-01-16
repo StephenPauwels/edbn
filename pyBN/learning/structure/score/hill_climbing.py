@@ -90,7 +90,7 @@ def model_score(data, bn, nodes = None):
                 for freq in freqs:
                     if freq > 0:
                         total_score += freq * math.log(freq / len(parent_configs[parent_config]))
-                bn.F[node]["qi"] = len(parent_configs[parent_config])
+            bn.F[node]["qi"] = data.drop_duplicates(list(parents)).shape[0]
     return total_score
 
 def calc_num_parent_configs(data, parents, configs_cache):
@@ -224,15 +224,15 @@ class hill_climbing:
             return_queue = Queue()
             p_add = Process(target=self.test_arc_additions, args=(configs_cache, mut_inf_cache, return_queue))
             p_rem = Process(target=self.test_arc_deletions, args=(configs_cache, mut_inf_cache, return_queue))
-            p_rev = Process(target=self.test_arc_reversals, args=(configs_cache, mut_inf_cache, return_queue))
+            #p_rev = Process(target=self.test_arc_reversals, args=(configs_cache, mut_inf_cache, return_queue))
 
             p_add.start()
             p_rem.start()
-            p_rev.start()
+            #p_rev.start()
 
             p_add.join()
             p_rem.join()
-            p_rev.join()
+            #p_rev.join()
 
             while not return_queue.empty():
                 results = return_queue.get()
@@ -371,11 +371,10 @@ class hill_climbing:
                         mut_inf_cache[new_cols] = mutual_information(self.data[list(new_cols)])
                     mi_new = mut_inf_cache[new_cols]
 
-                    ri = self.bn.F[v]['ri']
                     qi = self.bn.F[v]['qi']
-                    qi_new = calc_num_parent_configs(self.data, [x for x in self.bn.parents(v) if x != u], configs_cache)
-                    delta_score = self.nrow * (mi_new - mi_old) - (ri * (qi_new - qi) - (
-                                qi_new - qi))  # Add difference in complexity -> recalculate qi for node v
+
+                    qi_new = self.data.drop_duplicates(list(new_cols)).shape[0]
+                    delta_score = self.nrow * (mi_new - mi_old) - (qi_new - qi)
 
                     if delta_score - max_delta > 10 ** (-10):
                         max_delta = delta_score
@@ -430,11 +429,10 @@ class hill_climbing:
                     mut_inf_cache[new_cols] = mutual_information(self.data[list(new_cols)])
                 mi_new = mut_inf_cache[new_cols]
 
-                ri = self.bn.F[v]['ri']
                 qi = self.bn.F[v]['qi']
-                qi_new = calc_num_parent_configs(self.data, self.bn.parents(v) + [u], configs_cache)
-                delta_score = self.nrow * (mi_new - mi_old) - (ri * (qi_new - qi) - (
-                        qi_new - qi))  # Add difference in complexity -> recalculate qi for node v
+
+                qi_new = self.data.drop_duplicates(list(new_cols)).shape[0]
+                delta_score = self.nrow * (mi_new - mi_old) - (qi_new - qi)
 
                 if delta_score - max_delta > 10 ** (-10):
                     max_delta = delta_score
