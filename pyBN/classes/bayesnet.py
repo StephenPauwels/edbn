@@ -41,7 +41,6 @@ from copy import deepcopy
 import numpy as np
 
 from pyBN.utils.class_equivalence import are_class_equivalent
-from pyBN.utils.graph import topsort
 
 
 class BayesNet(object):

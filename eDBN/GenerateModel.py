@@ -1,12 +1,17 @@
 from Utils import Uncertainty_Coefficient as uc, BayesianNet as bn
 from eDBN.extended_Dynamic_Bayesian_Network import extendedDynamicBayesianNetwork
 
-import pandas as pd
-
 
 def generate_model(data, remove_attrs = []):
-    print("GENERATE: initialize")
+    """
+    Generate an eDBN model given the data
+
+    :param data:            The data to learn the model from
+    :param remove_attrs:    Attributes to be ignored
+    :return:                The learned eDBN
+    """
     # Initialize empty eDBN datastructure
+    print("GENERATE: initialize")
     cbn = extendedDynamicBayesianNetwork(len(data.attributes()), data.k, data.trace)
     nodes = []
 
@@ -28,17 +33,17 @@ def generate_model(data, remove_attrs = []):
 
     # Create the k-context of the data
     print("GENERATE: build k-context")
-
     data.create_k_context()
 
     # Add previous-attributes to the model
     for attribute in attributes:
         new_vals = uc.calculate_new_values_rate(data.get_column(attribute))
         print(attribute, new_vals)
-        cbn.add_variable(attribute, new_vals)
+        empty_val = data.convert_string2int(attribute, "nan")
+        cbn.add_variable(attribute, new_vals, empty_val)
         for i in range(data.k):
             nodes.append(attribute + "_Prev%i" % (i))
-            cbn.add_variable(attribute + "_Prev%i" % (i), new_vals)
+            cbn.add_variable(attribute + "_Prev%i" % (i), new_vals, empty_val)
 
     print("GENERATE: calculate mappings")
 
@@ -49,7 +54,7 @@ def generate_model(data, remove_attrs = []):
     print("GENERATE: removing redundant mappings")
     ignore_nodes = []
     while True:
-        cycle = get_max_closure(tmp_mappings)
+        cycle = get_max_cycle(tmp_mappings)
         if len(cycle) == 0:
             break
         print("GENERATE: found cycle:", cycle)
@@ -100,28 +105,16 @@ def generate_model(data, remove_attrs = []):
 
     return cbn
 
-def get_max_tranisitive_closure(relations, closure = None, size = 0, prefix = ""):
-    print(prefix, relations, closure, size)
-    if not closure:
-        closure = []
 
-    max_size = 0
-    max_closure = []
+def get_max_cycle(relations, nodes = None, closure = None):
+    """
+    Given a list of tuples, return the maximum cycle found in the list
 
-    if len(closure) > 0 and closure[0][0] == closure[-1][1]:
-        return size, closure
-
-    for r in relations:
-        if len(closure) == 0 or (r[0] == closure[-1][1] and r not in closure):
-            max, found_closure = get_max_tranisitive_closure(relations, closure + [r], size + 1, prefix + "  ")
-            if max > max_size:
-                max_size = max
-                max_closure = found_closure
-
-    return max_size, max_closure
-
-
-def get_max_closure(relations, nodes = None, closure = None):
+    :param relations:   a list of tuples, where every tuple denotes an edge in a graph
+    :param nodes:       all nodes not yet visited
+    :param closure:     current maximum cycle
+    :return:            if a cycle exists: return the maximum cycle otherwise return empty list
+    """
     if nodes is None:
         nodes = []
 
@@ -141,17 +134,7 @@ def get_max_closure(relations, nodes = None, closure = None):
 
     for r in relations:
         if len(closure) == 0 or (r[0] == closure[-1][1] and r[1] in nodes):
-            found_closure = get_max_closure(relations, [n for n in nodes if n != r[1]], closure + [r])
+            found_closure = get_max_cycle(relations, [n for n in nodes if n != r[1]], closure + [r])
             if len(found_closure) > len(max_closure):
                 max_closure = found_closure
     return max_closure
-
-
-
-
-
-if __name__ == "__main__":
-    doubles = [('action_code', 'Activity'), ('concept_name', 'Activity'), ('Activity', 'action_code'), ('concept_name', 'action_code'), ('activityNameNL', 'activityNameEN'), ('activityNameEN', 'activityNameNL'), ('Activity', 'concept_name'), ('action_code', 'concept_name')]
-    print(get_max_closure(doubles))
-    doubles = [('activityNameNL', 'activityNameEN'), ('activityNameEN', 'activityNameNL')]
-    print(get_max_closure(doubles))

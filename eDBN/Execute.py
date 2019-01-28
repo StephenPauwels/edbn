@@ -1,4 +1,5 @@
 import eDBN.GenerateModel as gm
+import matplotlib.pyplot as plt
 
 def train(data):
     cbn = gm.generate_model(data)
@@ -32,7 +33,13 @@ def test(test_data, output_file, model, label, normal_val):
         scores.append((seqs, accum_scores[seqs] / accum_length[seqs], seqs in anomalies))#, seq_anom_type[seqs]))
     scores.sort(key=lambda l:l[1])
 
+    y = []
+
     with open(output_file, "w") as fout:
         for s in scores:
             fout.write(",".join([str(i) for i in s]))
             fout.write("\n")
+            y.append(s[1])
+
+    plt.plot(list(range(len(y))), y)
+    plt.show()

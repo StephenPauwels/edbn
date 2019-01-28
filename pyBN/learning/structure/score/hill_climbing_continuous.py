@@ -33,11 +33,12 @@ from multiprocessing import Queue
 
 # from scipy.optimize import *
 import numpy as np
-import matplotlib.pyplot as plt
 
 from pyBN.classes.bayesnet import BayesNet
 from pyBN.utils.graph import would_cause_cycle
 from pyBN.utils.independence_tests import mutual_information
+
+from sklearn.neighbors.kde import KernelDensity
 
 import time
 
@@ -70,21 +71,17 @@ def model_score(data, bn):
     num_rows = data.shape[0]
 
     for node in bn.nodes():
+        print("Calculating for node", node)
         # Create all possible configurations of the parents
         parents = bn.parents(node)
-        parent_value_dict = {}
         parent_configs = {}
-        # Using bincount is faster than numpy.unique
-        bn.F[node]["ri"] = len([x for x in np.bincount(data.values[:, data.columns.get_loc(node)]) if x > 0])
-
         if len(parents) == 0:
             # Get the frequency for all occurring values
-            freqs = np.bincount(data.values[:, data.columns.get_loc(node)])
-            for count in freqs:
-                if count != 0:
-                    total_score += count * math.log(count / num_rows)
-            bn.F[node]["qi"] = 1
-        else:
+            vals = data[node].values[:, np.newaxis]
+            print(vals)
+            kdens = KernelDensity(kernel='gaussian', bandwidth=0.2, rtol=1E-2).fit(vals)
+            total_score += kdens.score(vals)
+        else: # TODO: change to CONTINUOUS
             # Create dataframe with only parents of node and convert to string
             str_data = data.values[:, [data.columns.get_loc(p) for p in parents]].astype('str')
             # Iterate over all rows and add row number to dict-entry of parent-values
@@ -200,10 +197,10 @@ class hill_climbing:
         self.bn = BayesNet(self.c_dict)
 
         # COMPUTE INITIAL LIKELIHOOD SCORE
-    #    value_dict = dict([(n, np.unique(np_data[:,i])) for i,n in enumerate(names)])
         print("Nodes:", list(self.bn.nodes()))
 
-        score = model_score(self.data, self.bn) - model_complexity(self.bn, self.nrow, metric)
+        # We do not take the complexity into account for Continuous Variables
+        score = model_score(self.data, self.bn)# - model_complexity(self.bn, self.nrow, metric)
         print("Initial Score:", score)
 
         # CREATE EMPIRICAL DISTRIBUTION OBJECT FOR CACHING
@@ -234,15 +231,15 @@ class hill_climbing:
 
             return_queue = Queue()
             p_add = Process(target=self.test_arc_additions, args=(configs_cache, mut_inf_cache, return_queue))
-            p_rem = Process(target=self.test_arc_deletions, args=(configs_cache, mut_inf_cache, return_queue))
+            #p_rem = Process(target=self.test_arc_deletions, args=(configs_cache, mut_inf_cache, return_queue))
             #p_rev = Process(target=self.test_arc_reversals, args=(configs_cache, mut_inf_cache, return_queue))
 
             p_add.start()
-            p_rem.start()
+            #p_rem.start()
             #p_rev.start()
 
             p_add.join()
-            p_rem.join()
+            #p_rem.join()
             #p_rev.join()
 
             while not return_queue.empty():
@@ -251,7 +248,6 @@ class hill_climbing:
                     max_arc = results[0]
                     max_delta = results[1]
                     max_operation = results[2]
-                    max_qi = results[3]
 
             ### DETERMINE IF/WHERE IMPROVEMENT WAS MADE ###
             if max_operation:
@@ -265,24 +261,20 @@ class hill_climbing:
                         print('ADDING: ' , str_arc , '\n')
                     self.p_dict[v].append(u)
                     self.bn.add_edge(u,v)
-                    self.bn.F[v]["qi"] = max_qi
                 elif max_operation == 'Deletion':
                     if debug:
                         print("delta:", max_delta)
                         print('DELETING: ' , str_arc , '\n')
                     self.p_dict[v].remove(u)
                     self.bn.remove_edge(u,v)
-                    self.bn.F[v]["qi"] = max_qi
                 elif max_operation == 'Reversal':
                     if debug:
                         print("delta:", max_delta)
                         print('REVERSING: ' , str_arc, '\n')
                     self.p_dict[v].remove(u)
                     self.bn.remove_edge(u,v)
-                    self.bn.F[v]['qi'] = max_qi[1]
                     self.p_dict[u].append(v)
                     self.bn.add_edge(v,u)
-                    self.bn.F[u]['qi'] = max_qi[0]
                 print("Model score:", score)  # TODO: improve so only changed elements get an update
             else:
                 if debug:
@@ -301,7 +293,7 @@ class hill_climbing:
         print("Size of Cache", len(mut_inf_cache))
         print("SCORE =", score)
 
-        plt.plot(x, y)
+        plt.plot(x,y)
         plt.show()
 
         return bn
@@ -403,7 +395,6 @@ class hill_climbing:
         max_delta = 0
         max_operation = None
         max_arc = None
-        max_qi = 0
         procs = []
         result_queue = Queue()
         for u in self.bn.nodes():
@@ -421,48 +412,108 @@ class hill_climbing:
                 max_arc = results[0]
                 max_delta = results[1]
                 max_operation = results[2]
-                max_qi = results[3]
-        return_queue.put((max_arc, max_delta, max_operation, max_qi))
+        return_queue.put((max_arc, max_delta, max_operation))
 
-    def test_arcs(self, configs_cache, mut_inf_cache, u, result_queue):
+    def test_arcs(self, configs_cache, l_inf_cache, u, result_queue):
         max_delta = 0
         max_operation = None
         max_arc = None
-        max_qi = 0
         for v in [n for n in self.bn.nodes() if u != n and n not in self.c_dict[u] and not would_cause_cycle(self.c_dict, u, n)]:
             # FOR MMHC ALGORITHM -> Edge Restrictions
             if self.restriction is None or (u, v) in self.restriction:
                 # SCORE FOR 'V' -> gaining a parent
                 old_cols = (v,) + tuple(self.p_dict[v])  # without 'u' as parent
-                if old_cols not in mut_inf_cache:
-                    mut_inf_cache[old_cols] = mutual_information(self.data[list(old_cols)])
-                mi_old = mut_inf_cache[old_cols]
-    
+                if len(old_cols) == 1:
+                    if old_cols not in l_inf_cache:
+                        vals = self.data[list(old_cols)].values
+                        kdens = KernelDensity(kernel='gaussian', bandwidth=0.2, rtol=1E-2).fit(vals)
+                        l_inf_cache[old_cols] = kdens.score(vals)
+                    l_old = l_inf_cache[old_cols]
+                else:
+                    if old_cols not in l_inf_cache:
+                        vals = self.data[list(old_cols)].values
+                        kdens = KernelDensity(kernel='gaussian', bandwidth=0.2, rtol=1E-2).fit(vals)
+                        l_inf_cache[old_cols] = kdens.score(vals)
+                    if tuple(self.p_dict[v]) not in l_inf_cache:
+                        vals = self.data[list(self.p_dict[v])].values
+                        kdens = KernelDensity(kernel='gaussian', bandwidth=0.2, rtol=1E-2).fit(vals)
+                        l_inf_cache[tuple(self.p_dict[v])] = kdens.score(vals)
+                    l_old = l_inf_cache[old_cols] - l_inf_cache[tuple(self.p_dict[v])]
+
                 new_cols = old_cols + (u,)  # with'u' as parent
-                if new_cols not in mut_inf_cache:
-                    mut_inf_cache[new_cols] = mutual_information(self.data[list(new_cols)])
-                mi_new = mut_inf_cache[new_cols]
+                if new_cols not in l_inf_cache:
+                    vals = self.data[list(new_cols)].values
+                    kdens = KernelDensity(kernel='gaussian', bandwidth=0.2, rtol=1E-2).fit(vals)
+                    l_inf_cache[new_cols] = kdens.score(vals)
+                new_cols2 = tuple(self.p_dict[v]) + (u,)
+                if new_cols2 not in l_inf_cache:
+                    vals = self.data[list(new_cols2)].values
+                    kdens = KernelDensity(kernel='gaussian', bandwidth=0.2, rtol=1E-2).fit(vals)
+                    l_inf_cache[new_cols2] = kdens.score(vals)
+                l_new = l_inf_cache[new_cols] - l_inf_cache[new_cols2]
 
-                qi = self.bn.F[v]['qi']
-
-                qi_new = self.data.drop_duplicates(list(new_cols)).shape[0]
-                delta_score = self.nrow * (mi_new - mi_old) - (qi_new - qi)
+                delta_score = (l_new - l_old) - 10
 
                 if delta_score - max_delta > 10 ** (-10):
                     max_delta = delta_score
                     max_operation = 'Addition'
                     max_arc = (u, v)
-                    max_qi = qi_new
-        result_queue.put((max_arc, max_delta, max_operation, max_qi))
+        result_queue.put((max_arc, max_delta, max_operation))
 
 
 
 
+if __name__ == "__main__":
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    log = pd.read_csv("../../../../Data/creditcard.csv", nrows=1000, dtype='float64').drop(columns=["Class", "Time"])
 
 
+    vals = log[["V2"]].values
+    kdens = KernelDensity(kernel='gaussian', bandwidth=0.2, rtol=1E-2).fit(vals)
+    scoreV1 = kdens.score(vals)
+
+    vals = log[["V1"]].values
+    kdens = KernelDensity(kernel='gaussian', bandwidth=0.2, rtol=1E-2).fit(vals)
+    scoreV2 = kdens.score(vals)
+
+    vals = log[["V2", "V1"]].values
+    kdens = KernelDensity(kernel='gaussian', bandwidth=0.2, rtol=1E-2).fit(vals)
+    score2 = kdens.score(vals)
+
+    vals = log[["V1", "V3"]].values
+    kdens = KernelDensity(kernel='gaussian', bandwidth=0.2, rtol=1E-2).fit(vals)
+    scoreV2V3 = kdens.score(vals)
+
+    vals = log[["V2", "V1", "V3"]].values
+    kdens = KernelDensity(kernel='gaussian', bandwidth=0.2, rtol=1E-2).fit(vals)
+    score3 = kdens.score(vals)
+
+    vals = log[["V1", "V3", "V4"]].values
+    kdens = KernelDensity(kernel='gaussian', bandwidth=0.2, rtol=1E-2).fit(vals)
+    scoreV2V3V4 = kdens.score(vals)
+
+    vals = log[["V2", "V1", "V3", "V4"]].values
+    kdens = KernelDensity(kernel='gaussian', bandwidth=0.2, rtol=1E-2).fit(vals)
+    score4 = kdens.score(vals)
+
+    vals = log[["V1", "V3", "V4", "V5"]].values
+    kdens = KernelDensity(kernel='gaussian', bandwidth=0.2, rtol=1E-2).fit(vals)
+    scoreV2V3V4V5 = kdens.score(vals)
+
+    vals = log[["V2", "V1", "V3", "V4", "V5"]].values
+    kdens = KernelDensity(kernel='gaussian', bandwidth=0.2, rtol=1E-2).fit(vals)
+    score5 = kdens.score(vals)
+
+    print(scoreV1, score2, score3, score4, score5)
+    print(scoreV2, scoreV2V3, scoreV2V3V4, scoreV2V3V4V5)
+    print(scoreV1, score2 - scoreV2, score3 - scoreV2V3, score4 - scoreV2V3V4, score5 - scoreV2V3V4V5)
 
 
+    #log = pd.read_csv("../../../../Data/boston_train.csv", nrows=1000, dtype='float64').drop(columns=["ID"])
+    hc = hill_climbing(log, log.columns)
+    net = hc.hc(debug=True)
 
-
-
-
+    print("FOUND RELATIONS:")
+    for edge in net.edges():
+        print(edge)

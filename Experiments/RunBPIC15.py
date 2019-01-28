@@ -44,22 +44,10 @@ def run_full():
     # Load logfile to use as training data
     train_data = LogFile(train_file, ",", 0, 500000, None, "Case_ID", activity_attr="Activity")
     train_data.remove_attributes(["Anomaly"])
-    #train_data.keep_attributes(["Case_ID", "Complete_Timestamp", "Activity", "Resource", "case_termName"])
-    train_data.remove_attributes(["planned", "dueDate", "dateStop", "dateFinished"])
-    train_data.remove_attributes(["case_IDofConceptCase"])
-    #train_data.remove_attributes(["case_Includes_subCases"])
-    #train_data.remove_attributes(["case_Responsible_actor"])
-    train_data.remove_attributes(["case_SUMleges"])
-    #train_data.remove_attributes(["case_caseProcedure"])
-    #train_data.remove_attributes(["case_caseStatus"])
-    #train_data.remove_attributes(["case_case_type"])
-    train_data.remove_attributes(["case_landRegisterID"])
-    #train_data.remove_attributes(["case_last_phase"])
-    train_data.remove_attributes(["case_parts"])
-    #train_data.remove_attributes(["case_requestComplete"])
-    #train_data.remove_attributes(["case_termName"])
-
-    #train_data.remove_attributes(["lifecycle_transition"])
+#    train_data.keep_attributes(["Case_ID", "Complete_Timestamp", "Activity", "Resource", "case_termName"])
+    train_data.remove_attributes(["planned"])
+    train_data.remove_attributes(["dueDate"])
+    train_data.remove_attributes(["dateFinished"])
 
     # Train the model
     model = edbn.train(train_data)
@@ -74,5 +62,5 @@ def run_full():
     plot.plot_single_prec_recall_curve("../Data/output.csv")
 
 if __name__ == "__main__":
-    #run_reduced()
-    run_full()
+    run_reduced()
+    #run_full()

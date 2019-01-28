@@ -30,20 +30,15 @@ class extendedDynamicBayesianNetwork():
         self.trace_attr = trace_attr
         self.durations = None
 
-    def add_variable(self, name, new_values):
-        self.variables[name] = Variable(name, new_values, self.num_attrs)
+
+    def add_variable(self, name, new_values, empty_val):
+        self.variables[name] = Variable(name, new_values, self.num_attrs, empty_val)
         m = re.search(r'Prev\d+$', name)
         if m is None:
             self.current_variables.append(name)
 
     def remove_variable(self, name):
         del self.variables[name]
-
-    def add_mapping(self, map_from_var, map_to_var):
-        self.variables[map_to_var].add_mapping(self.variables[map_from_var])
-
-    def add_parent(self, parent_var, attr_name):
-        self.variables[attr_name].add_parent(self.variables[parent_var])
 
     def iterate_variables(self):
         for key in self.variables:
@@ -53,8 +48,18 @@ class extendedDynamicBayesianNetwork():
         for key in self.current_variables:
             yield (key, self.variables[key])
 
-    def train(self, data):
-        self.log = data.contextdata
+    def add_mapping(self, map_from_var, map_to_var):
+        self.variables[map_to_var].add_mapping(self.variables[map_from_var])
+
+    def add_parent(self, parent_var, attr_name):
+        self.variables[attr_name].add_parent(self.variables[parent_var])
+
+
+    def train(self, data, single=False):
+        if single:
+            self.log = data
+        else:
+            self.log = data.contextdata
 
         for (_, value) in self.iterate_current_variables():
             self.train_var(value)
@@ -73,6 +78,7 @@ class extendedDynamicBayesianNetwork():
         groups = self.log.groupby(["Activity_Prev0", "Activity"])
         for group in groups:
             self.durations[group[0]] =  KernelDensity(kernel='gaussian', bandwidth=0.2, rtol=1E-2).fit(group[1]["duration_0"].values[:, np.newaxis])
+
 
     def calculate_scores_per_trace(self, data, accum_attr=None):
         """
@@ -94,7 +100,6 @@ class extendedDynamicBayesianNetwork():
         print("EVALUATION: Done")
         scores.sort(key=lambda l:l.time)
         return scores
-
 
     def calculate_scores_per_attribute(self, data, accum_attr = None):
         """
@@ -153,16 +158,19 @@ class extendedDynamicBayesianNetwork():
             fdt_scores = value.test_fdt(row)
             for fdt_score in fdt_scores:
                 score_fdt *= fdt_scores[fdt_score]
+            if key == "Case_ID":
+                print(value.test_value(row))
             result.set_attribute_score(value.attr_name, score_fdt * value.test_cpt(row) * value.test_value(row))
         return result
 
 
 class Variable:
-    def __init__(self, attr_name, new_values, num_attrs):
+    def __init__(self, attr_name, new_values, num_attrs, empty_val):
         self.attr_name = attr_name
         self.new_values = new_values
         self.new_relations = 0
         self.num_attrs = num_attrs
+        self.empty_val = empty_val
 
         self.values = set()
 
@@ -241,13 +249,6 @@ class Variable:
                 self.cpt[parent] = dict()
             self.cpt[parent][t[0][-1]] = t[1] / div[parent]
 
-        if self.attr_name == "case_Includes_subCases":
-            print("CPT for", self.attr_name)
-            for parent in self.cpt:
-                for child in self.cpt[parent]:
-                    print(parent, "\t", child, "\t", self.cpt[parent][child])
-                print("---------------------------------------------")
-
     def detailed_score(self, row):
         prob_result = {}
         prob_result["value"] = self.test_value(row)
@@ -265,6 +266,7 @@ class Variable:
                 if getattr(row, parent.attr_name) not in self.fdt[i]:
                     scores[parent.attr_name] = 1 - self.fdt_violation[i]
                     self.fdt[i][getattr(row, parent.attr_name)] = getattr(row, self.attr_name)
+                    self.values.add(getattr(row, self.attr_name))
                 elif self.fdt[i][getattr(row, parent.attr_name)] == getattr(row, self.attr_name) or getattr(row, parent.attr_name) == 0:
                     scores[parent.attr_name] = 1 - self.fdt_violation[i]
                 else:

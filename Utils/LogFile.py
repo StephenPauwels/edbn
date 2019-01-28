@@ -4,6 +4,7 @@ from dateutil.parser import parse
 from sklearn import preprocessing
 from collections import defaultdict
 import numpy as np
+import copy
 
 class LogFile:
 
@@ -116,6 +117,11 @@ class LogFile:
     def filter(self, filter_condition):
         self.data = self.data[eval(filter_condition)]
 
+    def filter_copy(self, filter_condition):
+        log_copy = copy.deepcopy(self)
+        log_copy.data = self.data[eval(filter_condition)]
+        return log_copy
+
     def get_column(self, attribute):
         return self.data[attribute]
 
@@ -165,6 +171,10 @@ class LogFile:
             return (endTime - startTime).total_seconds()
         else:
             return 0
+
+    def discretize(self,row):
+        pass # Use pandas.cut
+
 
 if __name__ == "__main__":
     import Uncertainty_Coefficient as uc
