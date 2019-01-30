@@ -54,6 +54,8 @@ class extendedDynamicBayesianNetwork():
     def add_parent(self, parent_var, attr_name):
         self.variables[attr_name].add_parent(self.variables[parent_var])
 
+    def add_continuous_parent(self, parent_var, attr_name):
+        self.variables[attr_name].add_continuous_parent(self.variables[parent_var])
 
     def train(self, data, single=False):
         if single:
@@ -70,6 +72,7 @@ class extendedDynamicBayesianNetwork():
         var.train_variable(self.log)
         var.train_fdt(self.log)
         var.train_cpt(self.log)
+        var.train_continuous(self.log)
         var.set_new_relation(self.log)
         return var
 
@@ -160,7 +163,7 @@ class extendedDynamicBayesianNetwork():
                 score_fdt *= fdt_scores[fdt_score]
             if key == "Case_ID":
                 print(value.test_value(row))
-            result.set_attribute_score(value.attr_name, score_fdt * value.test_cpt(row) * value.test_value(row))
+            result.set_attribute_score(value.attr_name, score_fdt * value.test_cpt(row) * value.test_value(row) * value.test_continuous(row))
         return result
 
 
@@ -179,6 +182,8 @@ class Variable:
         self.functional_parents = []
         self.fdt = []
         self.fdt_violation = []
+        self.continuous_parents = []
+        self.kernel = None
 
     def __repr__(self):
         return self.attr_name
@@ -189,6 +194,9 @@ class Variable:
     def add_mapping(self, var):
         self.functional_parents.append(var)
         self.fdt.append({})
+
+    def add_continuous_parent(self, var):
+        self.continuous_parents.append(var)
 
     def test_consistency(self):
         print("Consistent?", self.attr_name,":", len(self.cpt), len(self.fdt))
@@ -249,6 +257,11 @@ class Variable:
                 self.cpt[parent] = dict()
             self.cpt[parent][t[0][-1]] = t[1] / div[parent]
 
+    def train_continuous(self, log):
+        parents = [p.attr_name for p in self.continuous_parents]
+        vals = log[parents + [self.attr_name]].values
+        self.kernel = KernelDensity(kernel='gaussian', bandwidth=0.2, rtol=1E-2).fit(vals)
+
     def detailed_score(self, row):
         prob_result = {}
         prob_result["value"] = self.test_value(row)
@@ -295,3 +308,16 @@ class Variable:
             return self.new_values
         else:
             return 1 - self.new_values
+
+    def test_continuous(self, row):
+        if len(self.continuous_parents) == 0:
+            return 1
+
+        parent_vals = np.zeros(len(self.continuous_parents) + 1)
+        i = 0
+        for p in self.continuous_parents:
+            parent_vals[i] = getattr(row, p.attr_name)
+            i += 1
+        parent_vals[-1] = getattr(row, self.attr_name)
+        parent_vals = parent_vals.reshape(1,-1)
+        return np.power(np.e, self.kernel.score_samples(parent_vals)[0])

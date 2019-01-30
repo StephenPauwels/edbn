@@ -42,6 +42,8 @@ from sklearn.neighbors.kde import KernelDensity
 
 import time
 
+import matplotlib.pyplot as plt
+
 
 # from heapq import *
 
@@ -113,6 +115,12 @@ class hill_climbing:
         self.ncol = len(self.nodes)
         self.names = range(self.ncol)
 
+        self.bandwidth = 0.05
+        self.rtol = 1E-6
+
+        # From Density Estimation for Statistics and Data Analysis, Bernard. W. Silverman, CRC ,1986
+        #   (chapter Required sample size for given accuracy)
+        self.sample_size = [4,19,67,223,768,2790,10700,43700,187000,842000]
 
 
     def hc(self, metric='AIC', max_iter=100, debug=False, restriction=None, whitelist=None):
@@ -186,13 +194,13 @@ class hill_climbing:
         self.whitelist = whitelist
 
         if whitelist is None:
-            whitelist = []
-        for (u,v) in whitelist:
+            self.whitelist = []
+        for (u,v) in self.whitelist:
             if u in self.c_dict:
                 self.c_dict[u].append(v)
             if v in self.p_dict:
                 self.p_dict[v].append(u)
-        print("Whitelist", whitelist)
+        print("Whitelist", self.whitelist)
 
         self.bn = BayesNet(self.c_dict)
 
@@ -231,15 +239,15 @@ class hill_climbing:
 
             return_queue = Queue()
             p_add = Process(target=self.test_arc_additions, args=(configs_cache, mut_inf_cache, return_queue))
-            #p_rem = Process(target=self.test_arc_deletions, args=(configs_cache, mut_inf_cache, return_queue))
+            p_rem = Process(target=self.test_arc_deletions, args=(configs_cache, mut_inf_cache, return_queue))
             #p_rev = Process(target=self.test_arc_reversals, args=(configs_cache, mut_inf_cache, return_queue))
 
             p_add.start()
-            #p_rem.start()
+            p_rem.start()
             #p_rev.start()
 
             p_add.join()
-            #p_rem.join()
+            p_rem.join()
             #p_rev.join()
 
             while not return_queue.empty():
@@ -356,7 +364,7 @@ class hill_climbing:
                         max_qi = (qi_new1, qi_new2)
         return_queue.put((max_arc, max_delta, max_operation, max_qi))
 
-    def test_arc_deletions(self, configs_cache, mut_inf_cache, return_queue):
+    def test_arc_deletions(self, configs_cache, l_inf_cache, return_queue):
         print("Test Deletions")
         ### TEST ARC DELETIONS ###
         max_delta = 0
@@ -368,28 +376,44 @@ class hill_climbing:
                 #if (u,v) not in self.whitelist:
                     # SCORE FOR 'V' -> losing a parent
                     old_cols = (v,) + tuple(self.p_dict[v])  # with 'u' as parent
-                    if old_cols not in mut_inf_cache:
-                        mut_inf_cache[old_cols] = mutual_information(self.data[list(old_cols)])
-                    mi_old = mut_inf_cache[old_cols]
+                    if old_cols not in l_inf_cache:
+                        vals = self.data[list(old_cols)].values
+                        kdens = KernelDensity(kernel='gaussian', bandwidth=self.bandwidth, rtol=self.rtol).fit(vals)
+                        l_inf_cache[old_cols] = kdens.score(vals)
+                    old_cols2 = tuple(self.p_dict[v])
+                    if old_cols2 not in l_inf_cache:
+                        vals = self.data[list(old_cols2)].values
+                        kdens = KernelDensity(kernel='gaussian', bandwidth=self.bandwidth, rtol=self.rtol).fit(vals)
+                        l_inf_cache[old_cols2] = kdens.score(vals)
+                    l_old = l_inf_cache[old_cols] - l_inf_cache[old_cols2]
 
                     new_cols = tuple([i for i in old_cols if i != u])  # without 'u' as parent
-                    if new_cols not in mut_inf_cache:
-                        mut_inf_cache[new_cols] = mutual_information(self.data[list(new_cols)])
-                    mi_new = mut_inf_cache[new_cols]
+                    if len(new_cols) == 1:
+                        if new_cols not in l_inf_cache:
+                            vals = self.data[list(new_cols)].values
+                            kdens = KernelDensity(kernel='gaussian', bandwidth=self.bandwidth, rtol=self.rtol).fit(vals)
+                            l_inf_cache[new_cols] = kdens.score(vals)
+                        l_new = l_inf_cache[new_cols]
+                    else:
+                        if new_cols not in l_inf_cache:
+                            vals = self.data[list(new_cols)].values
+                            kdens = KernelDensity(kernel='gaussian', bandwidth=self.bandwidth, rtol=self.rtol).fit(vals)
+                            l_inf_cache[new_cols] = kdens.score(vals)
+                        if tuple([n for n in self.p_dict[v] if n != u]) not in l_inf_cache:
+                            vals = self.data[list(self.p_dict[v])].values
+                            kdens = KernelDensity(kernel='gaussian', bandwidth=self.bandwidth, rtol=self.rtol).fit(vals)
+                            l_inf_cache[tuple(self.p_dict[v])] = kdens.score(vals)
+                        l_new = l_inf_cache[old_cols] - l_inf_cache[tuple(self.p_dict[v])]
 
-                    qi = self.bn.F[v]['qi']
-
-                    qi_new = self.data.drop_duplicates(list(new_cols)).shape[0]
-                    delta_score = self.nrow * (mi_new - mi_old) - (qi_new - qi)
+                    delta_score = (l_new - l_old) #- self.sample_size[min(len(new_cols), len(self.sample_size))]
 
                     if delta_score - max_delta > 10 ** (-10):
                         max_delta = delta_score
                         max_operation = 'Deletion'
                         max_arc = (u, v)
-                        max_qi = qi_new
         return_queue.put((max_arc, max_delta, max_operation, max_qi))
 
-    def test_arc_additions(self, configs_cache, mut_inf_cache, return_queue):
+    def test_arc_additions(self, configs_cache, l_inf_cache, return_queue):
         print("Test Additions")
         ### TEST ARC ADDITIONS ###
         max_delta = 0
@@ -398,7 +422,7 @@ class hill_climbing:
         procs = []
         result_queue = Queue()
         for u in self.bn.nodes():
-            p = Process(target=self.test_arcs, args=(configs_cache, mut_inf_cache, u, result_queue))
+            p = Process(target=self.test_arcs, args=(configs_cache, l_inf_cache, u, result_queue))
             procs.append(p)
             p.start()
 
@@ -426,33 +450,33 @@ class hill_climbing:
                 if len(old_cols) == 1:
                     if old_cols not in l_inf_cache:
                         vals = self.data[list(old_cols)].values
-                        kdens = KernelDensity(kernel='gaussian', bandwidth=0.2, rtol=1E-2).fit(vals)
+                        kdens = KernelDensity(kernel='gaussian', bandwidth=self.bandwidth, rtol=self.rtol).fit(vals)
                         l_inf_cache[old_cols] = kdens.score(vals)
                     l_old = l_inf_cache[old_cols]
                 else:
                     if old_cols not in l_inf_cache:
                         vals = self.data[list(old_cols)].values
-                        kdens = KernelDensity(kernel='gaussian', bandwidth=0.2, rtol=1E-2).fit(vals)
+                        kdens = KernelDensity(kernel='gaussian', bandwidth=self.bandwidth, rtol=self.rtol).fit(vals)
                         l_inf_cache[old_cols] = kdens.score(vals)
                     if tuple(self.p_dict[v]) not in l_inf_cache:
                         vals = self.data[list(self.p_dict[v])].values
-                        kdens = KernelDensity(kernel='gaussian', bandwidth=0.2, rtol=1E-2).fit(vals)
+                        kdens = KernelDensity(kernel='gaussian', bandwidth=self.bandwidth, rtol=self.rtol).fit(vals)
                         l_inf_cache[tuple(self.p_dict[v])] = kdens.score(vals)
                     l_old = l_inf_cache[old_cols] - l_inf_cache[tuple(self.p_dict[v])]
 
                 new_cols = old_cols + (u,)  # with'u' as parent
                 if new_cols not in l_inf_cache:
                     vals = self.data[list(new_cols)].values
-                    kdens = KernelDensity(kernel='gaussian', bandwidth=0.2, rtol=1E-2).fit(vals)
+                    kdens = KernelDensity(kernel='gaussian', bandwidth=self.bandwidth, rtol=self.rtol).fit(vals)
                     l_inf_cache[new_cols] = kdens.score(vals)
                 new_cols2 = tuple(self.p_dict[v]) + (u,)
                 if new_cols2 not in l_inf_cache:
                     vals = self.data[list(new_cols2)].values
-                    kdens = KernelDensity(kernel='gaussian', bandwidth=0.2, rtol=1E-2).fit(vals)
+                    kdens = KernelDensity(kernel='gaussian', bandwidth=self.bandwidth, rtol=self.rtol).fit(vals)
                     l_inf_cache[new_cols2] = kdens.score(vals)
                 l_new = l_inf_cache[new_cols] - l_inf_cache[new_cols2]
 
-                delta_score = (l_new - l_old) - 10
+                delta_score = (l_new - l_old) - self.sample_size[min(len(new_cols), len(self.sample_size))]
 
                 if delta_score - max_delta > 10 ** (-10):
                     max_delta = delta_score
@@ -461,59 +485,66 @@ class hill_climbing:
         result_queue.put((max_arc, max_delta, max_operation))
 
 
-
-
-if __name__ == "__main__":
-    import pandas as pd
-    import matplotlib.pyplot as plt
-    log = pd.read_csv("../../../../Data/creditcard.csv", nrows=1000, dtype='float64').drop(columns=["Class", "Time"])
-
-
-    vals = log[["V2"]].values
-    kdens = KernelDensity(kernel='gaussian', bandwidth=0.2, rtol=1E-2).fit(vals)
-    scoreV1 = kdens.score(vals)
-
-    vals = log[["V1"]].values
-    kdens = KernelDensity(kernel='gaussian', bandwidth=0.2, rtol=1E-2).fit(vals)
-    scoreV2 = kdens.score(vals)
-
-    vals = log[["V2", "V1"]].values
-    kdens = KernelDensity(kernel='gaussian', bandwidth=0.2, rtol=1E-2).fit(vals)
-    score2 = kdens.score(vals)
-
-    vals = log[["V1", "V3"]].values
-    kdens = KernelDensity(kernel='gaussian', bandwidth=0.2, rtol=1E-2).fit(vals)
-    scoreV2V3 = kdens.score(vals)
-
-    vals = log[["V2", "V1", "V3"]].values
-    kdens = KernelDensity(kernel='gaussian', bandwidth=0.2, rtol=1E-2).fit(vals)
-    score3 = kdens.score(vals)
-
-    vals = log[["V1", "V3", "V4"]].values
-    kdens = KernelDensity(kernel='gaussian', bandwidth=0.2, rtol=1E-2).fit(vals)
-    scoreV2V3V4 = kdens.score(vals)
-
-    vals = log[["V2", "V1", "V3", "V4"]].values
-    kdens = KernelDensity(kernel='gaussian', bandwidth=0.2, rtol=1E-2).fit(vals)
-    score4 = kdens.score(vals)
-
-    vals = log[["V1", "V3", "V4", "V5"]].values
-    kdens = KernelDensity(kernel='gaussian', bandwidth=0.2, rtol=1E-2).fit(vals)
-    scoreV2V3V4V5 = kdens.score(vals)
-
-    vals = log[["V2", "V1", "V3", "V4", "V5"]].values
-    kdens = KernelDensity(kernel='gaussian', bandwidth=0.2, rtol=1E-2).fit(vals)
-    score5 = kdens.score(vals)
-
-    print(scoreV1, score2, score3, score4, score5)
-    print(scoreV2, scoreV2V3, scoreV2V3V4, scoreV2V3V4V5)
-    print(scoreV1, score2 - scoreV2, score3 - scoreV2V3, score4 - scoreV2V3V4, score5 - scoreV2V3V4V5)
-
-
-    #log = pd.read_csv("../../../../Data/boston_train.csv", nrows=1000, dtype='float64').drop(columns=["ID"])
-    hc = hill_climbing(log, log.columns)
+def learn_continuous_net(train):
+    hc = hill_climbing(train, train.columns)
     net = hc.hc(debug=True)
+
+    from extended_Dynamic_Bayesian_Network import extendedDynamicBayesianNetwork
+
+    edbn = extendedDynamicBayesianNetwork(len(train.columns), 0, None)
+    for col in train.columns:
+        edbn.add_variable(col, 1, None)
 
     print("FOUND RELATIONS:")
     for edge in net.edges():
         print(edge)
+        edbn.add_continuous_parent(edge[0], edge[1])
+
+    edbn.train(train, single=True)
+    return edbn
+
+def score_continuous_net(model, test, label_attr):
+    import Utils.PlotResults as plot
+
+    ranking = model.test(test)
+    ranking.sort(key=lambda l: l[0].get_total_score())
+    scores = []
+    y = []
+    for r in ranking:
+        scores.append((getattr(r[1], "Index"), r[0].get_total_score(), getattr(r[1], label_attr) != 0))
+        y.append(r[0].get_total_score())
+    print(len(scores))
+
+    with open("../output.csv", "w") as fout:
+        for s in scores:
+            fout.write(",".join([str(i) for i in s]))
+            fout.write("\n")
+
+    plot.plot_single_roc_curve("../output.csv")
+    plot.plot_single_prec_recall_curve("../output.csv")
+
+
+if __name__ == "__main__":
+    import pandas as pd
+    import Utils.PlotResults as plot
+
+    log = pd.read_csv("../../../../Data/creditcard.csv", nrows=10000, dtype='float64').drop(columns=["Time"])
+
+    train = log[:1000]
+    test = log[1000:]
+
+    print(log["Class"].value_counts())
+    print(train["Class"].value_counts())
+    print(test["Class"].value_counts())
+
+    train = train[train.Class == 0] # Only keep non-anomalies
+    train = train.drop(columns=["Class"]) # Drop Class label
+    train = train.drop(columns=["Amount"])
+
+    model = learn_continuous_net(train)
+    score_continuous_net(model, test)
+
+
+
+    #plt.plot(list(range(len(y))), y)
+    #plt.show()

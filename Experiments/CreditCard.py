@@ -75,6 +75,7 @@ if __name__ == "__main__":
 
     train = train[train.Class == 1] # Only keep non-anomalies
     train = train.drop(columns=["Class"]) # Drop Class label
+    train = train.drop(columns=["Amount"])
 
     edbn = extendedDynamicBayesianNetwork(len(train.columns), 0, None)
 
@@ -98,7 +99,7 @@ if __name__ == "__main__":
         edbn.add_parent(relation[0], relation[1])
         print(relation[0], "->", relation[1])
 
-    model = edbn.train(train, single=True)
+    edbn.train(train, single=True)
 
     ranking = edbn.test(test)
     ranking.sort(key=lambda l: l[0].get_total_score())

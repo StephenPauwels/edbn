@@ -131,6 +131,9 @@ class LogFile:
 
         :return: None
         """
+        if self.k == 0:
+            self.contextdata = self.data
+
         if self.contextdata is None:
             print("Start creating k-context Parallel")
 
