@@ -23,7 +23,7 @@ def cardio_exec():
     test = log[250:]
 
     model = hcc.learn_continuous_net(train)
-    hcc.score_continuous_net(model, test, "VLabel")
+    hcc.score_continuous_net(model, test, "VLabel", "../Data/cardio_output.csv", "cardio")
 
     print(log["VLabel"].value_counts())
     print(test["VLabel"].value_counts())
@@ -43,14 +43,14 @@ def mammo_exec():
     log.columns = cols
     print(log)
 
-    train = log[:2500]
-    test = log[2500:]
+    train = log[:5000]
+    test = log[5000:]
 
     train = train[train.VLabel == 0].drop(columns=["VLabel"])
 
 
     model = hcc.learn_continuous_net(train)
-    hcc.score_continuous_net(model, test, "VLabel")
+    hcc.score_continuous_net(model, test, "VLabel", "../Data/mammo_output.csv","mammo")
 
     print(log["VLabel"].value_counts())
     print(test["VLabel"].value_counts())
@@ -79,7 +79,7 @@ def breast_exec():
     print(log["VLabel"].value_counts())
     print(test["VLabel"].value_counts())
 
-    hcc.score_continuous_net(model, test, "VLabel")
+    hcc.score_continuous_net(model, test, "VLabel", "../Data/breast_output.csv", "breast")
 
 def breast_discrete_exec():
     data = "../Data/breast_data.csv"
@@ -110,10 +110,10 @@ def breast_discrete_exec():
     test_data = LogFile("../Data/breast_test.csv", ",", 0, 500000, None, "ID", activity_attr="Activity")
     test_data.k = 0
     print(test_data.data)
-    edbn.test(test_data, "../Data/output.csv", model, "VLabel", "0")
+    edbn.test(test_data, "../Data/breast_discrete_output.csv", model, "VLabel", "0")
 
-    plot.plot_single_roc_curve("../Data/output.csv")
-    plot.plot_single_prec_recall_curve("../Data/output.csv")
+    plot.plot_single_roc_curve("../Data/breast_discrete_output.csv", "breast_discrete")
+    plot.plot_single_prec_recall_curve("../Data/breast_discrete_output.csv", "breast_discrete")
 
 
 def letter_exec():
@@ -140,7 +140,7 @@ def letter_exec():
     print(log["VLabel"].value_counts())
     print(test["VLabel"].value_counts())
 
-    hcc.score_continuous_net(model, test, "VLabel")
+    hcc.score_continuous_net(model, test, "VLabel", "../Data/letter_output.csv", "letter")
 
 def letter_discrete_exec():
     data = "../Data/letter_data.csv"
@@ -171,15 +171,15 @@ def letter_discrete_exec():
     test_data = LogFile("../Data/letter_test.csv", ",", 0, 500000, None, "ID", activity_attr="Activity")
     test_data.k = 0
     print(test_data.data)
-    edbn.test(test_data, "../Data/output.csv", model, "VLabel", "0")
+    edbn.test(test_data, "../Data/letter_discrete_output.csv", model, "VLabel", "0")
 
-    plot.plot_single_roc_curve("../Data/output.csv")
-    plot.plot_single_prec_recall_curve("../Data/output.csv")
+    plot.plot_single_roc_curve("../Data/letter_discrete_output.csv", 'letter_discrete')
+    plot.plot_single_prec_recall_curve("../Data/letter_discrete_output.csv", 'letter_discrete')
 
 if __name__ == "__main__":
-    # cardio_exec()
-    # mammo_exec()
-    # breast_exec()
+    cardio_exec()
+    #mammo_exec()
+    breast_exec()
     breast_discrete_exec()
-    # letter_exec()
-    # letter_discrete_exec()
+    letter_exec()
+    letter_discrete_exec()

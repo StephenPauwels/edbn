@@ -46,7 +46,6 @@ class Event_result:
         else:
             self.attributes[attribute] = math.log(score)
 
-
     def get_attribute_score(self, attribute):
         if attribute in self.attributes:
             return self.attributes[attribute]

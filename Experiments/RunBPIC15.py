@@ -62,5 +62,5 @@ def run_full():
     plot.plot_single_prec_recall_curve("../Data/output.csv")
 
 if __name__ == "__main__":
-    run_reduced()
-    #run_full()
+    #run_reduced()
+    run_full()

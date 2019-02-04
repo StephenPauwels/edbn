@@ -40,10 +40,10 @@ def generate_model(data, remove_attrs = []):
         new_vals = uc.calculate_new_values_rate(data.get_column(attribute))
         print(attribute, new_vals)
         empty_val = data.convert_string2int(attribute, "nan")
-        cbn.add_variable(attribute, new_vals, empty_val)
+        cbn.add_discrete_variable(attribute, new_vals, empty_val)
         for i in range(data.k):
             nodes.append(attribute + "_Prev%i" % (i))
-            cbn.add_variable(attribute + "_Prev%i" % (i), new_vals, empty_val)
+            cbn.add_discrete_variable(attribute + "_Prev%i" % (i), new_vals, empty_val)
 
     print("GENERATE: calculate mappings")
 
@@ -73,7 +73,7 @@ def generate_model(data, remove_attrs = []):
     whitelist = []
     print("MAPPINGS:")
     for mapping in mappings:
-        cbn.add_mapping(mapping[0], mapping[1])
+        cbn.get_variable(mapping[1]).add_mapping(cbn.get_variable(mapping[0]))
         print(mapping[0], "=>", mapping[1])
         if (mapping[0], mapping[1]) in tmp_mappings:
             whitelist.append((mapping[0], mapping[1]))
@@ -100,111 +100,7 @@ def generate_model(data, remove_attrs = []):
     print("Relations:")
     for relation in relations:
         if relation not in mappings:
-            cbn.add_parent(relation[0], relation[1])
-            print(relation[0], "->", relation[1])
-
-    return cbn
-
-def generate_model(data, remove_attrs = []):
-    """
-    Generate an eDBN model given the data
-
-    :param data:            The data to learn the model from
-    :param remove_attrs:    Attributes to be ignored
-    :return:                The learned eDBN
-    """
-    # Initialize empty eDBN datastructure
-    print("GENERATE: initialize")
-    cbn = extendedDynamicBayesianNetwork(len(data.attributes()), data.k, data.trace)
-    nodes = []
-
-    # Remove attributes
-    for column in data.attributes():
-        if column not in remove_attrs:
-            nodes.append(column)
-    data.keep_attributes(nodes)
-
-    # Get all normal attributes and remove the trace attribute
-    attributes = list(data.attributes())
-    if data.trace:
-        attributes.remove(data.trace)
-        nodes.remove(data.trace)
-
-    if data.time in attributes:
-        attributes.remove(data.time)
-        nodes.remove(data.time)
-
-
-    # Create the k-context of the data
-    print("GENERATE: build k-context")
-    data.create_k_context()
-
-    # Add previous-attributes to the model
-    for attribute in attributes:
-        new_vals = uc.calculate_new_values_rate(data.get_column(attribute))
-        print(attribute, new_vals)
-        empty_val = data.convert_string2int(attribute, "nan")
-        cbn.add_variable(attribute, new_vals, empty_val)
-        for i in range(data.k):
-            nodes.append(attribute + "_Prev%i" % (i))
-            cbn.add_variable(attribute + "_Prev%i" % (i), new_vals, empty_val)
-
-    print("GENERATE: calculate mappings")
-
-    # Calculate Mappings
-    mappings = uc.calculate_mappings(data.contextdata, attributes, data.k, 0.99)
-
-    tmp_mappings = mappings[:]
-    print("GENERATE: removing redundant mappings")
-    ignore_nodes = []
-    while True:
-        cycle = get_max_cycle(tmp_mappings)
-        if len(cycle) == 0:
-            break
-        print("GENERATE: found cycle:", cycle)
-        cycle_nodes = [c[0] for c in cycle]
-        ignore_nodes.extend(cycle_nodes[1:])
-        remove_mappings = []
-        for m in tmp_mappings:
-            if m[0] in cycle_nodes:
-                remove_mappings.append(m)
-        for rem in remove_mappings:
-            tmp_mappings.remove(rem)
-
-    for n in ignore_nodes:
-        nodes.remove(n)
-
-    whitelist = []
-    print("MAPPINGS:")
-    for mapping in mappings:
-        cbn.add_mapping(mapping[0], mapping[1])
-        print(mapping[0], "=>", mapping[1])
-        if (mapping[0], mapping[1]) in tmp_mappings:
-            whitelist.append((mapping[0], mapping[1]))
-
-    # Create list with allowed edges (only from previous -> current and current -> current)
-    restrictions = []
-    for attr1 in attributes:
-        for attr2 in attributes:
-            if attr1 != attr2:
-                restrictions.append((attr2, attr1))
-            for i in range(data.k):
-                restrictions.append((attr2 + "_Prev%i" % (i), attr1))
-
-    print("GENERATE: Learn Bayesian Network")
-
-    # Calculate Bayesian Network
-    bay_net = bn.BayesianNetwork(data.contextdata)
-    net = bay_net.hill_climbing_pybn(nodes, restrictions=restrictions, whitelist=whitelist, metric="AIC")
-
-    relations = []
-    for edge in net.edges():
-        relations.append((edge[0], edge[1]))
-
-    print("Relations:")
-    for relation in relations:
-        if relation not in mappings:
-            cbn.add_parent(relation[0], relation[1])
+            cbn.get_variable(relation[1]).add_parent(cbn.get_variable(relation[0]))
             print(relation[0], "->", relation[1])
 
     return cbn

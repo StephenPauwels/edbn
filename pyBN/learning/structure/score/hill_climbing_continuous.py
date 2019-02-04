@@ -39,6 +39,7 @@ from pyBN.utils.graph import would_cause_cycle
 from pyBN.utils.independence_tests import mutual_information
 
 from sklearn.neighbors.kde import KernelDensity
+from sklearn.model_selection import GridSearchCV
 
 import time
 
@@ -72,17 +73,13 @@ def model_score(data, bn):
     total_score = 0
     num_rows = data.shape[0]
 
-    for node in bn.nodes():
+    for node in bn.nodes(): # TODO: caculate in parallel
         print("Calculating for node", node)
         # Create all possible configurations of the parents
         parents = bn.parents(node)
         parent_configs = {}
         if len(parents) == 0:
-            # Get the frequency for all occurring values
-            vals = data[node].values[:, np.newaxis]
-            print(vals)
-            kdens = KernelDensity(kernel='gaussian', bandwidth=0.2, rtol=1E-2).fit(vals)
-            total_score += kdens.score(vals)
+            total_score += calc_score(data, [node])
         else: # TODO: change to CONTINUOUS
             # Create dataframe with only parents of node and convert to string
             str_data = data.values[:, [data.columns.get_loc(p) for p in parents]].astype('str')
@@ -105,6 +102,17 @@ def model_score(data, bn):
     return total_score
 
 
+def calc_score(data, cols):
+    vals = data[list(cols)].values
+
+    # Calculate best bandwith for KDE
+    params = {'bandwidth': np.logspace(-2, 1, 20)}
+    grid = GridSearchCV(KernelDensity(), params, cv=5)
+    grid.fit(vals)
+
+    kdens = KernelDensity(kernel='gaussian', bandwidth=0.1, rtol=1E-6).fit(vals) #grid.best_estimator_.bandwidth
+    return kdens.score(vals)
+
 class hill_climbing:
 
     def __init__(self, data, nodes):
@@ -114,9 +122,6 @@ class hill_climbing:
         self.nrow = len(self.data)
         self.ncol = len(self.nodes)
         self.names = range(self.ncol)
-
-        self.bandwidth = 0.05
-        self.rtol = 1E-6
 
         # From Density Estimation for Statistics and Data Analysis, Bernard. W. Silverman, CRC ,1986
         #   (chapter Required sample size for given accuracy)
@@ -377,32 +382,22 @@ class hill_climbing:
                     # SCORE FOR 'V' -> losing a parent
                     old_cols = (v,) + tuple(self.p_dict[v])  # with 'u' as parent
                     if old_cols not in l_inf_cache:
-                        vals = self.data[list(old_cols)].values
-                        kdens = KernelDensity(kernel='gaussian', bandwidth=self.bandwidth, rtol=self.rtol).fit(vals)
-                        l_inf_cache[old_cols] = kdens.score(vals)
+                        l_inf_cache[old_cols] = calc_score(self.data, old_cols)
                     old_cols2 = tuple(self.p_dict[v])
                     if old_cols2 not in l_inf_cache:
-                        vals = self.data[list(old_cols2)].values
-                        kdens = KernelDensity(kernel='gaussian', bandwidth=self.bandwidth, rtol=self.rtol).fit(vals)
-                        l_inf_cache[old_cols2] = kdens.score(vals)
+                        l_inf_cache[old_cols2] = calc_score(self.data, old_cols2)
                     l_old = l_inf_cache[old_cols] - l_inf_cache[old_cols2]
 
                     new_cols = tuple([i for i in old_cols if i != u])  # without 'u' as parent
                     if len(new_cols) == 1:
                         if new_cols not in l_inf_cache:
-                            vals = self.data[list(new_cols)].values
-                            kdens = KernelDensity(kernel='gaussian', bandwidth=self.bandwidth, rtol=self.rtol).fit(vals)
-                            l_inf_cache[new_cols] = kdens.score(vals)
+                            l_inf_cache[new_cols] = calc_score(self.data, new_cols)
                         l_new = l_inf_cache[new_cols]
                     else:
                         if new_cols not in l_inf_cache:
-                            vals = self.data[list(new_cols)].values
-                            kdens = KernelDensity(kernel='gaussian', bandwidth=self.bandwidth, rtol=self.rtol).fit(vals)
-                            l_inf_cache[new_cols] = kdens.score(vals)
+                            l_inf_cache[new_cols] = calc_score(self.data, new_cols)
                         if tuple([n for n in self.p_dict[v] if n != u]) not in l_inf_cache:
-                            vals = self.data[list(self.p_dict[v])].values
-                            kdens = KernelDensity(kernel='gaussian', bandwidth=self.bandwidth, rtol=self.rtol).fit(vals)
-                            l_inf_cache[tuple(self.p_dict[v])] = kdens.score(vals)
+                            l_inf_cache[tuple(self.p_dict[v])] = calc_score(self.data, self.p_dict[v])
                         l_new = l_inf_cache[old_cols] - l_inf_cache[tuple(self.p_dict[v])]
 
                     delta_score = (l_new - l_old) #- self.sample_size[min(len(new_cols), len(self.sample_size))]
@@ -449,31 +444,21 @@ class hill_climbing:
                 old_cols = (v,) + tuple(self.p_dict[v])  # without 'u' as parent
                 if len(old_cols) == 1:
                     if old_cols not in l_inf_cache:
-                        vals = self.data[list(old_cols)].values
-                        kdens = KernelDensity(kernel='gaussian', bandwidth=self.bandwidth, rtol=self.rtol).fit(vals)
-                        l_inf_cache[old_cols] = kdens.score(vals)
+                        l_inf_cache[old_cols] = calc_score(self.data, old_cols)
                     l_old = l_inf_cache[old_cols]
                 else:
                     if old_cols not in l_inf_cache:
-                        vals = self.data[list(old_cols)].values
-                        kdens = KernelDensity(kernel='gaussian', bandwidth=self.bandwidth, rtol=self.rtol).fit(vals)
-                        l_inf_cache[old_cols] = kdens.score(vals)
+                        l_inf_cache[old_cols] = calc_score(self.data, old_cols)
                     if tuple(self.p_dict[v]) not in l_inf_cache:
-                        vals = self.data[list(self.p_dict[v])].values
-                        kdens = KernelDensity(kernel='gaussian', bandwidth=self.bandwidth, rtol=self.rtol).fit(vals)
-                        l_inf_cache[tuple(self.p_dict[v])] = kdens.score(vals)
+                        l_inf_cache[tuple(self.p_dict[v])] = calc_score(self.data, self.p_dict[v])
                     l_old = l_inf_cache[old_cols] - l_inf_cache[tuple(self.p_dict[v])]
 
                 new_cols = old_cols + (u,)  # with'u' as parent
                 if new_cols not in l_inf_cache:
-                    vals = self.data[list(new_cols)].values
-                    kdens = KernelDensity(kernel='gaussian', bandwidth=self.bandwidth, rtol=self.rtol).fit(vals)
-                    l_inf_cache[new_cols] = kdens.score(vals)
+                    l_inf_cache[new_cols] = calc_score(self.data, new_cols)
                 new_cols2 = tuple(self.p_dict[v]) + (u,)
                 if new_cols2 not in l_inf_cache:
-                    vals = self.data[list(new_cols2)].values
-                    kdens = KernelDensity(kernel='gaussian', bandwidth=self.bandwidth, rtol=self.rtol).fit(vals)
-                    l_inf_cache[new_cols2] = kdens.score(vals)
+                    l_inf_cache[new_cols2] = calc_score(self.data, new_cols2)
                 l_new = l_inf_cache[new_cols] - l_inf_cache[new_cols2]
 
                 delta_score = (l_new - l_old) - self.sample_size[min(len(new_cols), len(self.sample_size))]
@@ -493,17 +478,17 @@ def learn_continuous_net(train):
 
     edbn = extendedDynamicBayesianNetwork(len(train.columns), 0, None)
     for col in train.columns:
-        edbn.add_variable(col, 1, None)
+        edbn.add_continuous_variable(col)
 
     print("FOUND RELATIONS:")
     for edge in net.edges():
         print(edge)
-        edbn.add_continuous_parent(edge[0], edge[1])
+        edbn.get_variable(edge[1]).add_parent(edbn.get_variable(edge[0]))
 
     edbn.train(train, single=True)
     return edbn
 
-def score_continuous_net(model, test, label_attr):
+def score_continuous_net(model, test, label_attr, output_file=None, title=None):
     import Utils.PlotResults as plot
 
     ranking = model.test(test)
@@ -515,18 +500,22 @@ def score_continuous_net(model, test, label_attr):
         y.append(r[0].get_total_score())
     print(len(scores))
 
-    with open("../output.csv", "w") as fout:
+    if output_file is None:
+        output_file = "../output.csv"
+
+    with open(output_file, "w") as fout:
         for s in scores:
             fout.write(",".join([str(i) for i in s]))
             fout.write("\n")
 
-    plot.plot_single_roc_curve("../output.csv")
-    plot.plot_single_prec_recall_curve("../output.csv")
+    plot.plot_single_roc_curve(output_file, title)
+    plot.plot_single_prec_recall_curve(output_file, title)
 
 
 if __name__ == "__main__":
     import pandas as pd
     import Utils.PlotResults as plot
+    import pickle
 
     log = pd.read_csv("../../../../Data/creditcard.csv", nrows=10000, dtype='float64').drop(columns=["Time"])
 
@@ -542,9 +531,11 @@ if __name__ == "__main__":
     train = train.drop(columns=["Amount"])
 
     model = learn_continuous_net(train)
-    score_continuous_net(model, test)
 
+    with open("model_creditcard", "wb") as fout:
+        pickle.dump(model, fout)
 
+    with open("model_creditcard", "rb") as fin:
+        model = pickle.load(fin)
 
-    #plt.plot(list(range(len(y))), y)
-    #plt.show()
+    score_continuous_net(model, test, "Class")

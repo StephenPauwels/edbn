@@ -4,6 +4,7 @@ import re
 import numpy as np
 from joblib import Parallel, delayed
 from sklearn.neighbors.kde import KernelDensity
+from sklearn.model_selection import GridSearchCV
 
 import Result
 
@@ -31,8 +32,14 @@ class extendedDynamicBayesianNetwork():
         self.durations = None
 
 
-    def add_variable(self, name, new_values, empty_val):
-        self.variables[name] = Variable(name, new_values, self.num_attrs, empty_val)
+    def add_discrete_variable(self, name, new_values, empty_val):
+        self.variables[name] = Discrete_Variable(name, new_values, self.num_attrs, empty_val)
+        m = re.search(r'Prev\d+$', name)
+        if m is None:
+            self.current_variables.append(name)
+
+    def add_continuous_variable(self, name):
+        self.variables[name] = Continuous_Variable(name, self.num_attrs)
         m = re.search(r'Prev\d+$', name)
         if m is None:
             self.current_variables.append(name)
@@ -48,14 +55,8 @@ class extendedDynamicBayesianNetwork():
         for key in self.current_variables:
             yield (key, self.variables[key])
 
-    def add_mapping(self, map_from_var, map_to_var):
-        self.variables[map_to_var].add_mapping(self.variables[map_from_var])
-
-    def add_parent(self, parent_var, attr_name):
-        self.variables[attr_name].add_parent(self.variables[parent_var])
-
-    def add_continuous_parent(self, parent_var, attr_name):
-        self.variables[attr_name].add_continuous_parent(self.variables[parent_var])
+    def get_variable(self, attr_name):
+        return self.variables[attr_name]
 
     def train(self, data, single=False):
         if single:
@@ -64,17 +65,8 @@ class extendedDynamicBayesianNetwork():
             self.log = data.contextdata
 
         for (_, value) in self.iterate_current_variables():
-            self.train_var(value)
+            value.train(self.log)
         print("Training Done")
-
-    def train_var(self, var):
-        print("Training", var.attr_name)
-        var.train_variable(self.log)
-        var.train_fdt(self.log)
-        var.train_cpt(self.log)
-        var.train_continuous(self.log)
-        var.set_new_relation(self.log)
-        return var
 
     def train_durations(self):
         self.durations = {}
@@ -135,6 +127,7 @@ class extendedDynamicBayesianNetwork():
 
         results = []
         chunks = np.array_split(log, njobs)
+
         for r in Parallel(n_jobs=njobs)(delayed(self.test)(d) for d in chunks):
             results.extend(r)
         results.sort(key=lambda l: l[0].get_total_score())
@@ -157,17 +150,35 @@ class extendedDynamicBayesianNetwork():
         """
         result = Result.Event_result(row.Index)
         for (key, value) in self.iterate_current_variables():
-            score_fdt = 1
-            fdt_scores = value.test_fdt(row)
-            for fdt_score in fdt_scores:
-                score_fdt *= fdt_scores[fdt_score]
-            if key == "Case_ID":
-                print(value.test_value(row))
-            result.set_attribute_score(value.attr_name, score_fdt * value.test_cpt(row) * value.test_value(row) * value.test_continuous(row))
+            result.set_attribute_score(value.attr_name, value.test(row))
         return result
 
 
 class Variable:
+    def __init__(self, attr_name, new_values, num_attrs, empty_val):
+        self.attr_name = attr_name
+        self.new_values = new_values
+        self.new_relations = 0
+        self.num_attrs = num_attrs
+        self.empty_val = empty_val
+
+    def __repr__(self):
+        return self.attr_name
+
+    def add_parent(self, var):
+        pass
+
+    def add_mapping(self, var):
+        pass
+
+    def train(self, log):
+        pass
+
+    def test(self, row):
+        pass
+
+
+class Discrete_Variable(Variable):
     def __init__(self, attr_name, new_values, num_attrs, empty_val):
         self.attr_name = attr_name
         self.new_values = new_values
@@ -182,8 +193,6 @@ class Variable:
         self.functional_parents = []
         self.fdt = []
         self.fdt_violation = []
-        self.continuous_parents = []
-        self.kernel = None
 
     def __repr__(self):
         return self.attr_name
@@ -195,11 +204,15 @@ class Variable:
         self.functional_parents.append(var)
         self.fdt.append({})
 
-    def add_continuous_parent(self, var):
-        self.continuous_parents.append(var)
 
-    def test_consistency(self):
-        print("Consistent?", self.attr_name,":", len(self.cpt), len(self.fdt))
+    ###
+    # Training
+    ###
+    def train(self, log):
+        self.train_variable(log)
+        self.train_fdt(log)
+        self.train_cpt(log)
+        self.set_new_relation(log)
 
     def set_new_relation(self, log):
         attrs = set()
@@ -257,19 +270,17 @@ class Variable:
                 self.cpt[parent] = dict()
             self.cpt[parent][t[0][-1]] = t[1] / div[parent]
 
-    def train_continuous(self, log):
-        parents = [p.attr_name for p in self.continuous_parents]
-        vals = log[parents + [self.attr_name]].values
-        self.kernel = KernelDensity(kernel='gaussian', bandwidth=0.2, rtol=1E-2).fit(vals)
 
-    def detailed_score(self, row):
-        prob_result = {}
-        prob_result["value"] = self.test_value(row)
-        if len(self.conditional_parents) > 0:
-            prob_result["cpt"] = self.test_cpt(row)
-        if len(self.functional_parents) > 0:
-            prob_result["fdt"] = self.test_fdt(row)
-        return prob_result
+    ###
+    # Testing
+    ###
+    def test(self, row):
+        score = 1
+        for score in self.test_fdt(row).values():
+            score *= score
+        score *= self.test_cpt(row)
+        score *= self.test_value(row)
+        return score
 
     def test_fdt(self, row):
         scores = {}
@@ -309,6 +320,63 @@ class Variable:
         else:
             return 1 - self.new_values
 
+
+
+class Continuous_Variable(Variable):
+    def __init__(self, attr_name, num_attrs):
+        self.attr_name = attr_name
+        self.new_relations = 0
+        self.num_attrs = num_attrs
+
+        self.values = None
+
+        self.continuous_parents = []
+        self.kernel = None
+
+    def __repr__(self):
+        return self.attr_name
+
+    def add_parent(self, var):
+        self.continuous_parents.append(var)
+
+    def add_mapping(self, var):
+        raise NotImplementedError()
+
+
+    ###
+    # Training
+    ###
+    def train(self, log):
+        self.train_variable(log)
+        self.train_continuous(log)
+
+    def train_variable(self, log):
+        vals = log[self.attr_name].values
+        self.values = np.sort(vals)
+
+    def train_continuous(self, log):
+        parents = [p.attr_name for p in self.continuous_parents]
+        vals = log[parents + [self.attr_name]].values
+
+        self.kernel = KernelDensity(kernel='gaussian', bandwidth=0.2, rtol=1E-2).fit(vals)
+
+
+    ###
+    # Testing
+    ###
+    def test(self, row):
+        score = self.test_value(row)
+        score *= self.test_continuous(row)
+        return score
+
+    def test_value(self, row):
+        val = getattr(row, self.attr_name)
+        index = 0
+        while index < len(self.values) and self.values[index] <= val:
+            index += 1
+        prob = index / len(self.values)
+        return max(0.1, max(prob, -prob + 1))
+
     def test_continuous(self, row):
         if len(self.continuous_parents) == 0:
             return 1
@@ -319,5 +387,5 @@ class Variable:
             parent_vals[i] = getattr(row, p.attr_name)
             i += 1
         parent_vals[-1] = getattr(row, self.attr_name)
-        parent_vals = parent_vals.reshape(1,-1)
+        parent_vals = parent_vals.reshape(1, -1)
         return np.power(np.e, self.kernel.score_samples(parent_vals)[0])

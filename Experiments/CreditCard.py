@@ -82,10 +82,12 @@ if __name__ == "__main__":
     # Calculate New_value
     for col in train.columns:
         new_vals = uc.calculate_new_values_rate(train[col])
-        edbn.add_variable(col, new_vals, None)
+        edbn.add_discrete_variable(col, new_vals, None)
 
     mappings = uc.calculate_mappings(train, train.columns, 0, 0.99)
     print(mappings)
+    for mapping in mappings:
+        edbn.get_variable(mapping[1]).add_mapping(edbn.get_variable(mapping[0]))
 
     bay_net = bn.BayesianNetwork(train)
     net = bay_net.hill_climbing_pybn(train.columns, metric="AIC", whitelist=[])
@@ -96,7 +98,7 @@ if __name__ == "__main__":
 
     for relation in relations:
     #    if relation not in mappings:
-        edbn.add_parent(relation[0], relation[1])
+        edbn.get_variable(relation[1]).add_parent(edbn.get_variable(relation[0]))
         print(relation[0], "->", relation[1])
 
     edbn.train(train, single=True)

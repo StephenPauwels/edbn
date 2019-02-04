@@ -20,7 +20,7 @@ def calc(results):
         found_vals.append(result[1])
     return true_vals, found_vals
 
-def plot_single_prec_recall_curve(result_file, prec_recall=None, save_file=None):
+def plot_single_prec_recall_curve(result_file, title=None, prec_recall=None, save_file=None):
     precision, recall = calc_prec_recall(read_file(result_file))
     prec_recall_auc = auc(recall, precision)
 
@@ -36,12 +36,16 @@ def plot_single_prec_recall_curve(result_file, prec_recall=None, save_file=None)
     plt.xlabel('Recall')
     plt.ylabel('Precision')
     plt.title('Precision - Recall Curve')
+    if title:
+        plt.title(title + " (Precision - Recall Curve)")
+    else:
+        plt.title('Precision - Recall Curve')
     plt.legend(loc="lower right")
     if save_file:
         plt.savefig(save_file)
     plt.show()
 
-def plot_single_roc_curve(result_file, save_file=None):
+def plot_single_roc_curve(result_file, title=None, save_file=None):
     fpr, tpr = calc_roc(read_file(result_file))
     roc_auc = auc(fpr, tpr)
 
@@ -55,7 +59,10 @@ def plot_single_roc_curve(result_file, save_file=None):
     plt.ylim([0.0, 1])
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
-    plt.title('Receiver operating characteristic')
+    if title:
+        plt.title(title + " (Receiver operating characteristic)")
+    else:
+        plt.title('Receiver operating characteristic')
     plt.legend(loc="lower right")
     if save_file:
         plt.savefig(save_file)
