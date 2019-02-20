@@ -169,8 +169,9 @@ class LogFile:
 
     def calc_duration(self, row, k):
         if row[self.time + "_Prev%i" % (k)] != 0:
-            startTime = parse(self.convert_int2string(self.time, row[self.time + "_Prev%i" % (k)]))
-            endTime = parse(self.convert_int2string(self.time,row[self.time]))
+            startTime = parse(self.convert_int2string(self.time, int(row[self.time + "_Prev%i" % (k)])))
+            endTime = parse(self.convert_int2string(self.time,int(row[self.time])))
+            #print(startTime, endTime, (endTime - startTime), (endTime - startTime).total_seconds())
             return (endTime - startTime).total_seconds()
         else:
             return 0

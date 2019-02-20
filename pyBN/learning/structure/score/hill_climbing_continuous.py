@@ -110,7 +110,7 @@ def calc_score(data, cols):
     grid = GridSearchCV(KernelDensity(), params, cv=5)
     grid.fit(vals)
 
-    kdens = KernelDensity(kernel='gaussian', bandwidth=0.1, rtol=1E-6).fit(vals) #grid.best_estimator_.bandwidth
+    kdens = KernelDensity(kernel='gaussian', bandwidth=grid.best_estimator_.bandwidth, rtol=1E-6).fit(vals) #grid.best_estimator_.bandwidth
     return kdens.score(vals)
 
 class hill_climbing:
@@ -491,7 +491,7 @@ def learn_continuous_net(train):
 def score_continuous_net(model, test, label_attr, output_file=None, title=None):
     import Utils.PlotResults as plot
 
-    ranking = model.test(test)
+    ranking = model.test_parallel(test)
     ranking.sort(key=lambda l: l[0].get_total_score())
     scores = []
     y = []
@@ -517,7 +517,7 @@ if __name__ == "__main__":
     import Utils.PlotResults as plot
     import pickle
 
-    log = pd.read_csv("../../../../Data/creditcard.csv", nrows=10000, dtype='float64').drop(columns=["Time"])
+    log = pd.read_csv("../../../../Data/creditcard.csv", nrows=100000, dtype='float64').drop(columns=["Time"])
 
     train = log[:1000]
     test = log[1000:]
@@ -530,12 +530,14 @@ if __name__ == "__main__":
     train = train.drop(columns=["Class"]) # Drop Class label
     train = train.drop(columns=["Amount"])
 
-    model = learn_continuous_net(train)
+    #model = learn_continuous_net(train)
 
-    with open("model_creditcard", "wb") as fout:
-        pickle.dump(model, fout)
+    #with open("model_creditcard", "wb") as fout:
+    #    pickle.dump(model, fout)
 
-    with open("model_creditcard", "rb") as fin:
-        model = pickle.load(fin)
+    with open("model_creditcard", "rb") as finn:
+        model = pickle.load(finn)
+
+    model.train(train, single=True)
 
     score_continuous_net(model, test, "Class")

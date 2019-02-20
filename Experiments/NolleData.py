@@ -11,8 +11,8 @@ SMALL = ["../Data/Nolle_Data/small-0.3-1", "../Data/Nolle_Data/small-0.3-2", "..
 MEDIUM = ["../Data/Nolle_Data/medium-0.3-1", "../Data/Nolle_Data/medium-0.3-2", "../Data/Nolle_Data/medium-0.3-3", "../Data/Nolle_Data/medium-0.3-4"]
 LARGE = ["../Data/Nolle_Data/large-0.3-1", "../Data/Nolle_Data/large-0.3-2", "../Data/Nolle_Data/large-0.3-3", "../Data/Nolle_Data/large-0.3-4"]
 HUGE = ["../Data/Nolle_Data/huge-0.3-1", "../Data/Nolle_Data/huge-0.3-2", "../Data/Nolle_Data/huge-0.3-3", "../Data/Nolle_Data/huge-0.3-4"]
-P2P = ["../Data/Nolle_Data/wide-0.3-1", "../Data/Nolle_Data/wide-0.3-2", "../Data/Nolle_Data/wide-0.3-3", "../Data/Nolle_Data/wide-0.3-4"]
-WIDE = ["../Data/Nolle_Data/p2p-0.3-1", "../Data/Nolle_Data/p2p-0.3-2", "../Data/Nolle_Data/p2p-0.3-3", "../Data/Nolle_Data/p2p-0.3-4"]
+WIDE = ["../Data/Nolle_Data/wide-0.3-1", "../Data/Nolle_Data/wide-0.3-2", "../Data/Nolle_Data/wide-0.3-3", "../Data/Nolle_Data/wide-0.3-4"]
+P2P = ["../Data/Nolle_Data/p2p-0.3-1", "../Data/Nolle_Data/p2p-0.3-2", "../Data/Nolle_Data/p2p-0.3-3", "../Data/Nolle_Data/p2p-0.3-4"]
 
 def preprocess():
     for log in get_event_logs():
@@ -55,7 +55,7 @@ def test(files):
 def test_file(file):
     split_dataset(file + "_data.csv", file + "_labels.csv", file + "_train.csv", file + "_test.csv", 10000)
     train_data = LogFile(file + "_train.csv", ",", 0, 1000000, None, "case_id", "event")
-    train_data.remove_attributes(["event_position"])
+    #train_data.remove_attributes(["event_position"])
     model = edbn.train(train_data)
 
     test_data = LogFile(file + "_test.csv", ",", 0, 1000000, None, "case_id", "event", values=train_data.values)

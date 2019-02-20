@@ -22,7 +22,8 @@ def preprocess(data, case_attr, activity_attr, time_attr):
     test_traces = []
 
     def convert_2_weekdays(row):
-        row[time_attr] = datetime.datetime.strptime(row[time_attr], "%Y-%m-%d %H:%M:%S").weekday()
+        row["Weekday"] = datetime.datetime.strptime(row[time_attr], "%m/%d/%y %H:%M:%S").weekday()
+        row[time_attr] = datetime.datetime.strptime(row[time_attr], "%m/%d/%y %H:%M:%S")
         return row
 
     data = data.apply(func=convert_2_weekdays, axis=1)
@@ -39,7 +40,7 @@ def preprocess(data, case_attr, activity_attr, time_attr):
                 trace_data["Anomaly"] = "0"
                 test_traces.append(trace_data)
             else:
-                anom_trace, types = introduce_anomaly(trace_data, [case_attr, time_attr], ["Resource", "Activity", time_attr], single=False)
+                anom_trace, types = introduce_anomaly(trace_data, [case_attr, time_attr], ["Resource", "Activity", "Weekday"], single=False, time_attr=time_attr)
                 anom_trace["Anomaly"] = "1"
                 anom_trace["anom_types"] = str(types)
                 test_traces.append(anom_trace)
@@ -47,7 +48,7 @@ def preprocess(data, case_attr, activity_attr, time_attr):
     return pd.concat(training_traces, sort=False), pd.concat(test_traces, sort=False)
 
 
-def introduce_anomaly(trace, ignore_attrs = None, anom_attributes = None, single = False):
+def introduce_anomaly(trace, ignore_attrs = None, anom_attributes = None, single = False, time_attr = None):
     """
     Add anomaly to the input trace
 
@@ -69,20 +70,41 @@ def introduce_anomaly(trace, ignore_attrs = None, anom_attributes = None, single
         return trace
 
 
+    def duration_anomaly(trace, time_attr):
+        if len(trace) < 4:
+            return trace
+        start_anom = random.randint(2, len(trace) - 1)
+
+        delta = datetime.timedelta(1 + abs(random.gauss(4,2)))
+
+        for i in range(start_anom, len(trace)):
+            trace.loc[trace.index[i], time_attr] = trace.loc[trace.index[i], time_attr] + delta
+
+        return trace
+
     def generate_Anomaly(trace, num_diff_anoms, from_nums, to_nums):
         anoms = set()
         anomaly_types = []
         for i in range(num_diff_anoms):
-            anomaly = random.randint(0,len(anom_attributes))
+
+            anomaly = len(anom_attributes) + 4 #random.randint(0,len(anom_attributes))
             while anomaly in anoms: # Ensure each type of anomaly is only choosen once
-                anomaly = random.randint(0, len(anom_attributes))
-            for j in range(random.randint(from_nums, to_nums)):
-                if anomaly == len(anom_attributes):
-                    trace = alter_activity_order(trace)
-                    anomaly_types.append("alter_order")
-                else:
-                    trace = new_value(trace, anom_attributes[anomaly])
-                    anomaly_types.append("new_%s" % (anom_attributes[anomaly]))
+                anomaly = len(anom_attributes) + 4 #random.randint(0, len(anom_attributes))
+
+            if anomaly > len(anom_attributes):
+                for j in range(random.randint(from_nums, to_nums)):
+                    trace = duration_anomaly(trace, time_attr)
+                    anomaly_types.append("alter_duration")
+                break
+            else:
+                for j in range(random.randint(from_nums, to_nums)):
+                    if anomaly == len(anom_attributes):
+                        trace = alter_activity_order(trace)
+                        anomaly_types.append("alter_order")
+                    else:
+                        trace = new_value(trace, anom_attributes[anomaly])
+                        anomaly_types.append("new_%s" % (anom_attributes[anomaly]))
+
         return (trace, anomaly_types)
 
     if anom_attributes is None:
@@ -113,7 +135,9 @@ def preProcessData(file, train_file, test_file, case_attr, activity_attr, time_a
         new_cols.append(col.replace(":", "_").replace(" ", "_").replace("(", "").replace(")", ""))
     data.columns = new_cols
     training_data, testing_data = preprocess(data, case_attr, activity_attr, time_attr)
+    training_data = training_data.sort_values(by=[time_attr])
     training_data.to_csv(train_file, index=False)
+    testing_data = testing_data.sort_values(by=[time_attr])
     testing_data.to_csv(test_file, index=False)
 
 def preProcessData_total(files, train_file, test_file, case_attr, activity_attr, time_attr):
@@ -137,11 +161,12 @@ if __name__ == "__main__":
     test_files = []
     for i in range(1,6):
         files.append("../Data/BPIC15_%i_sorted.csv" % (i))
-        train_files.append("../Data/bpic15_%i_train.csv" % (i))
-        test_files.append("../Data/bpic15_%i_test.csv" % (i))
+        train_files.append("../Data/bpic15_%i_train_only_duration.csv" % (i))
+        test_files.append("../Data/bpic15_%i_test_only_duration.csv" % (i))
 
     for i in range(len(files)):
         print("PREPROCESS: Creating", files[i])
         preProcessData(files[i], train_files[i], test_files[i], "Case_ID", "Activity", "Complete_Timestamp")
 
-    preProcessData_total(files, "../Data/bpic15_total_train.csv", "../Data/bpic15_total_test.csv", "Case_ID", "Activity", "Complete_Timestamp")
+    print("PREPROCESS: Creating Total")
+    #preProcessData_total(files, "../Data/bpic15_total_train_only_duration.csv", "../Data/bpic15_total_test_only_duration.csv", "Case_ID", "Activity", "Complete_Timestamp")

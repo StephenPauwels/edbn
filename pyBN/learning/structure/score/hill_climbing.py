@@ -75,11 +75,12 @@ def model_score(data, bn):
         parent_value_dict = {}
         parent_configs = {}
         # Using bincount is faster than numpy.unique
-        bn.F[node]["ri"] = len([x for x in np.bincount(data.values[:, data.columns.get_loc(node)]) if x > 0])
+        values = data.values[:, data.columns.get_loc(node)].astype(int)
+        bn.F[node]["ri"] = len([x for x in np.bincount(values) if x > 0])
 
         if len(parents) == 0:
             # Get the frequency for all occurring values
-            freqs = np.bincount(data.values[:, data.columns.get_loc(node)])
+            freqs = np.bincount(values)
             for count in freqs:
                 if count != 0:
                     total_score += count * math.log(count / num_rows)
@@ -96,7 +97,7 @@ def model_score(data, bn):
 
             for parent_config in parent_configs:
                 # Get the occurring values of this node for the current parent configuration
-                filtered_data = data.values[parent_configs[parent_config], data.columns.get_loc(node)]
+                filtered_data = data.values[parent_configs[parent_config], data.columns.get_loc(node)].astype(int)
                 # Get the frequencies of the occurring values
                 freqs = np.bincount(filtered_data)
                 for freq in freqs:
@@ -115,7 +116,6 @@ class hill_climbing:
         self.nrow = len(self.data)
         self.ncol = len(self.nodes)
         self.names = range(self.ncol)
-
 
 
     def hc(self, metric='AIC', max_iter=100, debug=False, restriction=None, whitelist=None):

@@ -70,8 +70,8 @@ if __name__ == "__main__":
 
     print(log["Class"].value_counts())
 
-    train = log[:10000]
-    test = log[10000:]
+    train = log[:1000]
+    test = log[1000:]
 
     train = train[train.Class == 1] # Only keep non-anomalies
     train = train.drop(columns=["Class"]) # Drop Class label

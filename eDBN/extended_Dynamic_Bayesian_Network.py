@@ -33,12 +33,14 @@ class extendedDynamicBayesianNetwork():
 
 
     def add_discrete_variable(self, name, new_values, empty_val):
+        print("ADD Discrete:", name)
         self.variables[name] = Discrete_Variable(name, new_values, self.num_attrs, empty_val)
         m = re.search(r'Prev\d+$', name)
         if m is None:
             self.current_variables.append(name)
 
     def add_continuous_variable(self, name):
+        print("ADD Continuous:", name)
         self.variables[name] = Continuous_Variable(name, self.num_attrs)
         m = re.search(r'Prev\d+$', name)
         if m is None:
@@ -131,6 +133,19 @@ class extendedDynamicBayesianNetwork():
         for r in Parallel(n_jobs=njobs)(delayed(self.test)(d) for d in chunks):
             results.extend(r)
         results.sort(key=lambda l: l[0].get_total_score())
+        return results
+
+    def test_parallel(self, data):
+        njobs = mp.cpu_count()
+        size = data.shape[1]
+        if size < njobs:
+            njobs = 1
+
+        results = []
+        chunks = np.array_split(data, njobs)
+
+        for r in Parallel(n_jobs=njobs)(delayed(self.test)(d) for d in chunks):
+            results.extend(r)
         return results
 
     def test(self, data):
@@ -252,7 +267,6 @@ class Discrete_Variable(Variable):
                 self.fdt[i][p] = tmp_mapping[p][1]
 
             self.fdt_violation.append(violations / log_size)
-            print(self.functional_parents[i].attr_name, violations / log_size)
 
     def train_cpt(self, log):
         if len(self.conditional_parents) == 0:
@@ -275,12 +289,12 @@ class Discrete_Variable(Variable):
     # Testing
     ###
     def test(self, row):
-        score = 1
+        total_score = 1
         for score in self.test_fdt(row).values():
-            score *= score
-        score *= self.test_cpt(row)
-        score *= self.test_value(row)
-        return score
+            total_score *= score
+        total_score *= self.test_cpt(row)
+        total_score *= self.test_value(row)
+        return total_score
 
     def test_fdt(self, row):
         scores = {}
@@ -328,8 +342,17 @@ class Continuous_Variable(Variable):
         self.new_relations = 0
         self.num_attrs = num_attrs
 
-        self.values = None
+        self.total_values = None
+        self.values = {}
+        self.kernels = {}
+        self.window_size = 0
+        self.mean = 0
+        self.std = 0
+        self.hists = {}
+        self.quantiles = None
+        self.iqr = 0
 
+        self.discrete_parents = []
         self.continuous_parents = []
         self.kernel = None
 
@@ -337,7 +360,10 @@ class Continuous_Variable(Variable):
         return self.attr_name
 
     def add_parent(self, var):
-        self.continuous_parents.append(var)
+        if isinstance(var, Continuous_Variable):
+            self.continuous_parents.append(var)
+        else:
+            self.discrete_parents.append(var)
 
     def add_mapping(self, var):
         raise NotImplementedError()
@@ -351,14 +377,101 @@ class Continuous_Variable(Variable):
         self.train_continuous(log)
 
     def train_variable(self, log):
+        print("TRAINING CONT VALUE")
+        # TODO: split per values of activities, if new activity -> use total set
+        # set all values, independent of parents (used when new parent configuration has been found)
         vals = log[self.attr_name].values
-        self.values = np.sort(vals)
+        self.total_values = np.sort(vals)
+
+        self.mean = np.mean(vals)
+        self.std = np.std(vals)
+        self.quantiles = (np.percentile(vals,25), np.percentile(vals,75))
+        self.iqr = (self.quantiles[1] - self.quantiles[0])
+        #self.iqr = 1.06 * np.std(vals) * np.power(len(vals), -1/5)
+        #self.iqr = 2
+        print("Quantiles:", self.quantiles)
+        print("IQR:", self.iqr)
+
+        #import matplotlib.pyplot as plt
+        #plt.hist(vals)
+        #plt.show()
+
+        # Calculate best bandwith for KDE
+        params = {'bandwidth': np.logspace(-2, 10, 100)}
+        grid = GridSearchCV(KernelDensity(kernel='gaussian', rtol=1E-6), params, cv=2, n_jobs=mp.cpu_count(), verbose=3)
+        grid.fit(log[[self.attr_name]].values)
+
+        bw = grid.best_estimator_.bandwidth
+        #bw = 20000
+
+        print("Bandwidth:", bw)
+
+        self.total_kernel = KernelDensity(kernel='gaussian', bandwidth=bw, rtol=1E-6).fit(log[[self.attr_name]].values)
+
+        # set values per parent configuration
+        self.iqrs = {}
+        if len(self.discrete_parents) > 0:
+            grouped = log.groupby([p.attr_name for p in self.discrete_parents])
+            for group in grouped:
+                if isinstance(group[0], int):
+                    parent = str(group[0])
+                else:
+                    parent = "-".join([str(i) for i in group[0]])
+                vals = group[1][self.attr_name].values
+                self.values[parent] = np.sort(vals)
+                self.hists[parent] = np.histogram(vals, bins=10)
+                self.iqrs[parent] = np.percentile(vals,75) - np.percentile(vals,25)
+
+                # Calculate best bandwith for KDE
+                # params = {'bandwidth': np.logspace(-2, 1, 20)}
+                # grid = GridSearchCV(KernelDensity(), params, cv=5)
+                # grid.fit(group[1][[self.attr_name]].values)
+
+                self.kernels[parent] = KernelDensity(kernel='gaussian', bandwidth=bw, rtol=1E-6).fit(group[1][[self.attr_name]].values)
+
+
+        # Calculate best bandwith for KDE
+        # params = {'bandwidth': np.logspace(-2, 1, 20)}
+        # grid = GridSearchCV(KernelDensity(), params, cv=5)
+        # grid.fit(log[[self.attr_name]].values)
+
+        #print("Bandwidth:", grid.best_estimator_.bandwidth)
+        #vals = log[self.attr_name].values
+        #kernel = KernelDensity(kernel='gaussian', bandwidth=10).fit(log[[self.attr_name]].values)
+        #x = np.linspace(min(vals) - 100, max(vals) + 100, 1000)
+        #y = kernel.score_samples(x[:, np.newaxis])
+        #import matplotlib.pyplot as plt
+        #plt.title(self.attr_name)
+        #plt.plot(x, y)
+        #plt.show()
+
+        self.hist, self.edges = np.histogram(self.total_values, bins=1000)
+
+        def search_smallest_window(data, percentage):
+            num_vals = int(len(data) * percentage)
+            min_window = np.max(data)
+            for i in range(len(data) - num_vals):
+                window_size = data[i + num_vals] - data[i]
+                if window_size < min_window:
+                    min_window = window_size
+            return min_window
+
+        self.window_size = search_smallest_window(self.total_values, 0.75)
+        print("WINDOW:", self.window_size)
+
 
     def train_continuous(self, log):
-        parents = [p.attr_name for p in self.continuous_parents]
-        vals = log[parents + [self.attr_name]].values
+        if len(self.continuous_parents) > 0:
+            parents = [p.attr_name for p in self.continuous_parents]
+            vals = log[parents + [self.attr_name]].values
 
-        self.kernel = KernelDensity(kernel='gaussian', bandwidth=0.2, rtol=1E-2).fit(vals)
+            # Calculate best bandwith for KDE
+            params = {'bandwidth': np.logspace(-2, 1, 20)}
+            grid = GridSearchCV(KernelDensity(), params, cv=2, n_jobs=mp.cpu_count())
+            grid.fit(vals)
+
+
+            self.kernel = KernelDensity(kernel='gaussian', bandwidth=grid.best_estimator_.bandwidth, rtol=1E-6).fit(vals) #grid.best_estimator_.bandwidth
 
 
     ###
@@ -371,11 +484,93 @@ class Continuous_Variable(Variable):
 
     def test_value(self, row):
         val = getattr(row, self.attr_name)
+
+        par = []
+        for p in self.discrete_parents:
+            par.append(str(getattr(row, p.attr_name)))
+        par_val = "-".join(par)
+
+        #2 Use Kernel Density scores for probability
+        if par_val in self.kernels:
+            return np.power(np.e, self.kernels[par_val].score_samples([[val]]))
+        else:
+            return np.power(np.e, self.total_kernel.score_samples([[val]]))
+
+        #return np.power(np.e, self.total_kernel.score_samples([[val]])[0])
+
+
+        """#1 Use CDF to estimate probability
+        if par_val in self.values:
+            val_list = self.values[par_val]
+        else:
+            val_list = self.total_values
+
         index = 0
-        while index < len(self.values) and self.values[index] <= val:
+        while (index < len(val_list)/2 and val_list[index] <= val) or (index < len(val_list) and val_list[index] < val):
             index += 1
-        prob = index / len(self.values)
-        return max(0.1, max(prob, -prob + 1))
+        prob = index / len(val_list)
+        if prob > 0.5:
+            return (1 - prob) * 2 
+        else:
+            return prob * 2
+        """
+
+        """#3 Use window around data point and compare with total number of items
+        window_size = self.window_size
+        return len(self.total_values[(self.total_values >= (val - window_size)) & (self.total_values < (val + window_size))]) / len(self.total_values)
+        """
+
+        """#3a Use window around data point, restricted on activity
+        if par_val in self.values:
+            window_size = self.iqrs[par_val]
+            return len(self.values[par_val][(self.values[par_val] >= (val - window_size)) & (
+                        self.values[par_val] < (val + window_size))]) / len(self.values[par_val])
+        else:
+            window_size = self.iqr
+            return len(self.total_values[(self.total_values >= (val - window_size)) & (
+                        self.total_values < (val + window_size))]) / len(self.total_values)
+        """
+
+        """#4 Use Z-score
+        z = np.abs((val - self.mean) / self.std)
+        if z < 1:
+            return 1
+        else:
+            return 0.5
+        """
+
+        """#5 Bin all values
+        bin = 0
+        for edge in self.edges[1:]:
+            bin += 1
+            if bin >= len(self.hist) or val < edge:
+                break
+        print(self.hist[bin - 1] / len(self.total_values))
+        return self.hist[bin - 1] / len(self.total_values)
+        """
+
+        """#5a Bin all values per activity
+        if par_val in self.hists:
+            hist = self.hists[par_val][0]
+            edge = self.hists[par_val][1]
+            values = self.values[par_val]
+        else:
+            hist = self.hist
+            edge = self.edges
+            values = self.total_values
+        bin = 0
+        for e in edge:
+            bin += 1
+            if bin >= len(hist) or val < e:
+                break
+        return hist[bin - 1] / len(values)
+        """
+
+        """#6 Use Quartiles
+        if val < self.outlier_vals[0] or val > self.outlier_vals[1]:
+            return 0.1
+        return 0.9
+        """
 
     def test_continuous(self, row):
         if len(self.continuous_parents) == 0:

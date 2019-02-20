@@ -23,13 +23,13 @@ def generate_model(data, remove_attrs = []):
 
     # Get all normal attributes and remove the trace attribute
     attributes = list(data.attributes())
+
     attributes.remove(data.trace)
     nodes.remove(data.trace)
 
     if data.time in attributes:
         attributes.remove(data.time)
         nodes.remove(data.time)
-
 
     # Create the k-context of the data
     print("GENERATE: build k-context")
@@ -44,6 +44,17 @@ def generate_model(data, remove_attrs = []):
         for i in range(data.k):
             nodes.append(attribute + "_Prev%i" % (i))
             cbn.add_discrete_variable(attribute + "_Prev%i" % (i), new_vals, empty_val)
+
+    # Add duration and link to Activity
+    for i in range(data.k):
+        if data.contextdata is not None and "duration_%i" % (i) in data.contextdata.columns:
+            cbn.add_continuous_variable("duration_%i" % (i))
+            cbn.get_variable("duration_%i" % (i)).add_parent(cbn.get_variable(data.activity + "_Prev%i" % (i)))
+            prev = ""
+            if i + 1 < data.k:
+                prev = "_Prev%i" % (i+1)
+            cbn.get_variable("duration_%i" % (i)).add_parent(cbn.get_variable(data.activity + prev))
+
 
     print("GENERATE: calculate mappings")
 

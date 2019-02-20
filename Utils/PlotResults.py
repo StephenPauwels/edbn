@@ -1,5 +1,16 @@
 import matplotlib.pyplot as plt
 from sklearn.metrics import auc
+import numpy as np
+
+tableau20 = [(31, 119, 180), (174, 199, 232), (255, 127, 14), (255, 187, 120),
+             (44, 160, 44), (152, 223, 138), (214, 39, 40), (255, 152, 150),
+             (148, 103, 189), (197, 176, 213), (140, 86, 75), (196, 156, 148),
+             (227, 119, 194), (247, 182, 210), (127, 127, 127), (199, 199, 199),
+             (188, 189, 34), (219, 219, 141), (23, 190, 207), (158, 218, 229)]
+
+for i in range(len(tableau20)):
+    r, g, b = tableau20[i]
+    tableau20[i] = (r / 255., g / 255., b / 255.)
 
 def read_file(file):
     result = []
@@ -25,9 +36,27 @@ def plot_single_prec_recall_curve(result_file, title=None, prec_recall=None, sav
     prec_recall_auc = auc(recall, precision)
 
     plt.figure()
-    lw = 2
+
+    ax = plt.subplot(111)
+    ax.spines["top"].set_visible(False)
+    ax.spines["bottom"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.spines["left"].set_visible(False)
+
+    ax.get_xaxis().tick_bottom()
+    ax.get_yaxis().tick_left()
+
+    plt.yticks(np.linspace(0,1,11), ["%0.1f" % x for x in np.linspace(0,1,11)], fontsize=14)
+    plt.xticks(fontsize=14)
+
+    for y in np.linspace(0,1,11):
+        plt.plot(np.linspace(0,1,11), [y] * len(np.linspace(0,1,11)), "--", lw=0.5, color="black", alpha=0.3)
+
+    plt.tick_params(axis="both", which="both", bottom="off", top="off",
+                    labelbottom="on", left="off", right="off", labelleft="on")
+
     plt.plot(recall, precision, color='darkorange',
-             lw=lw, label='Precision-Recall curve (area = %0.2f)' % prec_recall_auc)
+             lw=2, label='Precision-Recall curve (area = %0.2f)' % prec_recall_auc)
     print("Prec-Recall auc:", prec_recall_auc)
     if prec_recall:
         plt.plot([prec_recall[1]], [prec_recall[0]], marker='o', markersize=3, color="red")
@@ -50,11 +79,29 @@ def plot_single_roc_curve(result_file, title=None, save_file=None):
     roc_auc = auc(fpr, tpr)
 
     plt.figure()
-    lw = 2
+
+    ax = plt.subplot(111)
+    ax.spines["top"].set_visible(False)
+    ax.spines["bottom"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.spines["left"].set_visible(False)
+
+    ax.get_xaxis().tick_bottom()
+    ax.get_yaxis().tick_left()
+
+    plt.yticks(np.linspace(0,1,11), ["%0.1f" % x for x in np.linspace(0,1,11)], fontsize=14)
+    plt.xticks(fontsize=14)
+
+    for y in np.linspace(0,1,11):
+        plt.plot(np.linspace(0,1,11), [y] * len(np.linspace(0,1,11)), "--", lw=0.5, color="black", alpha=0.3)
+
+    plt.tick_params(axis="both", which="both", bottom="off", top="off",
+                    labelbottom="on", left="off", right="off", labelleft="on")
+
     plt.plot(fpr, tpr, color='darkorange',
-             lw=lw, label='ROC curve (area = %0.2f)' % roc_auc)
+             lw=2, label='ROC curve (area = %0.2f)' % roc_auc)
     print("ROC auc:", roc_auc)
-    plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
+    plt.plot([0, 1], [0, 1], color='navy', lw=1, linestyle='--')
     plt.xlim([0.0, 1])
     plt.ylim([0.0, 1])
     plt.xlabel('False Positive Rate')
@@ -72,7 +119,7 @@ def get_roc_auc(result_file):
     fpr, tpr = calc_roc(read_file(result_file))
     return auc(fpr, tpr)
 
-def plot_compare_prec_recall_curve(result_files, labels, save_file=None):
+def plot_compare_prec_recall_curve(result_files, labels, title=None, save_file=None):
     prec_recall_vals = []
     auc_vals = []
     for file in result_files:
@@ -80,10 +127,28 @@ def plot_compare_prec_recall_curve(result_files, labels, save_file=None):
         auc_vals.append(auc(prec_recall_vals[-1][1], prec_recall_vals[-1][0]))
 
     plt.figure()
-    lw = 3
+
+    ax = plt.subplot(111)
+    ax.spines["top"].set_visible(False)
+    ax.spines["bottom"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.spines["left"].set_visible(False)
+
+    ax.get_xaxis().tick_bottom()
+    ax.get_yaxis().tick_left()
+
+    plt.yticks(np.linspace(0,1,11), ["%0.1f" % x for x in np.linspace(0,1,11)], fontsize=14)
+    plt.xticks(fontsize=14)
+
+    for y in np.linspace(0,1,11):
+        plt.plot(np.linspace(0,1,11), [y] * len(np.linspace(0,1,11)), "--", lw=0.5, color="black", alpha=0.3)
+
+    plt.tick_params(axis="both", which="both", bottom="off", top="off",
+                    labelbottom="on", left="off", right="off", labelleft="on")
+
     for i in range(len(prec_recall_vals)):
         plt.plot(prec_recall_vals[i][1], prec_recall_vals[i][0],
-             lw=lw, label='%s (area = %0.2f)' % (labels[i], auc_vals[i]))
+             lw=2, label='%s (area = %0.2f)' % (labels[i], auc_vals[i]), color=tableau20[i])
 
     print("Prec_recall auc:", labels, auc_vals)
 
@@ -91,13 +156,16 @@ def plot_compare_prec_recall_curve(result_files, labels, save_file=None):
     plt.ylim([0.0, 1.0])
     plt.xlabel('Recall')
     plt.ylabel('Precision')
-    plt.title('Precision - Recall Curve')
+    if title:
+        plt.title(title + " (Precision - Recall Curve)")
+    else:
+        plt.title('Precision - Recall Curve')
     plt.legend(loc="lower right")
     if save_file:
         plt.savefig(save_file)
     plt.show()
 
-def plot_compare_roc_curve(result_files, labels, save_file=None):
+def plot_compare_roc_curve(result_files, labels, title=None, save_file=None):
     roc_vals = []
     auc_vals = []
     for file in result_files:
@@ -105,18 +173,39 @@ def plot_compare_roc_curve(result_files, labels, save_file=None):
         auc_vals.append(auc(roc_vals[-1][0], roc_vals[-1][1]))
 
     plt.figure()
-    lw = 3
+
+    ax = plt.subplot(111)
+    ax.spines["top"].set_visible(False)
+    ax.spines["bottom"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.spines["left"].set_visible(False)
+
+    ax.get_xaxis().tick_bottom()
+    ax.get_yaxis().tick_left()
+
+    plt.yticks(np.linspace(0,1,11), ["%0.1f" % x for x in np.linspace(0,1,11)], fontsize=14)
+    plt.xticks(fontsize=14)
+
+    for y in np.linspace(0,1,11):
+        plt.plot(np.linspace(0,1,11), [y] * len(np.linspace(0,1,11)), "--", lw=0.5, color="black", alpha=0.3)
+
+    plt.tick_params(axis="both", which="both", bottom="off", top="off",
+                    labelbottom="on", left="off", right="off", labelleft="on")
+
     for i in range(len(roc_vals)):
         plt.plot(roc_vals[i][0], roc_vals[i][1],
-             lw=lw, label='%s (area = %0.2f)' % (labels[i], auc_vals[i]))
+             lw=2, label='%s (area = %0.2f)' % (labels[i], auc_vals[i]), color=tableau20[i])
     print("Roc auc:", labels, auc_vals)
 
-    plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
+    plt.plot([0, 1], [0, 1], color='navy', lw=1, linestyle='--')
     plt.xlim([0.0, 1.0])
     plt.ylim([0.0, 1.0])
     plt.xlabel('FPR')
     plt.ylabel('TPR')
-    plt.title('ROC Curve')
+    if title:
+        plt.title(title + " (Receiver operating characteristic)")
+    else:
+        plt.title('ROC Curve')
     plt.legend(loc="lower right")
     if save_file:
         plt.savefig(save_file)
