@@ -1,36 +1,40 @@
 import eDBN.GenerateModel as gm
 import matplotlib.pyplot as plt
 
+from Result import Trace_result
+
 def train(data):
     cbn = gm.generate_model(data)
     cbn.train(data)
     return cbn
 
 
-def test(test_data, output_file, model, label, normal_val):
+def test(test_data, output_file, model, label, normal_val, train_data):
+    """
+    training_scores = model.test_data(train_data)
+    attribute_scores = {}
+    attrs = training_scores[0].attributes
+    for attr in attrs:
+        attribute_scores[attr] = []
+    for score in training_scores:
+        attr_scores = score.get_attribute_scores()
+        for attr in attrs:
+            attribute_scores[attr].append(attr_scores[attr])
+
+    for attr in attribute_scores:
+        print(attribute_scores[attr])
+    """
+
     anoms = model.test_data(test_data)
     accum_scores = {}
-    accum_length = {}
     anomalies = set()
     seq_anom_type = {}
     normal_val = test_data.convert_string2int(label, normal_val)
-    for i in range(len(anoms)):
-        seqID = getattr(anoms[i][1], model.trace_attr)
+    labels = test_data.get_labels(label)
 
-        #seq_anom_type[seqID] = test_data.convert_int2string("anom_types", int(getattr(anoms[i][1], "anom_types")))
-        if getattr(anoms[i][1], label) != normal_val:
-            anomalies.add(seqID)
-
-        if seqID not in accum_scores:
-            accum_scores[seqID] = 0
-            accum_length[seqID] = 0
-
-        accum_scores[seqID] += anoms[i][0].get_total_score()
-        accum_length[seqID] += 1
     scores = []
-
-    for seqs in accum_scores:
-        scores.append((seqs, accum_scores[seqs] / accum_length[seqs], seqs in anomalies))#, seq_anom_type[seqs]))
+    for anom in anoms:
+        scores.append((anom.id, anom.get_total_score(), labels[anom.id] != normal_val, anom.get_attribute_scores()))
     scores.sort(key=lambda l:l[1])
 
     y = []

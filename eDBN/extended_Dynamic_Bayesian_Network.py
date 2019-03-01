@@ -5,6 +5,7 @@ import numpy as np
 from joblib import Parallel, delayed
 from sklearn.neighbors.kde import KernelDensity
 from sklearn.model_selection import GridSearchCV
+from sklearn.base import BaseEstimator
 
 import Result
 
@@ -122,6 +123,12 @@ class extendedDynamicBayesianNetwork():
         data.create_k_context()
         log = data.contextdata
 
+        with mp.Pool(mp.cpu_count()) as p:
+            result = p.map(self.test_trace, log.groupby([self.trace_attr]))
+        return result
+
+
+        """
         njobs = mp.cpu_count()
         size = len(log)
         if size < njobs:
@@ -134,6 +141,7 @@ class extendedDynamicBayesianNetwork():
             results.extend(r)
         results.sort(key=lambda l: l[0].get_total_score())
         return results
+        """
 
     def test_parallel(self, data):
         njobs = mp.cpu_count()
@@ -147,6 +155,12 @@ class extendedDynamicBayesianNetwork():
         for r in Parallel(n_jobs=njobs)(delayed(self.test)(d) for d in chunks):
             results.extend(r)
         return results
+
+    def test_trace(self, trace):
+        result = Result.Trace_result(trace[0])
+        for row in trace[1].itertuples():
+            result.add_event(self.test_row(row))
+        return result
 
     def test(self, data):
         """
@@ -360,6 +374,7 @@ class Continuous_Variable(Variable):
         return self.attr_name
 
     def add_parent(self, var):
+        print("ADDING PARENT:", var)
         if isinstance(var, Continuous_Variable):
             self.continuous_parents.append(var)
         else:
@@ -378,87 +393,67 @@ class Continuous_Variable(Variable):
 
     def train_variable(self, log):
         print("TRAINING CONT VALUE")
-        # TODO: split per values of activities, if new activity -> use total set
-        # set all values, independent of parents (used when new parent configuration has been found)
+
         vals = log[self.attr_name].values
         self.total_values = np.sort(vals)
 
-        self.mean = np.mean(vals)
-        self.std = np.std(vals)
-        self.quantiles = (np.percentile(vals,25), np.percentile(vals,75))
-        self.iqr = (self.quantiles[1] - self.quantiles[0])
-        #self.iqr = 1.06 * np.std(vals) * np.power(len(vals), -1/5)
-        #self.iqr = 2
-        print("Quantiles:", self.quantiles)
-        print("IQR:", self.iqr)
-
-        #import matplotlib.pyplot as plt
-        #plt.hist(vals)
-        #plt.show()
+        noise = 1 / (0.0001 + self.total_values[-1] - self.total_values[0])
+        print("Noise:",  noise)
 
         # Calculate best bandwith for KDE
-        params = {'bandwidth': np.logspace(-2, 10, 100)}
-        grid = GridSearchCV(KernelDensity(kernel='gaussian', rtol=1E-6), params, cv=2, n_jobs=mp.cpu_count(), verbose=3)
+        #params = {'bandwidth': np.logspace(-2, 10, 25), 'alpha': np.linspace(0,1,11)}
+
+
+        # Tophat kernel
+        m = []
+        for i in range(len(self.total_values) - 1):
+            m.append(self.total_values[i+1] - self.total_values[i])
+        bw = max(0.0001, np.mean(m))
+        
+        params = {'alpha': np.linspace(0,1,11)}
+        grid = GridSearchCV(tophat_KDE(noise=noise, bandwidth=bw), params, cv=2, n_jobs=mp.cpu_count(), verbose=0)
+        grid.fit(self.total_values)
+
+        #bw = grid.best_estimator_.bandwidth
+
+        a = grid.best_estimator_.alpha
+
+        print("Bandwidth:", bw, "Alpha:", a)
+        self.total_kernel = tophat_KDE(bandwidth=bw, noise=noise, alpha=a).fit(self.total_values)
+        ###
+        """
+
+        ## Gaussian Kernel
+        params = {'bandwidth': np.logspace(-2, 10, 25)}
+        grid = GridSearchCV(KernelDensity(kernel='gaussian', rtol=1E-6), params, cv=2, n_jobs=mp.cpu_count(), verbose=1)
         grid.fit(log[[self.attr_name]].values)
 
-        bw = grid.best_estimator_.bandwidth
-        #bw = 20000
+        #bw = grid.best_estimator_.bandwidth
+        bw = 100000
 
         print("Bandwidth:", bw)
-
         self.total_kernel = KernelDensity(kernel='gaussian', bandwidth=bw, rtol=1E-6).fit(log[[self.attr_name]].values)
-
+        ###
+        """
         # set values per parent configuration
-        self.iqrs = {}
         if len(self.discrete_parents) > 0:
             grouped = log.groupby([p.attr_name for p in self.discrete_parents])
+            print("NUM GROUPS:", len(grouped))
+            i = 0
             for group in grouped:
+                if len(group[1]) < 2:
+                    i += 1
+                    continue
+
                 if isinstance(group[0], int):
                     parent = str(group[0])
                 else:
                     parent = "-".join([str(i) for i in group[0]])
                 vals = group[1][self.attr_name].values
                 self.values[parent] = np.sort(vals)
-                self.hists[parent] = np.histogram(vals, bins=10)
-                self.iqrs[parent] = np.percentile(vals,75) - np.percentile(vals,25)
 
-                # Calculate best bandwith for KDE
-                # params = {'bandwidth': np.logspace(-2, 1, 20)}
-                # grid = GridSearchCV(KernelDensity(), params, cv=5)
-                # grid.fit(group[1][[self.attr_name]].values)
-
-                self.kernels[parent] = KernelDensity(kernel='gaussian', bandwidth=bw, rtol=1E-6).fit(group[1][[self.attr_name]].values)
-
-
-        # Calculate best bandwith for KDE
-        # params = {'bandwidth': np.logspace(-2, 1, 20)}
-        # grid = GridSearchCV(KernelDensity(), params, cv=5)
-        # grid.fit(log[[self.attr_name]].values)
-
-        #print("Bandwidth:", grid.best_estimator_.bandwidth)
-        #vals = log[self.attr_name].values
-        #kernel = KernelDensity(kernel='gaussian', bandwidth=10).fit(log[[self.attr_name]].values)
-        #x = np.linspace(min(vals) - 100, max(vals) + 100, 1000)
-        #y = kernel.score_samples(x[:, np.newaxis])
-        #import matplotlib.pyplot as plt
-        #plt.title(self.attr_name)
-        #plt.plot(x, y)
-        #plt.show()
-
-        self.hist, self.edges = np.histogram(self.total_values, bins=1000)
-
-        def search_smallest_window(data, percentage):
-            num_vals = int(len(data) * percentage)
-            min_window = np.max(data)
-            for i in range(len(data) - num_vals):
-                window_size = data[i + num_vals] - data[i]
-                if window_size < min_window:
-                    min_window = window_size
-            return min_window
-
-        self.window_size = search_smallest_window(self.total_values, 0.75)
-        print("WINDOW:", self.window_size)
-
+                self.kernels[parent] = tophat_KDE(bandwidth=bw, noise=noise, alpha=a).fit(self.values[parent])
+                i += 1
 
     def train_continuous(self, log):
         if len(self.continuous_parents) > 0:
@@ -471,16 +466,16 @@ class Continuous_Variable(Variable):
             grid.fit(vals)
 
 
-            self.kernel = KernelDensity(kernel='gaussian', bandwidth=grid.best_estimator_.bandwidth, rtol=1E-6).fit(vals) #grid.best_estimator_.bandwidth
+            self.kernel = KernelDensity(kernel='gaussian', bandwidth=grid.best_estimator_.bandwidth).fit(vals) #grid.best_estimator_.bandwidth
 
 
     ###
     # Testing
     ###
     def test(self, row):
-        score = self.test_value(row)
-        score *= self.test_continuous(row)
-        return score
+        score1 = self.test_value(row)
+        score2 = self.test_continuous(row)
+        return score1 * score2
 
     def test_value(self, row):
         val = getattr(row, self.attr_name)
@@ -490,87 +485,15 @@ class Continuous_Variable(Variable):
             par.append(str(getattr(row, p.attr_name)))
         par_val = "-".join(par)
 
-        #2 Use Kernel Density scores for probability
+        # Use Kernel Density scores for probability
         if par_val in self.kernels:
-            return np.power(np.e, self.kernels[par_val].score_samples([[val]]))
+            #return np.power(np.e, self.kernels[par_val].score_samples([[val]])[0])
+            return self.kernels[par_val].score_samples([[val]])[0]
         else:
-            return np.power(np.e, self.total_kernel.score_samples([[val]]))
+            #return np.power(np.e, self.total_kernel.score_samples([[val]])[0])
+            return self.total_kernel.score_samples([[val]])[0]
 
-        #return np.power(np.e, self.total_kernel.score_samples([[val]])[0])
 
-
-        """#1 Use CDF to estimate probability
-        if par_val in self.values:
-            val_list = self.values[par_val]
-        else:
-            val_list = self.total_values
-
-        index = 0
-        while (index < len(val_list)/2 and val_list[index] <= val) or (index < len(val_list) and val_list[index] < val):
-            index += 1
-        prob = index / len(val_list)
-        if prob > 0.5:
-            return (1 - prob) * 2 
-        else:
-            return prob * 2
-        """
-
-        """#3 Use window around data point and compare with total number of items
-        window_size = self.window_size
-        return len(self.total_values[(self.total_values >= (val - window_size)) & (self.total_values < (val + window_size))]) / len(self.total_values)
-        """
-
-        """#3a Use window around data point, restricted on activity
-        if par_val in self.values:
-            window_size = self.iqrs[par_val]
-            return len(self.values[par_val][(self.values[par_val] >= (val - window_size)) & (
-                        self.values[par_val] < (val + window_size))]) / len(self.values[par_val])
-        else:
-            window_size = self.iqr
-            return len(self.total_values[(self.total_values >= (val - window_size)) & (
-                        self.total_values < (val + window_size))]) / len(self.total_values)
-        """
-
-        """#4 Use Z-score
-        z = np.abs((val - self.mean) / self.std)
-        if z < 1:
-            return 1
-        else:
-            return 0.5
-        """
-
-        """#5 Bin all values
-        bin = 0
-        for edge in self.edges[1:]:
-            bin += 1
-            if bin >= len(self.hist) or val < edge:
-                break
-        print(self.hist[bin - 1] / len(self.total_values))
-        return self.hist[bin - 1] / len(self.total_values)
-        """
-
-        """#5a Bin all values per activity
-        if par_val in self.hists:
-            hist = self.hists[par_val][0]
-            edge = self.hists[par_val][1]
-            values = self.values[par_val]
-        else:
-            hist = self.hist
-            edge = self.edges
-            values = self.total_values
-        bin = 0
-        for e in edge:
-            bin += 1
-            if bin >= len(hist) or val < e:
-                break
-        return hist[bin - 1] / len(values)
-        """
-
-        """#6 Use Quartiles
-        if val < self.outlier_vals[0] or val > self.outlier_vals[1]:
-            return 0.1
-        return 0.9
-        """
 
     def test_continuous(self, row):
         if len(self.continuous_parents) == 0:
@@ -584,3 +507,28 @@ class Continuous_Variable(Variable):
         parent_vals[-1] = getattr(row, self.attr_name)
         parent_vals = parent_vals.reshape(1, -1)
         return np.power(np.e, self.kernel.score_samples(parent_vals)[0])
+
+
+class tophat_KDE(BaseEstimator):
+
+    def __init__(self, bandwidth=1, noise=0, alpha=0):
+        self.bandwidth = bandwidth
+        self.noise = noise
+        self.alpha = alpha
+
+    def fit(self, X):
+        self.values = sorted(X)
+        self.distr = (1-self.alpha) / (self.bandwidth * 2 * len(self.values))
+        return self
+
+    def score(self, X):
+        return np.sum(np.log(self.score_samples(X)))
+
+    def score_samples(self, X):
+        X = np.asarray(X)
+        begin_indexes = np.searchsorted(self.values, X - self.bandwidth, side='left')
+        end_indexes = np.searchsorted(self.values, X + self.bandwidth, side='right')
+        score = self.alpha * self.noise + (end_indexes - begin_indexes) * self.distr
+        if len(score) == 1:
+            score = score[0]
+        return score

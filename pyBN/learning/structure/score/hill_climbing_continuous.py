@@ -30,6 +30,7 @@ import math
 from multiprocessing import Manager
 from multiprocessing import Process
 from multiprocessing import Queue
+from multiprocessing import cpu_count
 
 # from scipy.optimize import *
 import numpy as np
@@ -106,8 +107,8 @@ def calc_score(data, cols):
     vals = data[list(cols)].values
 
     # Calculate best bandwith for KDE
-    params = {'bandwidth': np.logspace(-2, 1, 20)}
-    grid = GridSearchCV(KernelDensity(), params, cv=5)
+    params = {'bandwidth': np.logspace(-2, 5, 20)}
+    grid = GridSearchCV(KernelDensity(kernel='gaussian', rtol=1E-6), params, cv=2)
     grid.fit(vals)
 
     kdens = KernelDensity(kernel='gaussian', bandwidth=grid.best_estimator_.bandwidth, rtol=1E-6).fit(vals) #grid.best_estimator_.bandwidth
@@ -540,4 +541,4 @@ if __name__ == "__main__":
 
     model.train(train, single=True)
 
-    score_continuous_net(model, test, "Class")
+    score_continuous_net(model, test, "Class", output_file="../../../../Data/credit_output.csv")

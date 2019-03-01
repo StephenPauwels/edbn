@@ -183,3 +183,8 @@ if __name__ == "__main__":
     #breast_discrete_exec()
     #letter_exec()
     #letter_discrete_exec()
+
+    #files_out = ["../Data/breast_output.csv",  "../Data/credit_output.csv", "../Data/cardio_output.csv","../Data/mammo_output.csv"]
+    #labels = ["breast",  "credit", "cardio", "mammo"]
+    #plot.plot_compare_roc_curve(files_out, labels, title="Continuous Datasets")
+    #plot.plot_compare_prec_recall_curve(files_out, labels, title="Continuous Datasets")

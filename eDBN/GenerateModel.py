@@ -49,6 +49,7 @@ def generate_model(data, remove_attrs = []):
     for i in range(data.k):
         if data.contextdata is not None and "duration_%i" % (i) in data.contextdata.columns:
             cbn.add_continuous_variable("duration_%i" % (i))
+
             cbn.get_variable("duration_%i" % (i)).add_parent(cbn.get_variable(data.activity + "_Prev%i" % (i)))
             prev = ""
             if i + 1 < data.k:

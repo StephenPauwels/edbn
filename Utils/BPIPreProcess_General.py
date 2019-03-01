@@ -9,7 +9,7 @@ from joblib import Parallel, delayed
 
 import Bohmer.LikelihoodGraph as lg
 
-
+activity_configurations = set()
 
 def preprocess(data, case_attr, activity_attr, time_attr):
     """
@@ -22,8 +22,8 @@ def preprocess(data, case_attr, activity_attr, time_attr):
     test_traces = []
 
     def convert_2_weekdays(row):
-        row["Weekday"] = datetime.datetime.strptime(row[time_attr], "%m/%d/%y %H:%M:%S").weekday()
-        row[time_attr] = datetime.datetime.strptime(row[time_attr], "%m/%d/%y %H:%M:%S")
+        row["Weekday"] = datetime.datetime.strptime(row[time_attr], "%Y-%m-%d %H:%M:%S").weekday()
+        row[time_attr] = datetime.datetime.strptime(row[time_attr], "%Y-%m-%d %H:%M:%S")
         return row
 
     data = data.apply(func=convert_2_weekdays, axis=1)
@@ -36,7 +36,11 @@ def preprocess(data, case_attr, activity_attr, time_attr):
             trace_data["Anomaly"] = "0"
             training_traces.append(trace_data)
         else: # Adding to Test Log
-            if random.randint(0,100) > 50: # No anomaly injection with 50% chance
+
+#            for i in range(len(trace_data) - 1):
+#                activity_configurations.add(trace_data.loc[trace_data.index[i], "Activity"] + "-" + trace_data.loc[trace_data.index[i+1], "Activity"])
+
+            if random.randint(1,100) > 50: # No anomaly injection with 50% chance
                 trace_data["Anomaly"] = "0"
                 test_traces.append(trace_data)
             else:
@@ -75,28 +79,26 @@ def introduce_anomaly(trace, ignore_attrs = None, anom_attributes = None, single
             return trace
         start_anom = random.randint(2, len(trace) - 1)
 
-        delta = datetime.timedelta(1 + abs(random.gauss(4,2)))
+        delta = datetime.timedelta(1 + int(abs(random.gauss(10,3))))
 
         for i in range(start_anom, len(trace)):
             trace.loc[trace.index[i], time_attr] = trace.loc[trace.index[i], time_attr] + delta
-
         return trace
 
     def generate_Anomaly(trace, num_diff_anoms, from_nums, to_nums):
         anoms = set()
         anomaly_types = []
-        for i in range(num_diff_anoms):
+        # Temporal anomaly or attribute anomaly?
+        type = random.randint(1, 10)
+        if type <= 3:
+            trace = duration_anomaly(trace, time_attr)
+            anomaly_types.append("alter_duration")
+        else:
+            for i in range(num_diff_anoms):
+                anomaly = random.randint(0,len(anom_attributes))
+                while anomaly in anoms: # Ensure each type of anomaly is only choosen once
+                    anomaly = random.randint(0, len(anom_attributes))
 
-            anomaly = len(anom_attributes) + 4 #random.randint(0,len(anom_attributes))
-            while anomaly in anoms: # Ensure each type of anomaly is only choosen once
-                anomaly = len(anom_attributes) + 4 #random.randint(0, len(anom_attributes))
-
-            if anomaly > len(anom_attributes):
-                for j in range(random.randint(from_nums, to_nums)):
-                    trace = duration_anomaly(trace, time_attr)
-                    anomaly_types.append("alter_duration")
-                break
-            else:
                 for j in range(random.randint(from_nums, to_nums)):
                     if anomaly == len(anom_attributes):
                         trace = alter_activity_order(trace)
@@ -135,9 +137,18 @@ def preProcessData(file, train_file, test_file, case_attr, activity_attr, time_a
         new_cols.append(col.replace(":", "_").replace(" ", "_").replace("(", "").replace(")", ""))
     data.columns = new_cols
     training_data, testing_data = preprocess(data, case_attr, activity_attr, time_attr)
-    training_data = training_data.sort_values(by=[time_attr])
+    #training_data = training_data.sort_values(by=[time_attr], kind="mergesort")
     training_data.to_csv(train_file, index=False)
-    testing_data = testing_data.sort_values(by=[time_attr])
+    #testing_data = testing_data.sort_values(by=[time_attr], kind="mergesort")
+
+#    traces = testing_data.groupby([case_attr])
+#    new_activity_configurations = set()
+#    for trace in traces:
+#        trace_data = trace[1]
+#        for i in range(len(trace_data) - 1):
+#            new_activity_configurations.add(trace_data.loc[trace_data.index[i], "Activity"] + "-" + trace_data.loc[
+#                trace_data.index[i + 1], "Activity"])
+
     testing_data.to_csv(test_file, index=False)
 
 def preProcessData_total(files, train_file, test_file, case_attr, activity_attr, time_attr):
@@ -155,14 +166,29 @@ def preProcessData_total(files, train_file, test_file, case_attr, activity_attr,
     training_data.to_csv(train_file, index=False)
     testing_data.to_csv(test_file, index=False)
 
+def sort_datafile(file, outfile, time_attr):
+    df = pd.read_csv(file, header=0, delimiter=",", dtype="str")
+    df = df.apply(func=convert_dates, axis=1)
+    df = df.sort_values(by=[time_attr, "Activity"], kind="mergesort")
+    df.to_csv(outfile, index=False)
+
+def convert_dates(row):
+    time_attr= "Complete Timestamp"
+    row[time_attr] = datetime.datetime.strptime(row[time_attr], "%m/%d/%y %H:%M:%S")
+    return row
+
+
 if __name__ == "__main__":
     files = []
     train_files = []
     test_files = []
     for i in range(1,6):
-        files.append("../Data/BPIC15_%i_sorted.csv" % (i))
-        train_files.append("../Data/bpic15_%i_train_only_duration.csv" % (i))
-        test_files.append("../Data/bpic15_%i_test_only_duration.csv" % (i))
+        files.append("../Data/BPIC15_%i_sorted_new.csv" % (i))
+        train_files.append("../Data/bpic15_%i_train.csv" % (i))
+        test_files.append("../Data/bpic15_%i_test.csv" % (i))
+
+    #for i in range(1,6):
+    #    sort_datafile("../Data/BPIC15_%i_sorted.csv" % i, "../Data/BPIC15_%i_sorted_new.csv" % i, "Complete Timestamp")
 
     for i in range(len(files)):
         print("PREPROCESS: Creating", files[i])

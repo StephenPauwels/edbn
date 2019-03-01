@@ -125,6 +125,13 @@ class LogFile:
     def get_column(self, attribute):
         return self.data[attribute]
 
+    def get_labels(self, label):
+        labels = {}
+        traces = self.data.groupby([self.trace])
+        for trace in traces:
+            labels[trace[0]] = getattr(trace[1].iloc[0], label)
+        return labels
+
     def create_k_context(self):
         """
         Create the k-context from the current LogFile

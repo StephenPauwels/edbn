@@ -41,8 +41,8 @@ def run_full():
     for i in range(1,2):
 
         # Indicate which are the training and test files
-        train_file = "../Data/bpic15_%i_train_only_duration.csv" % (i)
-        test_file = "../Data/bpic15_%i_test_only_duration.csv" % (i)
+        train_file = "../Data/bpic15_%i_train.csv" % (i)
+        test_file = "../Data/bpic15_%i_test.csv" % (i)
 
         # Load logfile to use as training data
         train_data = LogFile(train_file, ",", 0, 500000, time_attr="Complete_Timestamp", trace_attr="Case_ID", activity_attr="Activity")
@@ -51,6 +51,9 @@ def run_full():
         train_data.remove_attributes(["planned"])
         train_data.remove_attributes(["dueDate"])
         train_data.remove_attributes(["dateFinished"])
+
+        train_data.keep_attributes(["Case_ID", "Complete_Timestamp", "Activity", "Resource", "Weekday"])
+
         train_data.create_k_context()
         train_data.add_duration_to_k_context()
 
@@ -65,17 +68,17 @@ def run_full():
         test_data.create_k_context()
         test_data.add_duration_to_k_context()
 
-        edbn.test(test_data, "../Data/output_%i.csv" % (i), model, label = "Anomaly", normal_val = "0")
+        edbn.test(test_data, "../Data/output2_%i.csv" % (i), model, label = "Anomaly", normal_val = "0", train_data=train_data)
 
         # Plot the ROC curve based on the results
-        plot.plot_single_roc_curve("../Data/output_%i.csv" % (i), title="BPIC15_%i" % (i))
-        plot.plot_single_prec_recall_curve("../Data/output_%i.csv" % (i), title="BPIC15_%i" % (i))
+        plot.plot_single_roc_curve("../Data/output2_%i.csv" % (i), title="BPIC15_%i" % (i))
+        plot.plot_single_prec_recall_curve("../Data/output2_%i.csv" % (i), title="BPIC15_%i" % (i))
 
     out_files = []
     labels = []
     for i in range(1,6):
-        out_files.append("../Data/output_%i.csv" % (i))
-        labels.append("BPIC15_%i" % (i))
+        out_files.append("../Data/output2_%i.csv" % (i))
+        labels.append("MUNIS_%i" % (i))
     plot.plot_compare_roc_curve(out_files, labels, "BPIC15 Comparison")
     plot.plot_compare_prec_recall_curve(out_files, labels, "BPIC15 Comparison")
 
