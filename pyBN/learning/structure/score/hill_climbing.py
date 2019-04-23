@@ -301,8 +301,8 @@ class hill_climbing:
         print("Size of Cache", len(mut_inf_cache))
         print("SCORE =", score)
 
-        plt.plot(x, y)
-        plt.show()
+        #plt.plot(x, y)
+        #plt.show()
 
         return bn
 

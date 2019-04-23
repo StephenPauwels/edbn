@@ -9,9 +9,7 @@ from joblib import Parallel, delayed
 
 import Bohmer.LikelihoodGraph as lg
 
-activity_configurations = set()
-
-def preprocess(data, case_attr, activity_attr, time_attr):
+def preprocess(data, case_attr, activity_attr, time_attr, time_anoms):
     """
     Function to split original data in training and test data with the introduction of anomalies.
     Anomalies are generated according to the explanation in Bohmer paper
@@ -35,24 +33,19 @@ def preprocess(data, case_attr, activity_attr, time_attr):
         if random.randint(0,1) == 0: # Adding to Train Log
             trace_data["Anomaly"] = "0"
             training_traces.append(trace_data)
-        else: # Adding to Test Log
-
-#            for i in range(len(trace_data) - 1):
-#                activity_configurations.add(trace_data.loc[trace_data.index[i], "Activity"] + "-" + trace_data.loc[trace_data.index[i+1], "Activity"])
-
+        else:
             if random.randint(1,100) > 50: # No anomaly injection with 50% chance
                 trace_data["Anomaly"] = "0"
                 test_traces.append(trace_data)
             else:
-                anom_trace, types = introduce_anomaly(trace_data, [case_attr, time_attr], ["Resource", "Activity", "Weekday"], single=False, time_attr=time_attr)
-                anom_trace["Anomaly"] = "1"
+                anom_trace, types = introduce_anomaly(trace_data, [case_attr, time_attr], ["Resource", "Activity", "Weekday"], single=False, time_attr=time_attr, time_anoms=time_anoms)
                 anom_trace["anom_types"] = str(types)
                 test_traces.append(anom_trace)
 
     return pd.concat(training_traces, sort=False), pd.concat(test_traces, sort=False)
 
 
-def introduce_anomaly(trace, ignore_attrs = None, anom_attributes = None, single = False, time_attr = None):
+def introduce_anomaly(trace, ignore_attrs = None, anom_attributes = None, single = False, time_attr = None, time_anoms = True):
     """
     Add anomaly to the input trace
 
@@ -60,44 +53,68 @@ def introduce_anomaly(trace, ignore_attrs = None, anom_attributes = None, single
     :return: trace containing anomalies
     """
     def alter_activity_order(trace):
+        """
+        Switch two consecutive events
+        """
         if len(trace) == 1:
             return trace
         alter = random.randint(0, len(trace) - 2)
-        tmp = trace.iloc[alter].copy()
-        trace.iloc[alter] = trace.iloc[alter + 1]
-        trace.iloc[alter + 1] = tmp
+        alter_index = trace.index[alter]
+        alter_index2 = trace.index[alter + 1]
+        tmp = trace.loc[alter_index].copy()
+        tmp_time1 = trace.loc[alter_index][time_attr]
+        tmp_time2 = trace.loc[alter_index2][time_attr]
+        trace.loc[alter_index] = trace.loc[alter_index2]
+        trace.loc[alter_index2] = tmp
+        trace.loc[alter_index, time_attr] = tmp_time1
+        trace.loc[alter_index2, time_attr] = tmp_time2
         return trace
 
 
     def new_value(trace, attribute):
+        """
+        Add generic new value to attribute
+        """
         trace.loc[random.choice(trace.index), attribute] = "NEW_%s" % (attribute)
         return trace
 
 
     def duration_anomaly(trace, time_attr):
-        if len(trace) < 4:
-            return trace
-        start_anom = random.randint(2, len(trace) - 1)
+        """
+        Introduce a timing anomaly and update next times
+        """
+        used_events = []
 
-        delta = datetime.timedelta(1 + int(abs(random.gauss(10,3))))
+        for _ in range(random.randint(1,1)): # For now, only add one time anomaly
+            start_anom = random.randint(2, len(trace) - 1)
+            while start_anom in used_events and len(used_events) < len(trace) - 2:
+                start_anom = random.randint(2, len(trace) - 1)
+            used_events.append(start_anom)
+            delta = datetime.timedelta(1 + int(abs(random.gauss(1000,100))))
 
-        for i in range(start_anom, len(trace)):
-            trace.loc[trace.index[i], time_attr] = trace.loc[trace.index[i], time_attr] + delta
-        return trace
+            for i in range(start_anom, len(trace)):
+                trace.loc[trace.index[i], time_attr] = trace.loc[trace.index[i], time_attr] + delta
+                if i == start_anom:
+                    trace.loc[trace.index[i], "time_anomaly"] = "Changed"
+        trace["Anomaly"] = 1
+        return True,trace
 
     def generate_Anomaly(trace, num_diff_anoms, from_nums, to_nums):
+        """
+        Introduce anomaly in the trace according to the input parameters
+        """
         anoms = set()
         anomaly_types = []
-        # Temporal anomaly or attribute anomaly?
-        type = random.randint(1, 10)
-        if type <= 3:
-            trace = duration_anomaly(trace, time_attr)
-            anomaly_types.append("alter_duration")
-        else:
-            for i in range(num_diff_anoms):
+        for _ in range(num_diff_anoms):
+            if time_anoms and len(trace) > 3 and random.randint(1,10) < 3:
+                anom_added, trace = duration_anomaly(trace,time_attr)
+                if anom_added:
+                    anomaly_types.append("alter_duration")
+            else:
                 anomaly = random.randint(0,len(anom_attributes))
                 while anomaly in anoms: # Ensure each type of anomaly is only choosen once
                     anomaly = random.randint(0, len(anom_attributes))
+                anoms.add(anomaly)
 
                 for j in range(random.randint(from_nums, to_nums)):
                     if anomaly == len(anom_attributes):
@@ -106,7 +123,7 @@ def introduce_anomaly(trace, ignore_attrs = None, anom_attributes = None, single
                     else:
                         trace = new_value(trace, anom_attributes[anomaly])
                         anomaly_types.append("new_%s" % (anom_attributes[anomaly]))
-
+                trace["Anomaly"] = 1
         return (trace, anomaly_types)
 
     if anom_attributes is None:
@@ -130,28 +147,19 @@ def introduce_anomaly(trace, ignore_attrs = None, anom_attributes = None, single
 
 
 
-def preProcessData(file, train_file, test_file, case_attr, activity_attr, time_attr):
+def generate(file, train_file, test_file, case_attr, activity_attr, time_attr, time_anom):
     data = pd.read_csv(file, header=0, delimiter=",", dtype="str")
     new_cols = []
     for col in list(data.columns):
         new_cols.append(col.replace(":", "_").replace(" ", "_").replace("(", "").replace(")", ""))
     data.columns = new_cols
-    training_data, testing_data = preprocess(data, case_attr, activity_attr, time_attr)
-    #training_data = training_data.sort_values(by=[time_attr], kind="mergesort")
+
+    training_data, testing_data = preprocess(data, case_attr, activity_attr, time_attr, time_anom)
+
     training_data.to_csv(train_file, index=False)
-    #testing_data = testing_data.sort_values(by=[time_attr], kind="mergesort")
-
-#    traces = testing_data.groupby([case_attr])
-#    new_activity_configurations = set()
-#    for trace in traces:
-#        trace_data = trace[1]
-#        for i in range(len(trace_data) - 1):
-#            new_activity_configurations.add(trace_data.loc[trace_data.index[i], "Activity"] + "-" + trace_data.loc[
-#                trace_data.index[i + 1], "Activity"])
-
     testing_data.to_csv(test_file, index=False)
 
-def preProcessData_total(files, train_file, test_file, case_attr, activity_attr, time_attr):
+def generate_combined(files, train_file, test_file, case_attr, activity_attr, time_attr, time_anom):
     logs = []
     for file in files:
         data = pd.read_csv(file, header=0, delimiter=",", dtype="str")
@@ -162,9 +170,11 @@ def preProcessData_total(files, train_file, test_file, case_attr, activity_attr,
         logs.append(data)
     data = pd.concat(logs)
 
-    training_data, testing_data = preprocess(data, case_attr, activity_attr, time_attr)
+    training_data, testing_data = preprocess(data, case_attr, activity_attr, time_attr, time_anom)
+
     training_data.to_csv(train_file, index=False)
     testing_data.to_csv(test_file, index=False)
+
 
 def sort_datafile(file, outfile, time_attr):
     df = pd.read_csv(file, header=0, delimiter=",", dtype="str")
@@ -178,21 +188,39 @@ def convert_dates(row):
     return row
 
 
-if __name__ == "__main__":
+def generate_discrete_bpic15(path = "../Data/"):
+    """
+    Create training and test file from BPIC15 data, only introducing discrete anomalies
+    """
     files = []
-    train_files = []
-    test_files = []
+    train = []
+    test = []
     for i in range(1,6):
         files.append("../Data/BPIC15_%i_sorted_new.csv" % (i))
-        train_files.append("../Data/bpic15_%i_train.csv" % (i))
-        test_files.append("../Data/bpic15_%i_test.csv" % (i))
-
-    #for i in range(1,6):
-    #    sort_datafile("../Data/BPIC15_%i_sorted.csv" % i, "../Data/BPIC15_%i_sorted_new.csv" % i, "Complete Timestamp")
+        train.append("../Data/bpic15_%i_train.csv" % (i))
+        test.append("../Data/bpic15_%i_test.csv" % (i))
 
     for i in range(len(files)):
         print("PREPROCESS: Creating", files[i])
-        preProcessData(files[i], train_files[i], test_files[i], "Case_ID", "Activity", "Complete_Timestamp")
+        generate(files[i], train[i], test[i], "Case_ID", "Activity", "Complete_Timestamp", False)
 
-    print("PREPROCESS: Creating Total")
-    #preProcessData_total(files, "../Data/bpic15_total_train_only_duration.csv", "../Data/bpic15_total_test_only_duration.csv", "Case_ID", "Activity", "Complete_Timestamp")
+def generate_bpic15(path = "../Data/"):
+    """
+    Create training and test file from BPIC15 data, only introducing discrete anomalies
+    """
+    files = []
+    train = []
+    test = []
+    for i in range(1,2):
+        files.append("../Data/BPIC15_%i_sorted_new.csv" % (i))
+        train.append("../Data/bpic15_%i_train.csv" % (i))
+        test.append("../Data/bpic15_%i_test.csv" % (i))
+
+    for i in range(len(files)):
+        print("PREPROCESS: Creating", files[i])
+        generate(files[i], train[i], test[i], "Case_ID", "Activity", "Complete_Timestamp", True)
+#    generate_combined(files, "../Data/bpic15_total_train.csv", "../Data/bpic15_total_train.csv", "Case_ID", "Activity", "Complete_Timestamp", True)
+
+if __name__ == "__main__":
+    #generate_discrete_bpic15()
+    generate_bpic15()

@@ -4,8 +4,12 @@ import re
 import numpy as np
 from joblib import Parallel, delayed
 from sklearn.neighbors.kde import KernelDensity
+from sklearn.neighbors import LocalOutlierFactor
 from sklearn.model_selection import GridSearchCV
 from sklearn.base import BaseEstimator
+
+import math
+from scipy.spatial import ConvexHull
 
 import Result
 
@@ -43,6 +47,13 @@ class extendedDynamicBayesianNetwork():
     def add_continuous_variable(self, name):
         print("ADD Continuous:", name)
         self.variables[name] = Continuous_Variable(name, self.num_attrs)
+        m = re.search(r'Prev\d+$', name)
+        if m is None:
+            self.current_variables.append(name)
+
+    def add_discretized_variable(self, name):
+        print("ADD Discretized:", name)
+        self.variables[name] = Discretized_Variable(name, self.num_attrs)
         m = re.search(r'Prev\d+$', name)
         if m is None:
             self.current_variables.append(name)
@@ -128,21 +139,6 @@ class extendedDynamicBayesianNetwork():
         return result
 
 
-        """
-        njobs = mp.cpu_count()
-        size = len(log)
-        if size < njobs:
-            njobs = 1
-
-        results = []
-        chunks = np.array_split(log, njobs)
-
-        for r in Parallel(n_jobs=njobs)(delayed(self.test)(d) for d in chunks):
-            results.extend(r)
-        results.sort(key=lambda l: l[0].get_total_score())
-        return results
-        """
-
     def test_parallel(self, data):
         njobs = mp.cpu_count()
         size = data.shape[1]
@@ -177,7 +173,7 @@ class extendedDynamicBayesianNetwork():
         """
         Return the score for the k-context of a single event
         """
-        result = Result.Event_result(row.Index)
+        result = Result.Event_result(row.Index, getattr(row, "anom_types"))
         for (key, value) in self.iterate_current_variables():
             result.set_attribute_score(value.attr_name, value.test(row))
         return result
@@ -212,7 +208,7 @@ class Discrete_Variable(Variable):
         self.attr_name = attr_name
         self.new_values = new_values
         self.new_relations = 0
-        self.num_attrs = num_attrs
+        #self.num_attrs = num_attrs
         self.empty_val = empty_val
 
         self.values = set()
@@ -238,6 +234,7 @@ class Discrete_Variable(Variable):
     # Training
     ###
     def train(self, log):
+        print("Train", self.attr_name)
         self.train_variable(log)
         self.train_fdt(log)
         self.train_cpt(log)
@@ -358,7 +355,8 @@ class Continuous_Variable(Variable):
 
         self.total_values = None
         self.values = {}
-        self.kernels = {}
+        self.k_dists = {}
+        self.lofs = {}
         self.window_size = 0
         self.mean = 0
         self.std = 0
@@ -368,7 +366,7 @@ class Continuous_Variable(Variable):
 
         self.discrete_parents = []
         self.continuous_parents = []
-        self.kernel = None
+        self.k_dist = None
 
     def __repr__(self):
         return self.attr_name
@@ -395,53 +393,22 @@ class Continuous_Variable(Variable):
         print("TRAINING CONT VALUE")
 
         vals = log[self.attr_name].values
+        #self.total_values = np.sort(vals)[int(len(vals) * 0.05):int(len(vals) * 0.95)]
         self.total_values = np.sort(vals)
 
-        noise = 1 / (0.0001 + self.total_values[-1] - self.total_values[0])
-        print("Noise:",  noise)
+        print("Total values:", len(self.total_values), "Min:", np.min(self.total_values), "Max:", np.max(self.total_values), "Unique:", len(np.unique(self.total_values)))
 
-        # Calculate best bandwith for KDE
-        #params = {'bandwidth': np.logspace(-2, 10, 25), 'alpha': np.linspace(0,1,11)}
+        self.k_dist = k_distance(5).fit(self.total_values)
 
 
-        # Tophat kernel
-        m = []
-        for i in range(len(self.total_values) - 1):
-            m.append(self.total_values[i+1] - self.total_values[i])
-        bw = max(0.0001, np.mean(m))
-        
-        params = {'alpha': np.linspace(0,1,11)}
-        grid = GridSearchCV(tophat_KDE(noise=noise, bandwidth=bw), params, cv=2, n_jobs=mp.cpu_count(), verbose=0)
-        grid.fit(self.total_values)
-
-        #bw = grid.best_estimator_.bandwidth
-
-        a = grid.best_estimator_.alpha
-
-        print("Bandwidth:", bw, "Alpha:", a)
-        self.total_kernel = tophat_KDE(bandwidth=bw, noise=noise, alpha=a).fit(self.total_values)
-        ###
-        """
-
-        ## Gaussian Kernel
-        params = {'bandwidth': np.logspace(-2, 10, 25)}
-        grid = GridSearchCV(KernelDensity(kernel='gaussian', rtol=1E-6), params, cv=2, n_jobs=mp.cpu_count(), verbose=1)
-        grid.fit(log[[self.attr_name]].values)
-
-        #bw = grid.best_estimator_.bandwidth
-        bw = 100000
-
-        print("Bandwidth:", bw)
-        self.total_kernel = KernelDensity(kernel='gaussian', bandwidth=bw, rtol=1E-6).fit(log[[self.attr_name]].values)
-        ###
-        """
         # set values per parent configuration
         if len(self.discrete_parents) > 0:
             grouped = log.groupby([p.attr_name for p in self.discrete_parents])
             print("NUM GROUPS:", len(grouped))
             i = 0
             for group in grouped:
-                if len(group[1]) < 2:
+                # How to determine if amount of data is sufficient ?
+                if len(group[1]) <= 20:
                     i += 1
                     continue
 
@@ -450,9 +417,10 @@ class Continuous_Variable(Variable):
                 else:
                     parent = "-".join([str(i) for i in group[0]])
                 vals = group[1][self.attr_name].values
+                print(group[0], len(vals), np.min(vals), np.mean(vals), np.max(vals))
                 self.values[parent] = np.sort(vals)
 
-                self.kernels[parent] = tophat_KDE(bandwidth=bw, noise=noise, alpha=a).fit(self.values[parent])
+                self.k_dists[parent] = k_distance(5).fit(self.values[parent])
                 i += 1
 
     def train_continuous(self, log):
@@ -477,7 +445,7 @@ class Continuous_Variable(Variable):
         score2 = self.test_continuous(row)
         return score1 * score2
 
-    def test_value(self, row):
+    def test_value(self, row, side="left"):
         val = getattr(row, self.attr_name)
 
         par = []
@@ -486,13 +454,13 @@ class Continuous_Variable(Variable):
         par_val = "-".join(par)
 
         # Use Kernel Density scores for probability
-        if par_val in self.kernels:
-            #return np.power(np.e, self.kernels[par_val].score_samples([[val]])[0])
-            return self.kernels[par_val].score_samples([[val]])[0]
+        if par_val in self.k_dists:
+            score = self.k_dists[par_val].score_distance([val], side)[0]
+            #if score == 0:
+            #    print("Value:", val, "Neighbour:", self.k_dists[par_val].get_k_neighbour([val]), "Distances:", self.k_dists[par_val].distances )
+            return score
         else:
-            #return np.power(np.e, self.total_kernel.score_samples([[val]])[0])
-            return self.total_kernel.score_samples([[val]])[0]
-
+            return self.k_dist.score_distance([val], side)[0]
 
 
     def test_continuous(self, row):
@@ -508,27 +476,89 @@ class Continuous_Variable(Variable):
         parent_vals = parent_vals.reshape(1, -1)
         return np.power(np.e, self.kernel.score_samples(parent_vals)[0])
 
+    def compare_left_right(self, row, score):
+        val = getattr(row, self.attr_name)
 
-class tophat_KDE(BaseEstimator):
+        par = []
+        for p in self.discrete_parents:
+            par.append(str(getattr(row, p.attr_name)))
+        par_val = "-".join(par)
 
-    def __init__(self, bandwidth=1, noise=0, alpha=0):
-        self.bandwidth = bandwidth
-        self.noise = noise
-        self.alpha = alpha
+        k_dist = None
+        if par_val in self.k_dists:
+            k_dist = self.k_dists[par_val]
+        else:
+            k_dist = self.k_dist
+
+        print("Diff:", score, "Val", val, "Neighbour:", k_dist.get_k_neighbour([val]), k_dist.distances)
+
+
+class k_distance(BaseEstimator):
+
+    def __init__(self, k=5):
+        self.k = k
 
     def fit(self, X):
         self.values = sorted(X)
-        self.distr = (1-self.alpha) / (self.bandwidth * 2 * len(self.values))
+        self.distances = sorted(self.get_k_neighbour(self.values))
+
         return self
 
-    def score(self, X):
-        return np.sum(np.log(self.score_samples(X)))
+    def score_distance(self, Y, side):
+        neighbours = self.get_k_neighbour(Y)
+        indexes = np.searchsorted(self.distances, neighbours, side="right")
+        return 1 - (indexes / len(self.distances))
 
-    def score_samples(self, X):
-        X = np.asarray(X)
-        begin_indexes = np.searchsorted(self.values, X - self.bandwidth, side='left')
-        end_indexes = np.searchsorted(self.values, X + self.bandwidth, side='right')
-        score = self.alpha * self.noise + (end_indexes - begin_indexes) * self.distr
-        if len(score) == 1:
-            score = score[0]
-        return score
+    def score(self):
+        return np.sum(np.log(self.score_distance(self.values)))
+
+    def get_k_neighbour(self, Y):
+        dist = []
+        indexes = np.searchsorted(self.values, Y)
+        for i in range(len(indexes)):
+            begin = max(0, indexes[i] - self.k - 1)
+            end = min(len(self.values), indexes[i] + self.k + 1)
+            if indexes[i] < len(self.values) and self.values[indexes[i]] == Y[i]:
+                neighbours = self.values[begin:indexes[i]] + self.values[indexes[i] + 1:end]
+            else:
+                neighbours = self.values[begin:end]
+            dist.append(sorted(np.abs(np.asarray(neighbours) - Y[i]))[min(self.k - 1, len(neighbours) - 1)])
+        return dist
+
+
+
+if __name__ == "__main__":
+    train = [0,0,0,0,1,1,1,2,2,3,6,8,13,16,88]
+    k_dist = k_distance(2).fit(train)
+
+    test = [1, 4, 15, 50, 500]
+    print(k_dist.score_distance(test))
+
+    print(k_dist.distances)
+
+class Discretized_Variable(Variable):
+    def __init__(self, attr_name, num_attrs):
+        self.attr_name = attr_name
+        self.new_relations = 0
+        self.num_attrs = num_attrs
+
+    def __repr__(self):
+        return self.attr_name
+
+    def add_parent(self, var):
+        pass
+
+    def add_mapping(self, var):
+        pass
+
+    def train(self, log):
+        self.value_counts = {}
+        vc = log[self.attr_name].value_counts(normalize=True)
+        print(vc)
+        for row in vc.index:
+            self.value_counts[row] = vc[row]
+
+    def test(self, row):
+        if getattr(row, self.attr_name) in self.value_counts:
+            return self.value_counts[getattr(row, self.attr_name)]
+        return 0

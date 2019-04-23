@@ -29,8 +29,6 @@ class LogFile:
         self.contextdata = None
         self.k = 1
 
-    def convert2int(self):
-        self.convert2ints("../converted_ints.csv")
 
     def convert2ints(self, file_out):
         """
@@ -41,7 +39,6 @@ class LogFile:
         :return: number of lines converted
         """
         self.data = self.data.apply(lambda x: self.convert_column2ints(x))
-        self.data.to_csv(file_out, index=False)
 
     def convert_column2ints(self, x):
 
@@ -150,6 +147,8 @@ class LogFile:
 
     def create_k_context_trace(self, trace):
         contextdata = pd.DataFrame()
+
+
 
         trace_data = trace[1]
         shift_data = trace_data.shift().fillna(0).astype(int)

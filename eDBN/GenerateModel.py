@@ -50,11 +50,16 @@ def generate_model(data, remove_attrs = []):
         if data.contextdata is not None and "duration_%i" % (i) in data.contextdata.columns:
             cbn.add_continuous_variable("duration_%i" % (i))
 
-            cbn.get_variable("duration_%i" % (i)).add_parent(cbn.get_variable(data.activity + "_Prev%i" % (i)))
-            prev = ""
-            if i + 1 < data.k:
-                prev = "_Prev%i" % (i+1)
-            cbn.get_variable("duration_%i" % (i)).add_parent(cbn.get_variable(data.activity + prev))
+            cbn.get_variable("duration_0").add_parent(cbn.get_variable(data.activity))
+
+            #cbn.get_variable("duration_%i" % (i)).add_parent(cbn.get_variable(data.activity + "_Prev%i" % (i)))
+            #prev = ""
+            #if i + 1 < data.k:
+            #    prev = "_Prev%i" % (i+1)
+            #cbn.get_variable("duration_%i" % (i)).add_parent(cbn.get_variable(data.activity + prev))
+ #   cbn.add_discretized_variable("duration_discr_0")
+#    cbn.get_variable("duration_discr_0").add_parent(cbn.get_variable(data.activity + "_Prev0"))
+ #   cbn.get_variable("duration_discr_0").add_parent(cbn.get_variable(data.activity))
 
 
     print("GENERATE: calculate mappings")

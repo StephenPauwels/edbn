@@ -177,9 +177,9 @@ def letter_discrete_exec():
     plot.plot_single_prec_recall_curve("../Data/letter_discrete_output.csv", 'letter_discrete')
 
 if __name__ == "__main__":
-    cardio_exec()
+    #cardio_exec()
     #mammo_exec()
-    breast_exec()
+    #breast_exec()
     #breast_discrete_exec()
     #letter_exec()
     #letter_discrete_exec()
