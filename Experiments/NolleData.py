@@ -1,5 +1,5 @@
-from binet.utils import get_event_logs
-from binet.dataset import Dataset
+#from binet.utils import get_event_logs
+#from binet.dataset import Dataset
 
 import pandas as pd
 
@@ -59,7 +59,7 @@ def test_file(file):
     model = edbn.train(train_data)
 
     test_data = LogFile(file + "_test.csv", ",", 0, 1000000, None, "case_id", "event", values=train_data.values)
-    edbn.test(test_data, file + "_output.csv", model, "label", "0")
+    edbn.test(test_data, file + "_output.csv", model, "label", "0", train_data)
 
     plot.plot_single_roc_curve(file + "_output.csv", file, save_file="../Data/Nolle_Graphs/" + file.split("/")[-1] + "_roc.png")
     plot.plot_single_prec_recall_curve(file + "_output.csv", file, save_file="../Data/Nolle_Graphs/" + file.split("/")[-1] + "_precrec.png")
@@ -83,6 +83,14 @@ def precision_at(file, at, output):
         print("Prec@" + str(at), "for", file + ":", str(true_pos/at))
 
 
+def calc_prec_recall_f1():
+    datasets = [SMALL, MEDIUM, LARGE, HUGE, P2P, WIDE]
+    for dataset in datasets:
+        for file in dataset:
+            print(file)
+            plot.calc_prec_recall_f1(file + "_output.csv")
+
+
 if __name__ == "__main__":
     # preprocess()
     test(SMALL)
@@ -97,3 +105,4 @@ if __name__ == "__main__":
     precision_at_files(HUGE, 2000, None)
     precision_at_files(P2P, 2000, None)
     precision_at_files(WIDE, 2000, None)
+    calc_prec_recall_f1()

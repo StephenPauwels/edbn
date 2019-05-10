@@ -36,7 +36,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from pyBN.classes.bayesnet import BayesNet
-from pyBN.utils.graph import would_cause_cycle
+# from pyBN.utils.graph import would_cause_cycle
 from pyBN.utils.independence_tests import mutual_information
 
 import time
@@ -300,6 +300,7 @@ class hill_climbing:
         bn = BayesNet(self.c_dict)
         print("Size of Cache", len(mut_inf_cache))
         print("SCORE =", score)
+        print("SCORE2 =", model_score(self.data, self.bn) - model_complexity(self.bn, self.nrow, metric))
 
         #plt.plot(x, y)
         #plt.show()
@@ -455,7 +456,20 @@ class hill_climbing:
                     max_qi = qi_new
         result_queue.put((max_arc, max_delta, max_operation, max_qi))
 
+def would_cause_cycle(graph, u, v, visited = None):
+    """
+    Check if adding the edge (u,v) would create a cycle in the graph
+    """
+    if visited is None:
+        visited = []
 
+    if v in visited:
+        return True
+
+    for child in graph[v]:
+        if would_cause_cycle(graph, v, child, visited + [u]):
+            return True
+    return False
 
 
 

@@ -9,8 +9,16 @@ def train(data):
 
 
 def test(test_data, output_file, model, label, normal_val, train_data):
-    """
+
     training_scores = model.test_data(train_data)
+    total_training_scores = [score.get_total_score() for score in training_scores]
+
+    mean_training_score = np.mean(total_training_scores)
+    std_training_score = np.std(total_training_scores)
+    print("MEAN:", mean_training_score)
+    print("STD:", std_training_score)
+
+    """
     attribute_scores = {}
     attrs = training_scores[0].attributes
     for attr in attrs:
@@ -31,7 +39,7 @@ def test(test_data, output_file, model, label, normal_val, train_data):
 
     attribute_scores = {"Resource": 10, "Activity": 10, "Weekday": 10, "duration_0": 1}
 
-    duration_anom = test_data.convert_string2int("anom_types", "['alter_duration']")
+    #duration_anom = test_data.convert_string2int("anom_types", "['alter_duration']")
 
     duration_scores = []
     scores = []
@@ -43,7 +51,10 @@ def test(test_data, output_file, model, label, normal_val, train_data):
 
         attr_scores = anom.get_attribute_scores()
 #        model_score = attr_scores["Resource"] + attr_scores["Weekday"] + attr_scores["Activity"]
-        scores.append((test_data.convert_int2string(test_data.trace, anom.id), anom.get_calibrated_score(attribute_scores), labels[anom.id] != normal_val, test_data.convert_int2string("anom_types", anom.get_anom_type())))#, attr_scores["duration_0"]))
+
+#        scores.append((test_data.convert_int2string(test_data.trace, anom.id), 0 if anom.get_total_score() < mean_training_score - (2 * std_training_score) else 1, labels[anom.id] != normal_val))
+
+        scores.append((test_data.convert_int2string(test_data.trace, anom.id), anom.get_calibrated_score(attribute_scores), labels[anom.id] != normal_val))#, test_data.convert_int2string("anom_types", anom.get_anom_type())))#, attr_scores["duration_0"]))
         #scores.append((test_data.convert_int2string("Case_ID", anom.id), anom.get_calibrated_score(attribute_scores), (labels[anom.id] != normal_val) and (anom.get_anom_type() == duration_anom), test_data.convert_int2string("anom_types", anom.get_anom_type())))
         #scores.append((test_data.convert_int2string(test_data.trace, anom.id), attr_scores["duration_0"], (labels[anom.id] != normal_val), test_data.convert_int2string("anom_types", anom.get_anom_type())))
 

@@ -533,11 +533,11 @@ if __name__ == "__main__":
 
     model = learn_continuous_net(train)
 
-    with open("model_creditcard", "wb") as fout:
-        pickle.dump(model, fout)
+    #with open("model_creditcard", "wb") as fout:
+    #    pickle.dump(model, fout)
 
-    #with open("model_creditcard", "rb") as finn:
-    #    model = pickle.load(finn)
+    with open("model_creditcard", "rb") as finn:
+        model = pickle.load(finn)
 
     model.train(train, single=True)
 

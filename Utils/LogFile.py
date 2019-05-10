@@ -17,6 +17,8 @@ class LogFile:
             self.values = values
         else:
             self.values = {}
+        self.numericalAttributes = set()
+        self.categoricalAttributes = set()
 
         type = "str"
         if integer_input:
@@ -28,6 +30,11 @@ class LogFile:
 
         self.contextdata = None
         self.k = 1
+
+    def get_data(self):
+        if self.contextdata is None:
+            return self.data
+        return self.contextdata
 
     def convert2int(self):
         self.convert2ints("../converted_ints.csv")
@@ -192,6 +199,14 @@ class LogFile:
 
     def discretize(self,row):
         pass # Use pandas.cut
+
+    def isNumericAttribute(self, attribute):
+        return True
+        #return attribute in self.numericalAttributes
+
+    def isCategoricalAttribute(self, attribute):
+        #return True
+        return attribute in self.categoricalAttributes
 
 
 if __name__ == "__main__":

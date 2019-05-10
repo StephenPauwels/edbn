@@ -263,3 +263,23 @@ def calc_roc(values):
         fprs.append(fpr)
         tprs.append(tpr)
     return fprs, tprs
+
+def calc_prec_recall_f1(file):
+    results = read_file(file)
+
+    true_pos = 0
+    false_pos = 0
+    false_neg = 0
+    for result in results:
+        if result[1] == 0 and result[3]:
+            true_pos += 1
+        elif result[1] == 0 and not result[3]:
+            false_pos += 1
+        elif result[3]:
+            false_neg += 1
+
+    prec = true_pos / (true_pos + false_pos)
+    rec = true_pos / (true_pos + false_neg)
+    print("PRECISION:", prec)
+    print("RECALL:", rec)
+    print("F1:", 2 * (prec * rec) / (prec + rec))

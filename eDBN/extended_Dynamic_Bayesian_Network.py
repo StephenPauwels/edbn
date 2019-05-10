@@ -173,7 +173,7 @@ class extendedDynamicBayesianNetwork():
         """
         Return the score for the k-context of a single event
         """
-        result = Result.Event_result(row.Index, getattr(row, "anom_types"))
+        result = Result.Event_result(row.Index)#, getattr(row, "anom_types"))
         for (key, value) in self.iterate_current_variables():
             result.set_attribute_score(value.attr_name, value.test(row))
         return result
@@ -398,7 +398,7 @@ class Continuous_Variable(Variable):
 
         print("Total values:", len(self.total_values), "Min:", np.min(self.total_values), "Max:", np.max(self.total_values), "Unique:", len(np.unique(self.total_values)))
 
-        self.k_dist = k_distance(5).fit(self.total_values)
+        self.k_dist = k_distance(1).fit(self.total_values)
 
 
         # set values per parent configuration
@@ -420,7 +420,7 @@ class Continuous_Variable(Variable):
                 print(group[0], len(vals), np.min(vals), np.mean(vals), np.max(vals))
                 self.values[parent] = np.sort(vals)
 
-                self.k_dists[parent] = k_distance(5).fit(self.values[parent])
+                self.k_dists[parent] = k_distance(1).fit(self.values[parent])
                 i += 1
 
     def train_continuous(self, log):
@@ -506,7 +506,7 @@ class k_distance(BaseEstimator):
 
     def score_distance(self, Y, side):
         neighbours = self.get_k_neighbour(Y)
-        indexes = np.searchsorted(self.distances, neighbours, side="right")
+        indexes = np.searchsorted(self.distances, neighbours, side="left")
         return 1 - (indexes / len(self.distances))
 
     def score(self):

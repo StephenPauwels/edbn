@@ -33,7 +33,8 @@ def fit_and_save(dataset_name, ad, ad_kwargs=None, fit_kwargs=None):
     end_time = arrow.now()
 
     # Cache result
-    Evaluator(model_file.str_path).cache_result()
+    evaluator = Evaluator(model_file.str_path)
+    eval = evaluator.cache_result()
 
     # Calculate training time in seconds
     training_time = (end_time - start_time).total_seconds()
@@ -56,6 +57,26 @@ def fit_and_save(dataset_name, ad, ad_kwargs=None, fit_kwargs=None):
         from keras.backend import clear_session
         clear_session()
 
+    print(eval)
+
+    binarizer = evaluator.binarizer
+    targets = binarizer.get_targets(axis=2)
+    scores = binarizer.mask(evaluator.result.scores)
+
+    import sklearn as sk
+    from april.anomalydetection.utils import max_collapse
+    import matplotlib.pyplot as plt
+
+    for i, attribute_name in enumerate(evaluator.dataset.attribute_keys):
+        _targets = max_collapse(targets[:,:,i])
+        _scores = max_collapse(scores[:,:,i])
+        fpr, tpr, thresholds = sk.metrics.roc_curve(_targets, _scores)
+        plt.plot(fpr,tpr)
+        plt.show()
+        #print(fpr)
+        #print(tpr)
+    print(evaluator.dataset.attribute_keys)
+    print("Waiting")
 
 if __name__ == "__main__":
     dataset = sorted([e.name for e in get_event_log_files() if e.p == 0.3 and e.name.startswith("small")])

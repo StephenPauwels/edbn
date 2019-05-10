@@ -110,7 +110,7 @@ def breast_discrete_exec():
     test_data = LogFile("../Data/breast_test.csv", ",", 0, 500000, None, "ID", activity_attr="Activity")
     test_data.k = 0
     print(test_data.data)
-    edbn.test(test_data, "../Data/breast_discrete_output.csv", model, "VLabel", "0")
+    edbn.test(test_data, "../Data/breast_discrete_output.csv", model, "VLabel", "0", train_data=train_data)
 
     plot.plot_single_roc_curve("../Data/breast_discrete_output.csv", "breast_discrete")
     plot.plot_single_prec_recall_curve("../Data/breast_discrete_output.csv", "breast_discrete")
@@ -180,7 +180,7 @@ if __name__ == "__main__":
     #cardio_exec()
     #mammo_exec()
     #breast_exec()
-    #breast_discrete_exec()
+    breast_discrete_exec()
     #letter_exec()
     #letter_discrete_exec()
 

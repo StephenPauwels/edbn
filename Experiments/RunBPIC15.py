@@ -38,7 +38,7 @@ def run_full():
     #preProcessData("../Data/")
 
 
-    for i in range(1,2):
+    for i in range(5,6):
         # Indicate which are the training and test files
         train_file = "../Data/bpic15_%i_train.csv" % (i)
         test_file = "../Data/bpic15_%i_test.csv" % (i)
@@ -72,6 +72,7 @@ def run_full():
         # Plot the ROC curve based on the results
         plot.plot_single_roc_curve("../Data/output2_%i.csv" % (i), title="BPIC15_%i" % (i))
         plot.plot_single_prec_recall_curve("../Data/output2_%i.csv" % (i), title="BPIC15_%i" % (i))
+        plot.calc_prec_recall_f1("../Data/output2_%i.csv" % (i))
 
     out_files = []
     labels = []
