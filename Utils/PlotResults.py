@@ -52,12 +52,12 @@ def plot_single_prec_recall_curve(result_file, title=None, prec_recall=None, sav
     for y in np.linspace(0,1,11):
         plt.plot(np.linspace(0,1,11), [y] * len(np.linspace(0,1,11)), "--", lw=0.5, color="black", alpha=0.3)
 
-    plt.tick_params(axis="both", which="both", bottom="off", top="off",
-                    labelbottom="on", left="off", right="off", labelleft="on")
+    plt.tick_params(axis="both", which="both", bottom=False, top=False,
+                    labelbottom=True, left=False, right=False, labelleft=True)
 
     plt.plot(recall, precision, color='darkorange',
              lw=2, label='Precision-Recall curve (area = %0.2f)' % prec_recall_auc)
-    print("Prec-Recall auc:", prec_recall_auc)
+    print("EVALUATION: AUC PR:", prec_recall_auc)
     if prec_recall:
         plt.plot([prec_recall[1]], [prec_recall[0]], marker='o', markersize=3, color="red")
     plt.xlim([0.0, 1.0])
@@ -95,12 +95,12 @@ def plot_single_roc_curve(result_file, title=None, save_file=None):
     for y in np.linspace(0,1,11):
         plt.plot(np.linspace(0,1,11), [y] * len(np.linspace(0,1,11)), "--", lw=0.5, color="black", alpha=0.3)
 
-    plt.tick_params(axis="both", which="both", bottom="off", top="off",
-                    labelbottom="on", left="off", right="off", labelleft="on")
+    plt.tick_params(axis="both", which="both", bottom=False, top=False,
+                    labelbottom=True, left=False, right=False, labelleft=True)
 
     plt.plot(fpr, tpr, color='darkorange',
              lw=2, label='ROC curve (area = %0.2f)' % roc_auc)
-    print("ROC auc:", roc_auc)
+    print("EVALUATION: AUC ROC:", roc_auc)
     plt.plot([0, 1], [0, 1], color='navy', lw=1, linestyle='--')
     plt.xlim([0.0, 1])
     plt.ylim([0.0, 1])
@@ -119,7 +119,7 @@ def get_roc_auc(result_file):
     fpr, tpr = calc_roc(read_file(result_file))
     return auc(fpr, tpr)
 
-def plot_compare_prec_recall_curve(result_files, labels, title=None, save_file=None):
+def plot_compare_prec_recall_curve(result_files, labels, prec_recalls=None, title=None, save_file=None):
     prec_recall_vals = []
     auc_vals = []
     for file in result_files:
@@ -143,14 +143,21 @@ def plot_compare_prec_recall_curve(result_files, labels, title=None, save_file=N
     for y in np.linspace(0,1,11):
         plt.plot(np.linspace(0,1,11), [y] * len(np.linspace(0,1,11)), "--", lw=0.5, color="black", alpha=0.3)
 
-    plt.tick_params(axis="both", which="both", bottom="off", top="off",
-                    labelbottom="on", left="off", right="off", labelleft="on")
+    plt.tick_params(axis="both", which="both", bottom=False, top=False,
+                    labelbottom=True, left=False, right=False, labelleft=True)
 
+    y = 0
     for i in range(len(prec_recall_vals)):
         plt.plot(prec_recall_vals[i][1], prec_recall_vals[i][0],
              lw=2, label='%s (area = %0.2f)' % (labels[i], auc_vals[i]), color=tableau20[i])
+        y += 1
 
-    print("Prec_recall auc:", labels, auc_vals)
+    if prec_recalls:
+        for prec_recall in prec_recalls:
+            plt.plot([prec_recall[1]], [prec_recall[0]], label=labels[y], marker='o', markersize=5, color=tableau20[y])
+            y += 1
+
+    print("EVALUATION: AUC PR :", labels, auc_vals)
 
     plt.xlim([0.0, 1.0])
     plt.ylim([0.0, 1.0])
@@ -189,13 +196,14 @@ def plot_compare_roc_curve(result_files, labels, title=None, save_file=None):
     for y in np.linspace(0,1,11):
         plt.plot(np.linspace(0,1,11), [y] * len(np.linspace(0,1,11)), "--", lw=0.5, color="black", alpha=0.3)
 
-    plt.tick_params(axis="both", which="both", bottom="off", top="off",
-                    labelbottom="on", left="off", right="off", labelleft="on")
+    plt.tick_params(axis="both", which="both", bottom=False, top=False,
+                    labelbottom=True, left=False, right=False, labelleft=True)
 
     for i in range(len(roc_vals)):
         plt.plot(roc_vals[i][0], roc_vals[i][1],
              lw=2, label='%s (area = %0.2f)' % (labels[i], auc_vals[i]), color=tableau20[i])
-    print("Roc auc:", labels, auc_vals)
+
+    print("EVALUATION: AUC ROC:", labels, auc_vals)
 
     plt.plot([0, 1], [0, 1], color='navy', lw=1, linestyle='--')
     plt.xlim([0.0, 1.0])
@@ -278,8 +286,13 @@ def calc_prec_recall_f1(file):
         elif result[3]:
             false_neg += 1
 
+    print("True Pos:", true_pos)
+    print("False Pos:", false_pos)
+    print("False neg:", false_neg)
+
     prec = true_pos / (true_pos + false_pos)
     rec = true_pos / (true_pos + false_neg)
     print("PRECISION:", prec)
     print("RECALL:", rec)
     print("F1:", 2 * (prec * rec) / (prec + rec))
+    return 2 * (prec * rec) / (prec + rec)

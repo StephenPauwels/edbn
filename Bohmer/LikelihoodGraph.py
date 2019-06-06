@@ -5,6 +5,11 @@
 """
 import pandas as pd
 
+CASE_ATTR = "case_id"
+ACTIVITY_ATTR = "name"
+RESOURCE_ATTR = "user"
+WEEKDAY_ATTR = "day"
+
 class LikelihoodModel:
 
     def __init__(self, data):
@@ -31,7 +36,7 @@ class LikelihoodModel:
         self.dependencies[0] = []
         self.dependencies[1] = []
 
-        grouped_logs = self.data.data.groupby("Case") # Group log file according to Cases
+        grouped_logs = self.data.data.groupby(CASE_ATTR) # Group log file according to Cases
         i = 0
         activity_mapping = {}
         for name, group in grouped_logs: # Iterate over all groupes
@@ -71,7 +76,7 @@ class LikelihoodModel:
         filtered = log.loc[log[self.data.activity] == a_s]
         tc = len(filtered)
         for idx in filtered.index:
-            if idx + 1 in log.index and log.at[idx + 1, "Case"] == log.at[idx, "Case"] and log.at[idx + 1, "Activity"] == a_e:
+            if idx + 1 in log.index and log.at[idx + 1, CASE_ATTR] == log.at[idx, CASE_ATTR] and log.at[idx + 1, ACTIVITY_ATTR] == a_e:
                 ec += 1
 
         return ec / tc
@@ -93,8 +98,8 @@ class LikelihoodModel:
             V_next = {x for x in D if x[0] == v}
             D = D.difference(V_next)
             self.dependencies[v] = [x for x in self.dependencies[v] if x == 1] # Reset dependencies for v, only keep dependency to END
-            activity_filtered = logs.loc[logs["Activity"] == self.dict_to_value[v]]
-            E_r = set(x[1] for x in activity_filtered.itertuples(index=False)) # SELECT resources with activity == v
+            activity_filtered = logs.loc[logs[ACTIVITY_ATTR] == self.dict_to_value[v]]
+            E_r = set(x[4] for x in activity_filtered.itertuples(index=False)) # SELECT resources with activity == v #TODO changed from 1 to 4 for Nolle Data
             for r in E_r:
                 r_node_id = len(self.dict_to_value)
                 self.dict_to_value[r_node_id] = r
@@ -104,8 +109,8 @@ class LikelihoodModel:
                 D.add((v, r_node_id, like_g))
                 self.dependencies[v].append((r_node_id, like_g)) # Add dependency from v to r_node_id (from ACTIVITY -> RESOURCE)
                 self.dependencies[r_node_id] = [] # Init new dependency for resource node
-                activity_resource_filtered = activity_filtered.loc[activity_filtered["Resource"] == r]
-                E_wd = set(x[2] for x in activity_resource_filtered.itertuples(index=False))
+                activity_resource_filtered = activity_filtered.loc[activity_filtered[RESOURCE_ATTR] == r]
+                E_wd = set(x[1] for x in activity_resource_filtered.itertuples(index=False)) # TODO: changed from x[2] to x[1] for Nolle Data
                 for wd in E_wd:
                     wd_node_id = len(self.dict_to_value)
                     self.dict_to_value[len(self.dict_to_value)] = wd
@@ -132,18 +137,18 @@ class LikelihoodModel:
 
         if type == "resource":
             tc = len(logs)
-            ec = len(logs.loc[logs["Resource"] == r])
+            ec = len(logs.loc[logs[RESOURCE_ATTR] == r])
         elif type == "weekday":
             tc = len(logs)
-            ec = len(logs.loc[logs["Weekday"] == wd])
+            ec = len(logs.loc[logs[WEEKDAY_ATTR] == wd])
         elif type == "final":
             log = logs[0]
             filtered = logs[1]
-            filtered = filtered.loc[filtered["Weekday"] == wd]
+            filtered = filtered.loc[filtered[WEEKDAY_ATTR] == wd]
             tc = len(filtered)
             for idx in filtered.index:
-                if idx + 1 in log.index and log.at[idx + 1, "Case"] == log.at[idx, "Case"] and \
-                        (log.at[idx + 1, "Activity"] == self.dict_to_value[a_e] or log.at[idx + 1, "Activity"] == self.dict_to_value[1]):
+                if idx + 1 in log.index and log.at[idx + 1, CASE_ATTR] == log.at[idx, CASE_ATTR] and \
+                        (log.at[idx + 1, ACTIVITY_ATTR] == self.dict_to_value[a_e] or log.at[idx + 1, ACTIVITY_ATTR] == self.dict_to_value[1]):
                     ec += 1
 
         if tc == 0 or ec == 0:
@@ -158,6 +163,7 @@ class LikelihoodModel:
         fnd = False
         likly = 0
         for d in D:
+ #           print(self.dict_to_value[d[1]] == f, d[1], self.dict_to_value[d[1]], f, type(self.dict_to_value[d[1]]), type(f))
             if self.dict_to_value[d[1]] == f: # f is a successor of the last successfully mapped event lst_v then
                 lst_v = d[1]
                 likly = d[2]
@@ -193,7 +199,7 @@ class LikelihoodModel:
         logs = self.data.data
 
         min = 1
-        grouped = logs.groupby("Case")
+        grouped = logs.groupby(CASE_ATTR)
         for name, group in grouped:
             s_c = 0
             found_a = False
@@ -204,20 +210,20 @@ class LikelihoodModel:
                 # Determine l_a2r (ACTIVITY -> RESOURCE)
                 id = -1 # Find ID for ACTIVITY NODE
                 for key in self.dependencies.keys():
-                    if self.dict_to_value[key] == e[0]:
+                    if self.dict_to_value[key] == e[3]: #TODO changed from 0 to 3 for Nolle Data
                         id = key
                         break
 
                 try:
-                    l_a2r = [x for x in self.dependencies[id] if self.dict_to_value[x[0]] == e[1]][0] # (resource_id, likely)
+                    l_a2r = [x for x in self.dependencies[id] if self.dict_to_value[x[0]] == e[4]][0] # (resource_id, likely) #TODO changed from 1 to 4 for Nolle Data
                 except IndexError:
                     print("Error:", e)
                     print(id, self.dependencies[id])
                 # Determine l_r2wd (RESOURCE -> WEEKDAY)
-                l_r2wd = [x for x in self.dependencies[l_a2r[0]] if self.dict_to_value[x[0]] == e[2]][0] # (weekday_id, likely)
+                l_r2wd = [x for x in self.dependencies[l_a2r[0]] if self.dict_to_value[x[0]] == e[1]][0] # (weekday_id, likely) # TODO: changed from x[2] to x[1] for Nolle Data
                 # Determine l_wd2a (WEEKDAY -> ACTIVITY
                 if e_idx + 1 in group.index:
-                    l_wd2a = [x for x in self.dependencies[l_r2wd[0]] if self.dict_to_value[x[0]] == group.at[e_idx + 1, "Activity"]][0] # (activity, likely) | TODO: Possible to improve?
+                    l_wd2a = [x for x in self.dependencies[l_r2wd[0]] if self.dict_to_value[x[0]] == group.at[e_idx + 1, ACTIVITY_ATTR]][0] # (activity, likely) | TODO: Possible to improve?
                 else:
                     l_wd2a = (0,1)
                 l_c = l_c * l_a2r[1] * l_r2wd[1] * l_wd2a[1]
@@ -234,7 +240,11 @@ class LikelihoodModel:
         return min
 
     def isActivity(self, node):
-        return node.startswith("a_")
+        if node.startswith("Activity") or (not node.startswith("r_") and not node.startswith("wd_")):
+            return True
+        return False
+    # Addapted for Nolle's format
+#        return node.startswith("Activity") #TODO: changed from a_ to Activity
 
     def isRes(self, node):
         return node.startswith("r_")
@@ -270,35 +280,35 @@ class LikelihoodModel:
         return fnd_fs
 
     def getType(self, node):
-        if node.startswith("a_"):
-            return "Activity"
+        if node.startswith("Activity") or (not node.startswith("r_") and not node.startswith("wd_")): #if node.startswith("Activity"):
+            return ACTIVITY_ATTR
         elif node.startswith("r_"):
-            return "Resource"
+            return RESOURCE_ATTR
         elif node.startswith("wd_"):
-            return "Weekday"
+            return WEEKDAY_ATTR
 
     def classLkly(self, f, lst_a, lst_v):
         logs = self.data.data
 
         if self.isRes(f):
-            tc = len(logs.Resource.unique()) # total amount of resources
-            ec = len(logs.loc[logs["Activity"] == self.dict_to_value[lst_a]].Resource.unique()) # total amount of resources with given activity
+            tc = len(logs[RESOURCE_ATTR].unique()) # total amount of resources
+            ec = len(logs.loc[logs[ACTIVITY_ATTR] == self.dict_to_value[lst_a]][RESOURCE_ATTR].unique()) # total amount of resources with given activity
         elif self.isWeekday(f):
-            tc = len(logs.Weekday.unique()) # total amount of weekdays
+            tc = len(logs[WEEKDAY_ATTR].unique()) # total amount of weekdays
             if self.isRes(self.dict_to_value[lst_v]):
-                ec = len(logs.loc[(logs["Activity"] == self.dict_to_value[lst_a]) & (logs["Resource"] == self.dict_to_value[lst_v])]) # total amount of weekdays with given activity and resource
+                ec = len(logs.loc[(logs[ACTIVITY_ATTR] == self.dict_to_value[lst_a]) & (logs[RESOURCE_ATTR] == self.dict_to_value[lst_v])]) # total amount of weekdays with given activity and resource
             else:
-                ec = len(logs.loc[logs["Activity"] == self.dict_to_value[lst_a]].Weekday.unique())
+                ec = len(logs.loc[logs[ACTIVITY_ATTR] == self.dict_to_value[lst_a]][WEEKDAY_ATTR].unique())
         else:
-            filtered = logs.loc[logs["Activity"] == self.dict_to_value[lst_a]]
-            tc = len({logs.at[idx + 1, "Activity"] for idx in filtered.index if idx + 1 in logs.index and logs.at[idx, "Case"] == logs.at[idx + 1, "Case"]})
+            filtered = logs.loc[logs[ACTIVITY_ATTR] == self.dict_to_value[lst_a]]
+            tc = len({logs.at[idx + 1, ACTIVITY_ATTR] for idx in filtered.index if idx + 1 in logs.index and logs.at[idx, CASE_ATTR] == logs.at[idx + 1, CASE_ATTR]})
 
             if self.isRes(self.dict_to_value[lst_v]):
-                filtered = filtered.loc[filtered["Resource"] == self.dict_to_value[lst_v]]
-                ec = len({logs.at[idx + 1, "Activity"] for idx in filtered.index if idx + 1 in logs.index and logs.at[idx, "Case"] == logs.at[idx + 1, "Case"]})
+                filtered = filtered.loc[filtered[RESOURCE_ATTR] == self.dict_to_value[lst_v]]
+                ec = len({logs.at[idx + 1, ACTIVITY_ATTR] for idx in filtered.index if idx + 1 in logs.index and logs.at[idx, CASE_ATTR] == logs.at[idx + 1, CASE_ATTR]})
             else:
-                filtered = filtered.loc[filtered["Weekday"] == self.dict_to_value[lst_v]]
-                ec = len({logs.at[idx + 1, "Activity"] for idx in filtered.index if idx + 1 in logs.index and logs.at[idx, "Case"] == logs.at[idx + 1, "Case"]})
+                filtered = filtered.loc[filtered[WEEKDAY_ATTR] == self.dict_to_value[lst_v]]
+                ec = len({logs.at[idx + 1, ACTIVITY_ATTR] for idx in filtered.index if idx + 1 in logs.index and logs.at[idx, CASE_ATTR] == logs.at[idx + 1, CASE_ATTR]})
         try:
             max = 0.5
             min = 1 / (tc + 1)
@@ -330,10 +340,10 @@ class LikelihoodModel:
         i = 0
         for idx, row in trace.iterrows():
             i += 1
-            for attr in ["Activity", "Resource", "Weekday"]:
+            for attr in [ACTIVITY_ATTR, RESOURCE_ATTR, WEEKDAY_ATTR]:
                 f = row[attr]
                 lst_v, lst_va, lst_l = self.mapEvents(lst_v, lst_va, f, lst_l, punAct, punOth)
-            #min_lik = minLike(graph, logs, lst_va, i)
+            #min_lik = self.minLike(lst_va, i)
             #prob = lst_l - min_lik
             prob = lst_l
             if prob < min_prob:

@@ -12,7 +12,7 @@ def generate_start_date():
     date = datetime.timedelta(random.uniform(0, 365))
     return base + date
 
-def generate():
+def generate(training_size, test_size, train_anoms, test_anoms, train_file, test_file):
     # Process A -> B -> C | D -> E -> F
 
     process_timing = {}
@@ -40,43 +40,23 @@ def generate():
     events_data = []
     date_data = []
     trace_data = []
-    process_data = []
-    resource_data = []
-    random_data = []
-    for trace in range(1000):
-        process_idx = random.randint(0,1)
-        process = processes[process_idx]
-        date = generate_start_date()
-        resource = random.choice(resources[process_idx])
-        for event in process:
-            events_data.append(event)
-            date = date + generate_duration(process_timing, process_idx, event)
-            date_data.append(date.strftime("%Y-%m-%d %H:%M:%S"))
-            trace_data.append(trace)
-            process_data.append(process_idx)
-            resource_data.append(resource)
-            random_data.append(random.randint(0,1000))
-    df_dict = {"event" : events_data, "date" : date_data, "trace" : trace_data, "process": process_data, "resource": resource_data, "random": random_data}
-    df = pd.DataFrame(df_dict)
-    df.to_csv("../Data/synth_duration/data.csv")
-
-    events_data = []
-    date_data = []
-    trace_data = []
     anom = []
     changed = []
     types = []
     process_data = []
     resource_data = []
     random_data = []
-    for trace in range(1000):
+    for trace in range(test_size):
         process_idx = random.randint(0,1)
         process = processes[process_idx]
         resource = random.choice(resources[process_idx])
-        trace_anom = random.randint(0,1)
+        trace_anom = random.randint(0,1000)
+        anomaly = False
+        if trace_anom < train_anoms:
+            anomaly = True
         event_anom = random.randint(1,len(process) - 1)
         anom_delta = None
-        if trace_anom == 0:
+        if anomaly:
             anom_delta = datetime.timedelta(1 + abs(random.gauss(20,10)))
         i = 0
         date = generate_start_date()
@@ -87,12 +67,12 @@ def generate():
             random_data.append(random.randint(0,1000))
             date = date + generate_duration(process_timing, process_idx, event)
             changed.append("0")
-            if trace_anom == 0 and i == event_anom:
+            if anomaly and i == event_anom:
                 date = date + anom_delta
                 changed[-1] = "1"
             date_data.append(date.strftime("%Y-%m-%d %H:%M:%S"))
             trace_data.append(trace)
-            if trace_anom == 0:
+            if anomaly:
                 anom.append("1")
                 types.append("Alter Duration")
             else:
@@ -102,7 +82,54 @@ def generate():
 
     df_dict = {"event" : events_data, "date" : date_data, "trace" : trace_data, "process": process_data, "resource": resource_data, "random": random_data, "anomaly": anom, "changed": changed, "anom_types": types}
     df = pd.DataFrame(df_dict)
-    df.to_csv("../Data/synth_duration/data_test.csv")
+    df.to_csv(train_file)
+
+    events_data = []
+    date_data = []
+    trace_data = []
+    anom = []
+    changed = []
+    types = []
+    process_data = []
+    resource_data = []
+    random_data = []
+    for trace in range(test_size):
+        process_idx = random.randint(0,1)
+        process = processes[process_idx]
+        resource = random.choice(resources[process_idx])
+        trace_anom = random.randint(0,1000)
+        anomaly = False
+        if trace_anom < test_anoms:
+            anomaly = True
+        event_anom = random.randint(1,len(process) - 1)
+        anom_delta = None
+        if anomaly:
+            anom_delta = datetime.timedelta(1 + abs(random.gauss(20,10)))
+        i = 0
+        date = generate_start_date()
+        for event in process:
+            events_data.append(event)
+            process_data.append(process_idx)
+            resource_data.append(resource)
+            random_data.append(random.randint(0,1000))
+            date = date + generate_duration(process_timing, process_idx, event)
+            changed.append("0")
+            if anomaly and i == event_anom:
+                date = date + anom_delta
+                changed[-1] = "1"
+            date_data.append(date.strftime("%Y-%m-%d %H:%M:%S"))
+            trace_data.append(trace)
+            if anomaly:
+                anom.append("1")
+                types.append("Alter Duration")
+            else:
+                anom.append("0")
+                types.append("")
+            i += 1
+
+    df_dict = {"event" : events_data, "date" : date_data, "trace" : trace_data, "process": process_data, "resource": resource_data, "random": random_data, "anomaly": anom, "changed": changed, "anom_types": types}
+    df = pd.DataFrame(df_dict)
+    df.to_csv(test_file)
 
 
 if __name__ == "__main__":

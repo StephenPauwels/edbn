@@ -1,5 +1,6 @@
-from Utils import Uncertainty_Coefficient as uc, BayesianNet as bn
-from eDBN.extended_Dynamic_Bayesian_Network import extendedDynamicBayesianNetwork
+from LearnBayesianStructure import Structure_learner
+from Utils import Uncertainty_Coefficient as uc
+from eDBN.ExtendedDynamicBayesianNetwork import ExtendedDynamicBayesianNetwork
 
 
 def generate_model(data, remove_attrs = []):
@@ -12,61 +13,64 @@ def generate_model(data, remove_attrs = []):
     """
     # Initialize empty eDBN datastructure
     print("GENERATE: initialize")
-    cbn = extendedDynamicBayesianNetwork(len(data.attributes()), data.k, data.trace)
+    cbn = ExtendedDynamicBayesianNetwork(len(data.attributes()), data.k, data.trace)
     nodes = []
 
-    # Remove attributes
+
+    # Remove attributes in remove_attrs
     for column in data.attributes():
         if column not in remove_attrs:
             nodes.append(column)
     data.keep_attributes(nodes)
 
-    # Get all normal attributes and remove the trace attribute
+
+    # Get all normal attributes and remove the trace and time attribute
     attributes = list(data.attributes())
 
-    attributes.remove(data.trace)
-    nodes.remove(data.trace)
+    if data.trace in attributes:
+        attributes.remove(data.trace)
+        nodes.remove(data.trace)
 
     if data.time in attributes:
         attributes.remove(data.time)
         nodes.remove(data.time)
 
+
     # Create the k-context of the data
     print("GENERATE: build k-context")
-    data.create_k_context()
+    if data.trace is not None:
+        data.create_k_context()
+
 
     # Add previous-attributes to the model
     for attribute in attributes:
-        new_vals = uc.calculate_new_values_rate(data.get_column(attribute))
-        print(attribute, new_vals)
-        empty_val = data.convert_string2int(attribute, "nan")
-        cbn.add_discrete_variable(attribute, new_vals, empty_val)
-        for i in range(data.k):
-            nodes.append(attribute + "_Prev%i" % (i))
-            cbn.add_discrete_variable(attribute + "_Prev%i" % (i), new_vals, empty_val)
+        if data.isCategoricalAttribute(attribute):
+            new_vals = uc.calculate_new_values_rate(data.get_column(attribute))
+            empty_val = data.convert_string2int(attribute, "nan")
+            cbn.add_discrete_variable(attribute, new_vals, empty_val)
+            for i in range(data.k):
+                nodes.append(attribute + "_Prev%i" % (i))
+                cbn.add_discrete_variable(attribute + "_Prev%i" % (i), new_vals, empty_val)
+        else:
+            cbn.add_numerical_variable(attribute)
+            for i in range(data.k):
+                nodes.append(attribute + "_Prev%i" % (i))
+                cbn.add_numerical_variable(attribute + "_Prev%i" % (i))
 
-    # Add duration and link to Activity
+
+    # Add duration to the model
     for i in range(data.k):
         if data.contextdata is not None and "duration_%i" % (i) in data.contextdata.columns:
-            cbn.add_continuous_variable("duration_%i" % (i))
-
-            cbn.get_variable("duration_0").add_parent(cbn.get_variable(data.activity))
-
-            #cbn.get_variable("duration_%i" % (i)).add_parent(cbn.get_variable(data.activity + "_Prev%i" % (i)))
-            #prev = ""
-            #if i + 1 < data.k:
-            #    prev = "_Prev%i" % (i+1)
-            #cbn.get_variable("duration_%i" % (i)).add_parent(cbn.get_variable(data.activity + prev))
- #   cbn.add_discretized_variable("duration_discr_0")
-#    cbn.get_variable("duration_discr_0").add_parent(cbn.get_variable(data.activity + "_Prev0"))
- #   cbn.get_variable("duration_discr_0").add_parent(cbn.get_variable(data.activity))
+            cbn.add_numerical_variable("duration_%i" % (i))
+            nodes.append("duration_0")
 
 
     print("GENERATE: calculate mappings")
 
     # Calculate Mappings
-    mappings = uc.calculate_mappings(data.contextdata, attributes, data.k, 0.99)
+    mappings = uc.calculate_mappings(data, attributes, 0.99)
 
+    # Look for cycles in mappings
     tmp_mappings = mappings[:]
     print("GENERATE: removing redundant mappings")
     ignore_nodes = []
@@ -88,11 +92,11 @@ def generate_model(data, remove_attrs = []):
         nodes.remove(n)
 
     whitelist = []
-    print("MAPPINGS:")
+    print("GENERATE: Found Functional Dependencies:")
     for mapping in mappings:
         cbn.get_variable(mapping[1]).add_mapping(cbn.get_variable(mapping[0]))
-        print(mapping[0], "=>", mapping[1])
-        if (mapping[0], mapping[1]) in tmp_mappings:
+        print("   ", mapping[0], "=>", mapping[1])
+        if (mapping[0], mapping[1]) in tmp_mappings and mapping[0] not in ignore_nodes and mapping[1] not in ignore_nodes:
             whitelist.append((mapping[0], mapping[1]))
 
     # Create list with allowed edges (only from previous -> current and current -> current)
@@ -103,22 +107,21 @@ def generate_model(data, remove_attrs = []):
                 restrictions.append((attr2, attr1))
             for i in range(data.k):
                 restrictions.append((attr2 + "_Prev%i" % (i), attr1))
+        if "duration_0" in nodes:
+            restrictions.append((attr1, "duration_0"))
+
 
     print("GENERATE: Learn Bayesian Network")
 
     # Calculate Bayesian Network
-    bay_net = bn.BayesianNetwork(data.contextdata)
-    net = bay_net.hill_climbing_pybn(nodes, restrictions=restrictions, whitelist=whitelist, metric="AIC")
+    learner = Structure_learner(data, nodes)
+    relations = learner.learn(restrictions, whitelist)
 
-    relations = []
-    for edge in net.edges():
-        relations.append((edge[0], edge[1]))
-
-    print("Relations:")
+    print("GENERATE: Found Conditional Dependencies:")
     for relation in relations:
         if relation not in mappings:
             cbn.get_variable(relation[1]).add_parent(cbn.get_variable(relation[0]))
-            print(relation[0], "->", relation[1])
+            print("   ", relation[0], "->", relation[1])
 
     return cbn
 

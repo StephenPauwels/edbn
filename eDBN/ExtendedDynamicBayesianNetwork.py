@@ -1,5 +1,6 @@
 import multiprocessing as mp
 import re
+import pandas as pd
 
 import numpy as np
 from joblib import Parallel, delayed
@@ -22,7 +23,9 @@ def calculate(trace):
         result.add_event(e_result)
     return result
 
-class extendedDynamicBayesianNetwork():
+
+
+class ExtendedDynamicBayesianNetwork():
     """
     Class for representing an extended Dynamic Bayesian Network (eDBN)
     """
@@ -38,21 +41,18 @@ class extendedDynamicBayesianNetwork():
 
 
     def add_discrete_variable(self, name, new_values, empty_val):
-        print("ADD Discrete:", name)
         self.variables[name] = Discrete_Variable(name, new_values, self.num_attrs, empty_val)
         m = re.search(r'Prev\d+$', name)
         if m is None:
             self.current_variables.append(name)
 
-    def add_continuous_variable(self, name):
-        print("ADD Continuous:", name)
-        self.variables[name] = Continuous_Variable(name, self.num_attrs)
+    def add_numerical_variable(self, name):
+        self.variables[name] = Numerical_Variable(name, self.num_attrs)
         m = re.search(r'Prev\d+$', name)
         if m is None:
             self.current_variables.append(name)
 
     def add_discretized_variable(self, name):
-        print("ADD Discretized:", name)
         self.variables[name] = Discretized_Variable(name, self.num_attrs)
         m = re.search(r'Prev\d+$', name)
         if m is None:
@@ -73,21 +73,15 @@ class extendedDynamicBayesianNetwork():
         return self.variables[attr_name]
 
     def train(self, data, single=False):
-        if single:
+        print("GENERATE: Start Training")
+        if isinstance(data, pd.DataFrame):
             self.log = data
         else:
-            self.log = data.contextdata
+            self.log = data.get_data()
 
         for (_, value) in self.iterate_current_variables():
             value.train(self.log)
-        print("Training Done")
-
-    def train_durations(self):
-        self.durations = {}
-        groups = self.log.groupby(["Activity_Prev0", "Activity"])
-        for group in groups:
-            self.durations[group[0]] =  KernelDensity(kernel='gaussian', bandwidth=0.2, rtol=1E-2).fit(group[1]["duration_0"].values[:, np.newaxis])
-
+        print("GENERATE: Training Done")
 
     def calculate_scores_per_trace(self, data, accum_attr=None):
         """
@@ -101,12 +95,12 @@ class extendedDynamicBayesianNetwork():
 
         data.create_k_context()
 
-        print("EVALUATION: calculate scores")
+        print("EVALUATION: Calculate Scores")
         if accum_attr is None:
             accum_attr = self.trace_attr
         with mp.Pool(mp.cpu_count(), initializer, (self, data.time)) as p:
             scores = p.map(calculate, data.contextdata.groupby([accum_attr]))
-        print("EVALUATION: Done")
+        print("EVALUATION: Scores Calculated")
         scores.sort(key=lambda l:l.time)
         return scores
 
@@ -130,18 +124,22 @@ class extendedDynamicBayesianNetwork():
         """
         Compute the score for all events in the k-context of the data
         """
-        print("EVALUATION: calculate scores")
+        print("EVALUATION: Calculate Scores")
         data.create_k_context()
         log = data.contextdata
 
         with mp.Pool(mp.cpu_count()) as p:
-            result = p.map(self.test_trace, log.groupby([self.trace_attr]))
+            if self.trace_attr is not None:
+                result = p.map(self.test_trace, log.groupby([self.trace_attr]))
+            else:
+                result = self.test_parallel(data.get_data())
+        print("EVALUATION: Scores Calculated")
         return result
 
 
     def test_parallel(self, data):
         njobs = mp.cpu_count()
-        size = data.shape[1]
+        size = data.shape[0]
         if size < njobs:
             njobs = 1
 
@@ -166,7 +164,9 @@ class extendedDynamicBayesianNetwork():
         """
         ranking = []
         for row in data.itertuples():
-            ranking.append((self.test_row(row), row))
+            result = Result.Trace_result(row.Index, anomaly=getattr(row, ""))
+            result.add_event(self.test_row(row))
+            ranking.append(result)
         return ranking
 
     def test_row(self, row):
@@ -179,7 +179,11 @@ class extendedDynamicBayesianNetwork():
         return result
 
 
+
 class Variable:
+    """
+    Basic class representing a variable of an EDBN
+    """
     def __init__(self, attr_name, new_values, num_attrs, empty_val):
         self.attr_name = attr_name
         self.new_values = new_values
@@ -203,7 +207,11 @@ class Variable:
         pass
 
 
+
 class Discrete_Variable(Variable):
+    """
+    Discrete variable of an EDBN
+    """
     def __init__(self, attr_name, new_values, num_attrs, empty_val):
         self.attr_name = attr_name
         self.new_values = new_values
@@ -234,7 +242,6 @@ class Discrete_Variable(Variable):
     # Training
     ###
     def train(self, log):
-        print("Train", self.attr_name)
         self.train_variable(log)
         self.train_fdt(log)
         self.train_cpt(log)
@@ -305,7 +312,9 @@ class Discrete_Variable(Variable):
             total_score *= score
         total_score *= self.test_cpt(row)
         total_score *= self.test_value(row)
-        return total_score
+        if total_score == 0:
+            total_score = 0.0000000001
+        return np.log(total_score)
 
     def test_fdt(self, row):
         scores = {}
@@ -347,33 +356,27 @@ class Discrete_Variable(Variable):
 
 
 
-class Continuous_Variable(Variable):
+class Numerical_Variable(Variable):
+    """
+    Numerical variable of an EDBN
+    """
     def __init__(self, attr_name, num_attrs):
         self.attr_name = attr_name
-        self.new_relations = 0
         self.num_attrs = num_attrs
 
-        self.total_values = None
-        self.values = {}
-        self.k_dists = {}
-        self.lofs = {}
-        self.window_size = 0
-        self.mean = 0
-        self.std = 0
-        self.hists = {}
-        self.quantiles = None
-        self.iqr = 0
+        self.kernels_nom = {}
+        self.kernels_denom = {}
+        self.kernel_nominator = None
+        self.kernel_denominator = None
 
         self.discrete_parents = []
         self.continuous_parents = []
-        self.k_dist = None
 
     def __repr__(self):
         return self.attr_name
 
     def add_parent(self, var):
-        print("ADDING PARENT:", var)
-        if isinstance(var, Continuous_Variable):
+        if isinstance(var, Numerical_Variable):
             self.continuous_parents.append(var)
         else:
             self.discrete_parents.append(var)
@@ -386,86 +389,75 @@ class Continuous_Variable(Variable):
     # Training
     ###
     def train(self, log):
-        self.train_variable(log)
-        self.train_continuous(log)
+        self.train_relations(log)
 
-    def train_variable(self, log):
-        print("TRAINING CONT VALUE")
+    def train_relations(self, log):
+        if len(self.discrete_parents) > 0: # Split log in partitions according to the discrete parents
+            partitions = log.groupby([p.attr_name for p in self.discrete_parents])
+        else: # If no discrete parents -> split log in just one partition
+            partitions = [("", log)]
 
-        vals = log[self.attr_name].values
-        #self.total_values = np.sort(vals)[int(len(vals) * 0.05):int(len(vals) * 0.95)]
-        self.total_values = np.sort(vals)
+        cont_par = [p.attr_name for p in self.continuous_parents]
 
-        print("Total values:", len(self.total_values), "Min:", np.min(self.total_values), "Max:", np.max(self.total_values), "Unique:", len(np.unique(self.total_values)))
+        for partition in partitions:
+            if len(partition[1]) <= 20:
+                continue
 
-        self.k_dist = k_distance(1).fit(self.total_values)
+            if isinstance(partition[0], int):
+                disc_parent = str(partition[0])
+            else:
+                disc_parent = "-".join([str(i) for i in partition[0]])
 
-
-        # set values per parent configuration
-        if len(self.discrete_parents) > 0:
-            grouped = log.groupby([p.attr_name for p in self.discrete_parents])
-            print("NUM GROUPS:", len(grouped))
-            i = 0
-            for group in grouped:
-                # How to determine if amount of data is sufficient ?
-                if len(group[1]) <= 20:
-                    i += 1
-                    continue
-
-                if isinstance(group[0], int):
-                    parent = str(group[0])
-                else:
-                    parent = "-".join([str(i) for i in group[0]])
-                vals = group[1][self.attr_name].values
-                print(group[0], len(vals), np.min(vals), np.mean(vals), np.max(vals))
-                self.values[parent] = np.sort(vals)
-
-                self.k_dists[parent] = k_distance(1).fit(self.values[parent])
-                i += 1
-
-    def train_continuous(self, log):
-        if len(self.continuous_parents) > 0:
-            parents = [p.attr_name for p in self.continuous_parents]
-            vals = log[parents + [self.attr_name]].values
-
+            nom_vals = partition[1][cont_par + [self.attr_name]].values
             # Calculate best bandwith for KDE
             params = {'bandwidth': np.logspace(-2, 1, 20)}
-            grid = GridSearchCV(KernelDensity(), params, cv=2, n_jobs=mp.cpu_count())
+            grid = GridSearchCV(KernelDensity(), params, cv=2, n_jobs=mp.cpu_count(), iid=False)
+            grid.fit(nom_vals)
+
+            self.kernels_nom[disc_parent] = KernelDensity(kernel='gaussian', bandwidth=grid.best_estimator_.bandwidth).fit(nom_vals)
+
+            if len(cont_par) > 0:
+                denom_vals = partition[1][cont_par].values
+                # Calculate best bandwith for KDE
+                params = {'bandwidth': np.logspace(-2, 1, 20)}
+                grid = GridSearchCV(KernelDensity(), params, cv=2, n_jobs=mp.cpu_count(), iid=False)
+                grid.fit(denom_vals)
+
+                self.kernels_denom[disc_parent] = KernelDensity(kernel='gaussian', bandwidth=grid.best_estimator_.bandwidth).fit(denom_vals)
+
+        vals = log[cont_par + [self.attr_name]].values
+        # Calculate best bandwith for KDE
+        params = {'bandwidth': np.logspace(-2, 1, 20)}
+        grid = GridSearchCV(KernelDensity(), params, cv=2, n_jobs=mp.cpu_count(), iid=False)
+        grid.fit(vals)
+
+        self.kernel_nominator = KernelDensity(kernel='gaussian', bandwidth=grid.best_estimator_.bandwidth).fit(vals)
+
+        if len(cont_par) > 0:
+            vals = log[cont_par].values
+            # Calculate best bandwith for KDE
+            params = {'bandwidth': np.logspace(-2, 1, 20)}
+            grid = GridSearchCV(KernelDensity(), params, cv=2, n_jobs=mp.cpu_count(), iid=False)
             grid.fit(vals)
 
-
-            self.kernel = KernelDensity(kernel='gaussian', bandwidth=grid.best_estimator_.bandwidth).fit(vals) #grid.best_estimator_.bandwidth
-
+            self.kernel_denominator = KernelDensity(kernel='gaussian', bandwidth=grid.best_estimator_.bandwidth).fit(vals)
+        else:
+            self.kernel_denominator = None
 
     ###
     # Testing
     ###
     def test(self, row):
-        score1 = self.test_value(row)
-        score2 = self.test_continuous(row)
-        return score1 * score2
-
-    def test_value(self, row, side="left"):
-        val = getattr(row, self.attr_name)
-
-        par = []
-        for p in self.discrete_parents:
-            par.append(str(getattr(row, p.attr_name)))
-        par_val = "-".join(par)
-
-        # Use Kernel Density scores for probability
-        if par_val in self.k_dists:
-            score = self.k_dists[par_val].score_distance([val], side)[0]
-            #if score == 0:
-            #    print("Value:", val, "Neighbour:", self.k_dists[par_val].get_k_neighbour([val]), "Distances:", self.k_dists[par_val].distances )
-            return score
-        else:
-            return self.k_dist.score_distance([val], side)[0]
+        return self.test_continuous(row)
 
 
     def test_continuous(self, row):
-        if len(self.continuous_parents) == 0:
-            return 1
+        disc_par = []
+        for p in self.discrete_parents:
+            disc_par.append(str(getattr(row, p.attr_name)))
+        disc_par_val = "-".join(disc_par)
+
+        val = getattr(row, self.attr_name)
 
         parent_vals = np.zeros(len(self.continuous_parents) + 1)
         i = 0
@@ -474,69 +466,28 @@ class Continuous_Variable(Variable):
             i += 1
         parent_vals[-1] = getattr(row, self.attr_name)
         parent_vals = parent_vals.reshape(1, -1)
-        return np.power(np.e, self.kernel.score_samples(parent_vals)[0])
 
-    def compare_left_right(self, row, score):
-        val = getattr(row, self.attr_name)
-
-        par = []
-        for p in self.discrete_parents:
-            par.append(str(getattr(row, p.attr_name)))
-        par_val = "-".join(par)
-
-        k_dist = None
-        if par_val in self.k_dists:
-            k_dist = self.k_dists[par_val]
-        else:
-            k_dist = self.k_dist
-
-        print("Diff:", score, "Val", val, "Neighbour:", k_dist.get_k_neighbour([val]), k_dist.distances)
-
-
-class k_distance(BaseEstimator):
-
-    def __init__(self, k=5):
-        self.k = k
-
-    def fit(self, X):
-        self.values = sorted(X)
-        self.distances = sorted(self.get_k_neighbour(self.values))
-
-        return self
-
-    def score_distance(self, Y, side):
-        neighbours = self.get_k_neighbour(Y)
-        indexes = np.searchsorted(self.distances, neighbours, side="left")
-        return 1 - (indexes / len(self.distances))
-
-    def score(self):
-        return np.sum(np.log(self.score_distance(self.values)))
-
-    def get_k_neighbour(self, Y):
-        dist = []
-        indexes = np.searchsorted(self.values, Y)
-        for i in range(len(indexes)):
-            begin = max(0, indexes[i] - self.k - 1)
-            end = min(len(self.values), indexes[i] + self.k + 1)
-            if indexes[i] < len(self.values) and self.values[indexes[i]] == Y[i]:
-                neighbours = self.values[begin:indexes[i]] + self.values[indexes[i] + 1:end]
+        if disc_par_val in self.kernels_nom:
+            nominator = self.kernels_nom[disc_par_val].score_samples(parent_vals)[0]
+            if disc_par_val in self.kernels_denom and len(parent_vals) > 1:
+                denominator = self.kernels_denom[disc_par_val].score_samples(parent_vals[:-1])[0]
             else:
-                neighbours = self.values[begin:end]
-            dist.append(sorted(np.abs(np.asarray(neighbours) - Y[i]))[min(self.k - 1, len(neighbours) - 1)])
-        return dist
+                denominator = 0
+        else:
+            nominator = self.kernel_nominator.score_samples(parent_vals)[0]
+            if self.kernel_denominator is None:
+                denominator = 0
+            else:
+                denominator = self.kernel_denominator.score_samples(parent_vals[:-1])[0]
+
+        return nominator - denominator
 
 
-
-if __name__ == "__main__":
-    train = [0,0,0,0,1,1,1,2,2,3,6,8,13,16,88]
-    k_dist = k_distance(2).fit(train)
-
-    test = [1, 4, 15, 50, 500]
-    print(k_dist.score_distance(test))
-
-    print(k_dist.distances)
 
 class Discretized_Variable(Variable):
+    """
+    Discretized numerical variable for the EDBN
+    """
     def __init__(self, attr_name, num_attrs):
         self.attr_name = attr_name
         self.new_relations = 0

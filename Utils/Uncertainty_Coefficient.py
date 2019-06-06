@@ -23,29 +23,29 @@ def is_mapping(col1, col2, threshold, debug = False):
     return False
 
 
-def calculate_mappings(data, attributes, k, threshold):
-    if k > 0:
-        filtered_data = data[data[attributes[0] + "_Prev0"] != 0]
+def calculate_mappings(data, attributes, threshold):
+    if data.k > 0:
+        filtered_data = data.get_data()[data.get_data()[attributes[0] + "_Prev0"] != 0]
     else:
-        filtered_data = data
+        filtered_data = data.get_data()
 
     # Create all relations that can have a Functional Dependency
     mappings = []
     for attr1 in attributes:
-        for attr2 in attributes:
-            # Check attr2 -> attr1
-            if attr1 != attr2 and is_mapping(filtered_data[attr1], filtered_data[attr2], threshold):
-                mappings.append((attr2, attr1))
-            # Check attr2_PrevX -> attr1
-            for i in range(k):
-                prev_attr2 = attr2 + "_Prev%i" % (i)
-                if prev_attr2 in data.columns:
-                    debug = False
-                    if attr1 == "planned" and prev_attr2 == "planned_Prev0":
-                        debug = True
-                    if is_mapping(filtered_data[attr1], filtered_data[prev_attr2], threshold, debug):
-                        mappings.append((prev_attr2, attr1))
-
+        if data.isCategoricalAttribute(attr1):
+            for attr2 in attributes:
+                # Check attr2 -> attr1
+                if data.isCategoricalAttribute(attr2) and attr1 != attr2 and is_mapping(filtered_data[attr1], filtered_data[attr2], threshold):
+                    mappings.append((attr2, attr1))
+                # Check attr2_PrevX -> attr1
+                for i in range(data.k):
+                    prev_attr2 = attr2 + "_Prev%i" % (i)
+                    if prev_attr2 in data.get_data().columns:
+                        debug = False
+                        if attr1 == "planned" and prev_attr2 == "planned_Prev0":
+                            debug = True
+                        if is_mapping(filtered_data[attr1], filtered_data[prev_attr2], threshold, debug):
+                            mappings.append((prev_attr2, attr1))
     return mappings
 
 

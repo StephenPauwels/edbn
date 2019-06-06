@@ -379,7 +379,7 @@ def create_shipment_data(training_size, test_size, train_anoms, test_anoms, trai
     events_test.append(events_train[0])
 
     ###
-    # Create training dataset (no anomalies)
+    # Create training dataset
     ###
     normals = 0
     anoms = 0

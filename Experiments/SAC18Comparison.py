@@ -1,8 +1,13 @@
+"""
+    File used for the Comparison Experiments in the SAC'18 paper
+"""
+
 import Bohmer.Execute as bmr
-import eDBN.Execute as edbn
 import Utils.BPIPreProcess as preprocess
 import Utils.PlotResults as plt
+import eDBN.Execute as edbn
 from Utils.LogFile import LogFile
+
 
 def compare_bpics(path):
     for i in range(1,6):
@@ -18,8 +23,8 @@ def compare_bpics(path):
         train_data.remove_attributes(["Anomaly", "Type", "Time"])
         test_data = LogFile(test, ",", 0, 500000, "Time", "Case", activity_attr="Activity", values=train_data.values, convert=False)
 
-        #bohmer_model = bmr.train(train_data)
-        #bmr.test(test_data, output, bohmer_model, label = "Anomaly", normal_val = "0")
+        bohmer_model = bmr.train(train_data)
+        bmr.test(test_data, output, bohmer_model, label = "Anomaly", normal_val = "0")
 
         train_data.convert2int()
         test_data.convert2int()
@@ -57,8 +62,8 @@ def compare_bpic_total(path):
 if __name__  == "__main__":
     path = "../Data/"
 
-    #preprocess.preProcessData(path)
-    #preprocess.preProcessData_total(path)
+    preprocess.preProcessData(path)
+    preprocess.preProcessData_total(path)
 
     compare_bpics(path)
-    #compare_bpic_total(path)
+    compare_bpic_total(path)

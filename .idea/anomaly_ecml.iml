@@ -7,14 +7,12 @@
       <sourceFolder url="file://$MODULE_DIR$/eDBN" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Experiments" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Utils" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/binet/generator" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/binet/processmining" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/binet" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/binet/anomalydetection" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/pyBN/learning/structure/score" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Nolle/binet/april" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Nolle/binet" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/venv" />
     </content>
-    <orderEntry type="jdk" jdkName="Remote Python 3.5.2 (ssh://spauwels@div.cmi.uantwerpen.be:22/usr/bin/python3)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Remote Python 3.6.7 (ssh://spauwels@sub:22/usr/bin/python3)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
   <component name="TestRunnerService">

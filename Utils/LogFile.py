@@ -1,10 +1,10 @@
-import pandas as pd
-import multiprocessing as mp
-from dateutil.parser import parse
-from sklearn import preprocessing
-from collections import defaultdict
-import numpy as np
 import copy
+import multiprocessing as mp
+
+import numpy as np
+import pandas as pd
+from dateutil.parser import parse
+
 
 class LogFile:
 
@@ -19,17 +19,27 @@ class LogFile:
             self.values = {}
         self.numericalAttributes = set()
         self.categoricalAttributes = set()
+        if self.trace is None:
+            self.k = 0
+        else:
+            self.k = 1
 
         type = "str"
         if integer_input:
             type = "int"
-        self.data = pd.read_csv(self.filename, header=header, nrows=rows, delimiter=delim, dtype=type)
+        self.data = pd.read_csv(self.filename, header=header, nrows=rows, delimiter=delim)
+
+        # Determine types for all columns - numerical or categorical
+        for col_type in self.data.dtypes.iteritems():
+            if col_type[1] == 'float64':
+                self.numericalAttributes.add(col_type[0])
+            else:
+                self.categoricalAttributes.add(col_type[0])
 
         if convert:
             self.convert2int()
 
         self.contextdata = None
-        self.k = 1
 
     def get_data(self):
         if self.contextdata is None:
@@ -70,6 +80,9 @@ class LogFile:
                 new_uniques.extend(a[a_ix:])
             return new_uniques
 
+        if self.isNumericAttribute(x.name):
+            return x
+
 
         print("PREPROCESSING: Converting", x.name)
         if x.name not in self.values:
@@ -88,6 +101,8 @@ class LogFile:
         return indices + 1
 
     def convert_string2int(self, column, value):
+        if column not in self.values:
+            return value
         vals = self.values[column]
         found = np.where(vals==value)
         if len(found[0]) == 0:
@@ -96,6 +111,8 @@ class LogFile:
             return found[0][0] + 1
 
     def convert_int2string(self, column, int_val):
+        if column not in self.values:
+            return int_val
         return self.values[column][int_val - 1]
 
 
@@ -134,9 +151,13 @@ class LogFile:
 
     def get_labels(self, label):
         labels = {}
-        traces = self.data.groupby([self.trace])
-        for trace in traces:
-            labels[trace[0]] = getattr(trace[1].iloc[0], label)
+        if self.trace is None:
+            for row in self.data.itertuples():
+                labels[row.Index] = getattr(row, label)
+        else:
+            traces = self.data.groupby([self.trace])
+            for trace in traces:
+                labels[trace[0]] = getattr(trace[1].iloc[0], label)
         return labels
 
     def create_k_context(self):
@@ -149,8 +170,6 @@ class LogFile:
             self.contextdata = self.data
 
         if self.contextdata is None:
-            print("Start creating k-context Parallel")
-
             with mp.Pool(mp.cpu_count()) as p:
                 result = p.map(self.create_k_context_trace, self.data.groupby([self.trace]))
             self.contextdata = pd.concat(result, ignore_index=True)
@@ -169,7 +188,7 @@ class LogFile:
         contextdata = contextdata.append(joined_trace, ignore_index=True)
         return contextdata
 
-    def add_duration_to_k_context(self, bins=25):
+    def add_duration_to_k_context(self):
         """
         Add durations to the k-context, only calculates if k-context has been calculated
 
@@ -180,19 +199,12 @@ class LogFile:
 
         for i in range(self.k):
             self.contextdata['duration_%i' %(i)] = self.contextdata.apply(self.calc_duration, axis=1, args=(i,))
-
-        #self.contextdata['duration_discr_0'], bins = pd.cut(self.contextdata['duration_discr_0'], bins=bins, retbins=True)
-        return bins
+            self.numericalAttributes.add("duration_%i" % (i))
 
     def calc_duration(self, row, k):
         if row[self.time + "_Prev%i" % (k)] != 0:
             startTime = parse(self.convert_int2string(self.time, int(row[self.time + "_Prev%i" % (k)])))
             endTime = parse(self.convert_int2string(self.time,int(row[self.time])))
-            #print(startTime, endTime, (endTime - startTime), (endTime - startTime).total_seconds())
-        #    if (endTime - startTime).total_seconds() < 0:
-        #        print(row)
-        #        print()
-        #        print()
             return (endTime - startTime).total_seconds()
         else:
             return 0
@@ -201,33 +213,19 @@ class LogFile:
         pass # Use pandas.cut
 
     def isNumericAttribute(self, attribute):
-        return True
-        #return attribute in self.numericalAttributes
+        if attribute in self.numericalAttributes:
+            return True
+        else:
+            for k in range(self.k):
+                if attribute.replace("_Prev%i" % (k), "") in self.numericalAttributes:
+                    return True
+        return False
 
     def isCategoricalAttribute(self, attribute):
-        #return True
-        return attribute in self.categoricalAttributes
-
-
-if __name__ == "__main__":
-    import Uncertainty_Coefficient as uc
-
-    print("Read train")
-    train = LogFile("../Data/bpic2018.csv", ",", 0, 30000, "startTime", "case", convert=False)
-    train.remove_attributes(["eventid", "identity_id", "event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
-    train.convert2int()
-
-    print("Read converted")
-    converted_data = LogFile("../Data/bpic2018.csv", ",", 0, 5000000, "startTime", "case", convert=False, values=train.values)
-    converted_data.remove_attributes(["eventid", "identity_id", "event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
-    converted_data.convert2int()
-
-    print("Read int")
-    int_data = LogFile("../Data/bpic2018_ints.csv", ",", 0, 5000000, "startTime", "case", convert=False, integer_input=True)
-    int_data.remove_attributes(["eventid", "identity_id", "event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
-
-    for attr in converted_data.data:
-        print("ATTRIBUTE", attr)
-        print(uc.calculate_mutual_information(converted_data.data[attr], int_data.data[attr]))
-        print(uc.calculate_entropy(converted_data.data[attr]),uc.calculate_entropy(int_data.data[attr]))
-        print(uc.is_mapping(converted_data.data["case"], int_data.data["case"], 0.99))
+        if attribute in self.categoricalAttributes:
+            return True
+        else:
+            for k in range(self.k):
+                if attribute.replace("_Prev%i" % (k), "") in self.categoricalAttributes:
+                    return True
+        return False

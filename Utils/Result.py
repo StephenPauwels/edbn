@@ -25,7 +25,9 @@ class Trace_result:
     def add_event(self, event):
         self.events.append(event)
         if self.attributes is None:
-            self.attributes = event.attributes.keys()
+            self.attributes = []
+            for score_pair in event.attributes:
+                self.attributes.append(score_pair[0])
 
     def get_attribute_score(self, attribute):
         total = 0
@@ -91,24 +93,21 @@ class Trace_result:
 class Event_result:
 
     def __init__(self, id = None, type = None):
-        self.attributes = {}
+        self.attributes = []
         self.id = id
         self.type = type
 
     def set_attribute_score(self, attribute, score):
-        if score <= 0:
-            self.attributes[attribute] = -15
-        else:
-            self.attributes[attribute] = math.log(score)
+        self.attributes.append((attribute,score))
 
     def get_attribute_score(self, attribute):
-        if attribute in self.attributes:
-            return self.attributes[attribute]
-        else:
-            return None
+        for score_pair in self.attributes:
+            if score_pair[0] == attribute:
+                return score_pair[1]
+        return None
 
     def get_total_score(self):
         total = 0
-        for attr in self.attributes:
-            total += self.attributes[attr]
+        for score_pair in self.attributes:
+            total += score_pair[1]
         return total
