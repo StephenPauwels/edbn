@@ -7,12 +7,12 @@ in this repository.
 All experiments in the papers can be reproduced using the files in the Experiments directory in the project.
 
 ## Project Structure
-- Bohmer: Contains our own implementation of the Likelihood Graphs introduced by Bohmer et al in [4]
-- Nolle: Contains the original implementations used by Nolle et al in [5]
-- EDBN: Contains our implementation of our Extended Dynamic Bayesian Network model
-- Experiments: Contains all files used for the experiments found in [1] and [3]
-- Utils: Some extra implementations regarding datastructures, preprocessing and data generation
-- Data: Data used for the experiments
+- [Bohmer](https://github.com/StephenPauwels/edbn/tree/master/Bohmer): Contains our own implementation of the Likelihood Graphs introduced by Bohmer et al in [4]
+- [Nolle](https://github.com/StephenPauwels/edbn/tree/master/Nolle): Contains the original implementations used by Nolle et al in [5]
+- [EDBN](https://github.com/StephenPauwels/edbn/tree/master/eDBN): Contains our implementation of our Extended Dynamic Bayesian Network model
+- [Experiments](https://github.com/StephenPauwels/edbn/tree/master/Experiments): Contains all files used for the experiments found in [1] and [3]
+- [Utils](https://github.com/StephenPauwels/edbn/tree/master/Utils): Some extra implementations regarding datastructures, preprocessing and data generation
+- [Data](https://github.com/StephenPauwels/edbn/tree/master/Data): Data used for the experiments
 
 
 ## References
