@@ -1,11 +1,11 @@
 """
-    File used for the Comparison Experiments in the SAC'18 paper
+    File used for the Comparison Experiments in the SAC'19 paper
 """
 
 import Bohmer.Execute as bmr
 import Utils.BPIPreProcess as preprocess
 import Utils.PlotResults as plt
-import eDBN.Execute as edbn
+import EDBN.Execute as edbn
 from Utils.LogFile import LogFile
 
 
@@ -32,8 +32,8 @@ def compare_bpics(path):
         edbn_model = edbn.train(train_data)
         edbn.test(test_data, output_edbn, edbn_model, label = "Anomaly", normal_val = "0")
 
-        plt.plot_compare_prec_recall_curve([output, output_edbn], ["Likelihood Graph", "eDBN"], save_file=prec_recall)
-        plt.plot_compare_roc_curve([output, output_edbn], ["Likelihood Graph", "eDBN"], roc)
+        plt.plot_compare_prec_recall_curve([output, output_edbn], ["Likelihood Graph", "EDBN"], save_file=prec_recall)
+        plt.plot_compare_roc_curve([output, output_edbn], ["Likelihood Graph", "EDBN"], roc)
 
 def compare_bpic_total(path):
     train = path + "BPIC15_train_total.csv"
@@ -56,8 +56,8 @@ def compare_bpic_total(path):
     edbn_model = edbn.train(train_data)
     edbn.test(test_data, output_edbn, edbn_model, label = "Anomaly", normal_val = "0")
 
-    plt.plot_compare_prec_recall_curve([output, output_edbn], ["Likelihood Graph", "eDBN"], save_file=prec_recall)
-    plt.plot_compare_roc_curve([output, output_edbn], ["Likelihood Graph", "eDBN"], roc)
+    plt.plot_compare_prec_recall_curve([output, output_edbn], ["Likelihood Graph", "EDBN"], save_file=prec_recall)
+    plt.plot_compare_roc_curve([output, output_edbn], ["Likelihood Graph", "EDBN"], roc)
 
 if __name__  == "__main__":
     path = "../Data/"

@@ -12,7 +12,7 @@ WEEKDAY_ATTR = "day"
 
 class LikelihoodModel:
 
-    def __init__(self, data):
+    def __init__(self, data, act_idx=1, res_idx=2, wk_idx=3):
         self.dict_to_id = dict()
         self.dict_to_value = dict()
 
@@ -25,6 +25,10 @@ class LikelihoodModel:
 
         self.data = data
         self.graph = None
+
+        self.act_idx = act_idx
+        self.res_idx = res_idx
+        self.wk_idx = wk_idx
 
     def basicLikelihoodGraph(self):
         V = set()
@@ -99,7 +103,7 @@ class LikelihoodModel:
             D = D.difference(V_next)
             self.dependencies[v] = [x for x in self.dependencies[v] if x == 1] # Reset dependencies for v, only keep dependency to END
             activity_filtered = logs.loc[logs[ACTIVITY_ATTR] == self.dict_to_value[v]]
-            E_r = set(x[4] for x in activity_filtered.itertuples(index=False)) # SELECT resources with activity == v #TODO changed from 1 to 4 for Nolle Data
+            E_r = set(x[self.res_idx] for x in activity_filtered.itertuples(index=False)) # SELECT resources with activity == v
             for r in E_r:
                 r_node_id = len(self.dict_to_value)
                 self.dict_to_value[r_node_id] = r
@@ -110,7 +114,7 @@ class LikelihoodModel:
                 self.dependencies[v].append((r_node_id, like_g)) # Add dependency from v to r_node_id (from ACTIVITY -> RESOURCE)
                 self.dependencies[r_node_id] = [] # Init new dependency for resource node
                 activity_resource_filtered = activity_filtered.loc[activity_filtered[RESOURCE_ATTR] == r]
-                E_wd = set(x[1] for x in activity_resource_filtered.itertuples(index=False)) # TODO: changed from x[2] to x[1] for Nolle Data
+                E_wd = set(x[self.wk_idx] for x in activity_resource_filtered.itertuples(index=False))
                 for wd in E_wd:
                     wd_node_id = len(self.dict_to_value)
                     self.dict_to_value[len(self.dict_to_value)] = wd
@@ -210,17 +214,17 @@ class LikelihoodModel:
                 # Determine l_a2r (ACTIVITY -> RESOURCE)
                 id = -1 # Find ID for ACTIVITY NODE
                 for key in self.dependencies.keys():
-                    if self.dict_to_value[key] == e[3]: #TODO changed from 0 to 3 for Nolle Data
+                    if self.dict_to_value[key] == e[self.act_idx]:
                         id = key
                         break
 
                 try:
-                    l_a2r = [x for x in self.dependencies[id] if self.dict_to_value[x[0]] == e[4]][0] # (resource_id, likely) #TODO changed from 1 to 4 for Nolle Data
+                    l_a2r = [x for x in self.dependencies[id] if self.dict_to_value[x[0]] == e[self.res_idx]][0] # (resource_id, likely)
                 except IndexError:
                     print("Error:", e)
                     print(id, self.dependencies[id])
                 # Determine l_r2wd (RESOURCE -> WEEKDAY)
-                l_r2wd = [x for x in self.dependencies[l_a2r[0]] if self.dict_to_value[x[0]] == e[1]][0] # (weekday_id, likely) # TODO: changed from x[2] to x[1] for Nolle Data
+                l_r2wd = [x for x in self.dependencies[l_a2r[0]] if self.dict_to_value[x[0]] == e[self.wk_idx]][0] # (weekday_id, likely)
                 # Determine l_wd2a (WEEKDAY -> ACTIVITY
                 if e_idx + 1 in group.index:
                     l_wd2a = [x for x in self.dependencies[l_r2wd[0]] if self.dict_to_value[x[0]] == group.at[e_idx + 1, ACTIVITY_ATTR]][0] # (activity, likely) | TODO: Possible to improve?

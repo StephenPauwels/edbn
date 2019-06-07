@@ -1,9 +1,9 @@
 import Bohmer.LikelihoodGraph as lg
 
 
-def train(data):
+def train(data, act_idx=1, res_idx=2, wk_idx=3):
 
-    model = lg.LikelihoodModel(data)
+    model = lg.LikelihoodModel(data, act_idx, res_idx, wk_idx)
 
     model.basicLikelihoodGraph()
     model.extendLikelihoodGraph()

@@ -4,7 +4,7 @@
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/Bohmer" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Concept Drift" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/eDBN" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/EDBN" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Experiments" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Utils" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/pyBN/learning/structure/score" isTestSource="false" />

@@ -205,7 +205,7 @@ def create_bohmer_synth_data(training_size, test_size, train_anoms, test_anoms, 
         if random.randint(0,1000) < train_anoms:
             seq = anomalous_model.generateCase()
             anoms += 1
-            # Output format for eDBN
+            # Output format for EDBN
             events_train_edbn.append(",".join(["START"] * len(seq[0])) + "," + str(i) + ",1," + ",".join(seq[0]) + "," + str(i) + ",1\n")
             for j in range(1, len(seq)):
                 events_train_edbn.append(",".join(seq[j-1]) + "," + str(i) + ",1," + ",".join(seq[j]) + "," + str(i) + ",1\n")
@@ -217,7 +217,7 @@ def create_bohmer_synth_data(training_size, test_size, train_anoms, test_anoms, 
         else:
             seq = correct_model.generateCase()
             normals += 1
-            # Output format for eDBN
+            # Output format for EDBN
             events_train_edbn.append(",".join(["START"] * len(seq[0])) + "," + str(i) + ",0," + ",".join(seq[0]) + "," + str(i) + ",0\n")
             for j in range(1, len(seq)):
                 events_train_edbn.append(",".join(seq[j-1]) + "," + str(i) + ",0," + ",".join(seq[j]) + "," + str(i) + ",0\n")
@@ -242,7 +242,7 @@ def create_bohmer_synth_data(training_size, test_size, train_anoms, test_anoms, 
             else:
                 seq = correct_model.generateCase(True)
 
-            # Output format for eDBN
+            # Output format for EDBN
             events_test_edbn.append(",".join(["START"] * len(seq[0])) + "," + str(i) + ",1," + ",".join(seq[0]) + "," + str(i) + ",1\n")
             for j in range(1, len(seq)):
                 events_test_edbn.append(",".join(seq[j-1]) + "," + str(i) + ",1," + ",".join(seq[j]) + "," + str(i) + ",1\n")
@@ -255,7 +255,7 @@ def create_bohmer_synth_data(training_size, test_size, train_anoms, test_anoms, 
             normals += 1
             seq = correct_model.generateCase()
 
-            # Output format for eDBN
+            # Output format for EDBN
             events_test_edbn.append(",".join(["START"] * len(seq[0])) + "," + str(i) + ",0," + ",".join(seq[0]) + "," + str(i) + ",0\n")
             for j in range(1, len(seq)):
                 events_test_edbn.append(",".join(seq[j-1]) + "," + str(i) + ",0," + ",".join(seq[j]) + "," + str(i) + ",0\n")

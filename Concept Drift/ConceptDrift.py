@@ -7,11 +7,11 @@ from scipy import stats
 # Import LogFile for representing the data
 
 
-import eDBN.GenerateModel as gm
+import EDBN.GenerateModel as gm
 
 def create_model(training_structure_data, training_params_data):
     """
-    Create an eDBN model from the given data
+    Create an EDBN model from the given data
 
     :param training_structure_data: data to be used to learn the structure of the model
     :param training_params_data: data to be used to learn the parameters of the model

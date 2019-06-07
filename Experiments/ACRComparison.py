@@ -5,7 +5,7 @@ import pandas as pd
 
 import Bohmer.Execute as bohmer
 import Utils.PlotResults as plot
-import eDBN.Execute as edbn
+import EDBN.Execute as edbn
 from LogFile import LogFile
 from april.dataset import Dataset
 from april.fs import get_event_log_files
@@ -49,26 +49,28 @@ def preprocess():
 def split_dataset(data_name, label_name, train_name, test_name, train_size):
     log = pd.read_csv(data_name, header=0).drop(columns=["timestamp"])
 
-    if "bpic" in data_name:
-        labels = pd.read_csv(label_name, header=0)
-        anoms = set(labels[labels["label"] == 1].case)
+    labels = pd.read_csv(label_name, header=None)
+    normals = set(labels[labels[0] == 0].index + 1)
+    anoms = set(labels[labels[0] == 1].index + 1)
+
+    if train_size is None:
+        log["label"] = log.apply(add_label, anoms=anoms, axis=1)
+        log["user"] = log.apply(add_prefix, attr="user", prefix="r_", axis=1)
+        log["day"] = log.apply(add_prefix, attr="day", prefix="wd_", axis=1)
+        log.to_csv(train_name, index=False)
+        log.to_csv(test_name, index=False)
     else:
-        labels = pd.read_csv(label_name, header=None)
-        normals = set(labels[labels[0] == 0].index + 1)
-        anoms = set(labels[labels[0] == 1].index + 1)
+        train = log[log.case_id.isin(normals)][:train_size]
+        train["label"] = train.apply(add_label, anoms=anoms, axis=1)
+        train["user"] = train.apply(add_prefix, attr="user", prefix="r_", axis=1)
+        train["day"] = train.apply(add_prefix, attr="day", prefix="wd_", axis=1)
+        train.to_csv(train_name, index=False)
 
-    train = log[log.case_id.isin(normals)][:train_size]
-
-    train["label"] = train.apply(add_label, anoms=anoms, axis=1)
-    train["user"] = train.apply(add_prefix, attr="user", prefix="r_", axis=1)
-    train["day"] = train.apply(add_prefix, attr="day", prefix="wd_", axis=1)
-    train.to_csv(train_name, index=False)
-
-    test = log
-    test["label"] = test.apply(add_label, anoms=anoms, axis=1)
-    test["user"] = test.apply(add_prefix, attr="user", prefix="r_", axis=1)
-    test["day"] = test.apply(add_prefix, attr="day", prefix="wd_", axis=1)
-    test.to_csv(test_name, index=False)
+        test = log
+        test["label"] = test.apply(add_label, anoms=anoms, axis=1)
+        test["user"] = test.apply(add_prefix, attr="user", prefix="r_", axis=1)
+        test["day"] = test.apply(add_prefix, attr="day", prefix="wd_", axis=1)
+        test.to_csv(test_name, index=False)
 
 def add_label(row, anoms):
     if getattr(row, "case_id") in anoms:
@@ -79,7 +81,7 @@ def add_label(row, anoms):
 def add_prefix(row, attr, prefix):
     return prefix + str(getattr(row, attr))
 
-def test(files):
+def test_sample(files):
     for file in files:
         test_file(file)
 
@@ -90,11 +92,26 @@ def test_file(file):
     model = edbn.train(train_data)
 
     test_data = LogFile(file + "_test.csv", ",", 0, 1000000, None, "case_id", "name", values=train_data.values)
+    edbn.test(test_data, file + "_output_sample.csv", model, "label", "0", train_data)
+
+    plot.plot_single_roc_curve(file + "_output_sample.csv", file, save_file="../Data/Nolle_Graphs/" + file.split("/")[-1] + "_roc.png")
+    plot.plot_single_prec_recall_curve(file + "_output_sample.csv", file, save_file="../Data/Nolle_Graphs/" + file.split("/")[-1] + "_precrec.png")
+
+def test_full(files):
+    for file in files:
+        test_file_full(file)
+
+def test_file_full(file):
+    split_dataset(file + "_data.csv", file + "_labels.csv", file + "_train.csv", file + "_test.csv", None)
+    train_data = LogFile(file + "_train.csv", ",", 0, 1000000, None, "case_id", "name")
+    train_data.remove_attributes(["label"])
+    model = edbn.train(train_data)
+
+    test_data = LogFile(file + "_test.csv", ",", 0, 1000000, None, "case_id", "name", values=train_data.values)
     edbn.test(test_data, file + "_output_full.csv", model, "label", "0", train_data)
 
     plot.plot_single_roc_curve(file + "_output_full.csv", file, save_file="../Data/Nolle_Graphs/" + file.split("/")[-1] + "_roc.png")
     plot.plot_single_prec_recall_curve(file + "_output_full.csv", file, save_file="../Data/Nolle_Graphs/" + file.split("/")[-1] + "_precrec.png")
-
 
 def test_bohmer(files):
     test_file_bohmer(files[0])
@@ -104,7 +121,7 @@ def test_file_bohmer(file):
 
     train_data = LogFile(file + "_train.csv", ",", 0, 1000000, None, "case_id", "name", convert=False)
     train_data.remove_attributes(["label"])
-    model = bohmer.train(train_data)
+    model = bohmer.train(train_data, 3, 4, 1)
 
     test_data = LogFile(file + "_test.csv", ",", 0, 1000000, None, "case_id", "name", convert=False, values=train_data.values)
     bohmer.test(test_data, file + "_output_bohmer.csv", model, "label", 0)
@@ -128,6 +145,22 @@ def compare(files, nolle_result, nolle_labels):
 
 if __name__ == "__main__":
     preprocess(True)
+
+    test_sample([SMALL[1]])
+    test_sample([MEDIUM[1]])
+    test_sample([LARGE[1]])
+    test_sample([HUGE[1]])
+    test_sample([P2P[1]])
+    test_sample([WIDE[1]])
+    test_sample([GIGANTIC[1]])
+
+    test_full([SMALL[1]])
+    test_full([MEDIUM[1]])
+    test_full([LARGE[1]])
+    test_full([HUGE[1]])
+    test_full([P2P[1]])
+    test_full([WIDE[1]])
+    test_full([GIGANTIC[1]])
 
     test_bohmer([SMALL[1]])
     test_bohmer([MEDIUM[1]])

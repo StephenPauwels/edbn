@@ -2,7 +2,7 @@
     File containing evaluation of the model on synthetic data
 """
 
-import eDBN.Execute as edbn
+import EDBN.Execute as edbn
 import Utils.DataGenerator as generator
 import Utils.DataDurationGenerator as duration_generator
 import Utils.PlotResults as plt
