@@ -209,8 +209,18 @@ class LogFile:
         else:
             return 0
 
-    def discretize(self,row):
-        pass # Use pandas.cut
+    def discretize(self,row, bins=25):
+        if isinstance(bins, int):
+            labels = [str(i) for i in range(1,bins+1)]
+        else:
+            labels = [str(i) for i in range(1,len(bins))]
+        if self.isNumericAttribute(row):
+            self.numericalAttributes.remove(row)
+            self.categoricalAttributes.add(row)
+            self.contextdata[row], binned = pd.cut(self.contextdata[row], bins, retbins=True, labels=labels)
+            #self.contextdata[row] = self.contextdata[row].astype(str)
+            #self.contextdata[row] = self.convert_column2ints(self.contextdata[row])
+        return binned
 
     def isNumericAttribute(self, attribute):
         if attribute in self.numericalAttributes:

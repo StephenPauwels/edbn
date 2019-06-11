@@ -217,7 +217,8 @@ def plot_compare_roc_curve(result_files, labels, title=None, save_file=None):
     plt.legend(loc="lower right")
     if save_file:
         plt.savefig(save_file)
-    plt.show()
+    else:
+        plt.show()
 
 # Input: (Case ID, score, Anom)
 def calc_prec_recall(values):

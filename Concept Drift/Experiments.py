@@ -220,12 +220,22 @@ def experiment_outliers():
                         print(s, case, score)
 
 
+def analyze():
+    train = LogFile("../Data/bpic2018.csv", ",", 0, None, "startTime", "case", activity_attr=None, integer_input=False, convert=False)
+    print("Num of attributes:", len(train.data.columns))
+    train.remove_attributes(["eventid", "identity_id", "event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
+    print("Num of attributes:", len(train.data.columns))
+    print(train.data.columns)
+
+    for attr in train.data.columns:
+        print(attr, len(train.data[attr].value_counts()))
 
 if __name__ == "__main__":
-    learn_and_dump_model()
+    #learn_and_dump_model()
 
-    experiment_standard()
+    #experiment_standard()
     #experiment_attributes_standard()
     #experiment_department()
     #experiment_clusters()
     #experiment_outliers()
+    analyze()
