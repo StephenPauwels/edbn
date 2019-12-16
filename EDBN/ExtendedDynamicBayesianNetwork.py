@@ -39,7 +39,6 @@ class ExtendedDynamicBayesianNetwork():
         self.trace_attr = trace_attr
         self.durations = None
 
-
     def add_discrete_variable(self, name, new_values, empty_val):
         self.variables[name] = Discrete_Variable(name, new_values, self.num_attrs, empty_val)
         m = re.search(r'Prev\d+$', name)
@@ -61,6 +60,10 @@ class ExtendedDynamicBayesianNetwork():
     def remove_variable(self, name):
         del self.variables[name]
 
+    def add_edges(self, edges):
+        for edge in edges:
+            self.variables[edge[1]].add_parent(self.variables[edge[0]])
+
     def iterate_variables(self):
         for key in self.variables:
             yield (key, self.variables[key])
@@ -81,6 +84,11 @@ class ExtendedDynamicBayesianNetwork():
 
         for (_, value) in self.iterate_current_variables():
             value.train(self.log)
+
+        # TODO: instead of training all variables, just copy current values to previous variables
+        for (_, value) in self.iterate_variables():
+            value.train_variable(self.log)
+
         print("GENERATE: Training Done")
 
     def calculate_scores_per_trace(self, data, accum_attr=None):
@@ -257,7 +265,11 @@ class Discrete_Variable(Variable):
         self.new_relations = len(grouped) / log.shape[0]
 
     def train_variable(self, log):
-        self.values = set(log[self.attr_name].unique())
+        print("Train Variable", self.attr_name)
+        self.values = {}
+        for val, count in log[self.attr_name].value_counts().iteritems():
+            self.values[val] = count / log.shape[0]
+
 
     def train_fdt(self, log):
         if len(self.functional_parents) == 0:
@@ -296,12 +308,14 @@ class Discrete_Variable(Variable):
         div = grouped.count().to_dict()
         for t in val_counts.items():
             parent = t[0][:-1]
-            if len(parent) == 1:
-                parent = parent[0]
+#            if len(parent) == 1:
+#                parent = parent[0]
             if parent not in self.cpt:
                 self.cpt[parent] = dict()
-            self.cpt[parent][t[0][-1]] = t[1] / div[parent]
-
+            if len(parent) == 1:
+                self.cpt[parent][t[0][-1]] = t[1] / div[parent[0]]
+            else:
+                self.cpt[parent][t[0][-1]] = t[1] / div[parent]
 
     ###
     # Testing

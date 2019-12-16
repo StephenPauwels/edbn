@@ -8,7 +8,7 @@ from dateutil.parser import parse
 
 class LogFile:
 
-    def __init__(self, filename, delim, header, rows, time_attr, trace_attr, activity_attr = None, values = None, integer_input = False, convert = True):
+    def __init__(self, filename, delim, header, rows, time_attr, trace_attr, activity_attr = None, values = None, integer_input = False, convert = True, k = 1):
         self.filename = filename
         self.time = time_attr
         self.trace = trace_attr
@@ -22,29 +22,41 @@ class LogFile:
         if self.trace is None:
             self.k = 0
         else:
-            self.k = 1
+            self.k = k
 
         type = "str"
         if integer_input:
             type = "int"
-        self.data = pd.read_csv(self.filename, header=header, nrows=rows, delimiter=delim)
+        if filename is not None:
+            self.data = pd.read_csv(self.filename, header=header, nrows=rows, delimiter=delim, encoding='latin-1', dtype="str")
 
-        # Determine types for all columns - numerical or categorical
-        for col_type in self.data.dtypes.iteritems():
-            if col_type[1] == 'float64':
-                self.numericalAttributes.add(col_type[0])
-            else:
-                self.categoricalAttributes.add(col_type[0])
+            # Determine types for all columns - numerical or categorical
+            for col_type in self.data.dtypes.iteritems():
+                #if col_type[1] == 'float64':
+                #    self.numericalAttributes.add(col_type[0])
+                #else:
+                    self.categoricalAttributes.add(col_type[0])
 
-        if convert:
-            self.convert2int()
+            if convert:
+                self.convert2int()
 
-        self.contextdata = None
+            self.contextdata = None
 
     def get_data(self):
         if self.contextdata is None:
             return self.data
         return self.contextdata
+
+    def get_cases(self):
+        return self.get_data().groupby([self.trace])
+    
+    def filter_case_length(self, min_length):
+        cases = self.data.groupby([self.trace])
+        filtered_cases = []
+        for case in cases:
+            if len(case[1]) > min_length:
+                filtered_cases.append(case[1])
+        self.data = pd.concat(filtered_cases)
 
     def convert2int(self):
         self.convert2ints("../converted_ints.csv")
@@ -166,6 +178,8 @@ class LogFile:
 
         :return: None
         """
+        print("Create k-context:", self.k)
+
         if self.k == 0:
             self.contextdata = self.data
 
@@ -239,3 +253,38 @@ class LogFile:
                 if attribute.replace("_Prev%i" % (k), "") in self.categoricalAttributes:
                     return True
         return False
+
+    def splitTrainTest(self, train_percentage):
+        import random
+
+        grouped = self.get_data().groupby([self.trace])
+        train_cases = []
+        test_cases = []
+        for group in grouped:
+            if random.randint(0,100) < train_percentage:
+                train_cases.append(group[1])
+            else:
+                test_cases.append(group[1])
+
+        train = pd.concat(train_cases)
+        test = pd.concat(test_cases)
+
+        train_logfile = LogFile(None, None, None, None, self.time, self.trace, self.activity, self.values, False, False)
+        train_logfile.filename = self.filename
+        train_logfile.values = self.values
+        train_logfile.contextdata = train
+        train_logfile.categoricalAttributes = self.categoricalAttributes
+        train_logfile.numericalAttributes = self.numericalAttributes
+        train_logfile.data = self.data
+        train_logfile.k = self.k
+
+        test_logfile = LogFile(None, None, None, None, self.time, self.trace, self.activity, self.values, False, False)
+        test_logfile.filename = self.filename
+        test_logfile.values = self.values
+        test_logfile.contextdata = test
+        test_logfile.categoricalAttributes = self.categoricalAttributes
+        test_logfile.numericalAttributes = self.numericalAttributes
+        test_logfile.data = self.data
+        test_logfile.k = self.k
+
+        return train_logfile, test_logfile

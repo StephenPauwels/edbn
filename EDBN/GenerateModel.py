@@ -3,7 +3,7 @@ from Utils import Uncertainty_Coefficient as uc
 from EDBN.ExtendedDynamicBayesianNetwork import ExtendedDynamicBayesianNetwork
 
 
-def generate_model(data, remove_attrs = []):
+def generate_model(data, remove_attrs = None):
     """
     Generate an EDBN model given the data
 
@@ -18,6 +18,9 @@ def generate_model(data, remove_attrs = []):
 
 
     # Remove attributes in remove_attrs
+    if remove_attrs is None:
+        remove_attrs = []
+
     for column in data.attributes():
         if column not in remove_attrs:
             nodes.append(column)
@@ -65,14 +68,14 @@ def generate_model(data, remove_attrs = []):
             if data.isNumericAttribute(dur_attr):
                cbn.add_numerical_variable("duration_%i" % (i))
             else:
-                cbn.add_discrete_variable("duration_0",uc.calculate_new_values_rate(data.contextdata["duration_0"]), data.convert_string2int(attribute, "nan"))
+                cbn.add_discrete_variable("duration_0",uc.calculate_new_values_rate(data.contextdata["duration_0"]), data.convert_string2int(dur_attr, "nan"))
             nodes.append("duration_0")
-
 
     print("GENERATE: calculate mappings")
 
     # Calculate Mappings
-    mappings = uc.calculate_mappings(data, attributes, 0.99)
+    #mappings = uc.calculate_mappings(data, attributes, 0.99)
+    mappings = []
 
     # Look for cycles in mappings
     tmp_mappings = mappings[:]
@@ -93,7 +96,8 @@ def generate_model(data, remove_attrs = []):
             tmp_mappings.remove(rem)
 
     for n in ignore_nodes:
-        nodes.remove(n)
+#        nodes.remove(n)
+        print("Remove", n)
 
     whitelist = []
     print("GENERATE: Found Functional Dependencies:")
@@ -107,10 +111,11 @@ def generate_model(data, remove_attrs = []):
     restrictions = []
     for attr1 in attributes:
         for attr2 in attributes:
-            if attr1 != attr2:
-                restrictions.append((attr2, attr1))
+    #        if attr1 != attr2:
+    #            restrictions.append((attr2, attr1))
             for i in range(data.k):
                 restrictions.append((attr2 + "_Prev%i" % (i), attr1))
+                #restrictions.append((attr2, attr1 + "_Prev%i" % (i)))
         if "duration_0" in nodes:
             restrictions.append((attr1, "duration_0"))
 
@@ -119,7 +124,8 @@ def generate_model(data, remove_attrs = []):
 
     # Calculate Bayesian Network
     learner = Structure_learner(data, nodes)
-    relations = learner.learn(restrictions, whitelist)
+    relations = learner.learn(restrictions)
+    #relations = learner.learn(restrictions, whitelist)
 
     print("GENERATE: Found Conditional Dependencies:")
     for relation in relations:

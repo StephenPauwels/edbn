@@ -53,19 +53,24 @@ class Structure_learner():
             if self.log.isNumericAttribute(node):
                 total_score += self.numericalScore(node, cache, bandwidth_cache)
             elif self.log.isCategoricalAttribute(node):
-                total_score += self.categoricalScore(node)
-
+                s, q = self.categoricalScore(node)
+                self.nodes[node]["qi"] = q
+                total_score += s
         return total_score
 
-    def categoricalScore(self, node):
+    def categoricalScore(self, node, use_parents=None):
         """
         Calculate the score for a particular categorical node
         """
         total_score = 0
+        qi = 0
         num_rows = self.data.shape[0]
 
         # Create all possible configurations of the parents
         parents = self.p_dict[node]
+        if use_parents:
+            parents = use_parents
+
         parent_configs = {}
 
         # Using bincount is faster than numpy.unique
@@ -78,7 +83,7 @@ class Structure_learner():
             for count in freqs:
                 if count != 0:
                     total_score += count * math.log(count / num_rows)
-            self.nodes[node]["qi"] = 1
+            qi = 1
         else:
             # Create dataframe with only parents of node and convert to string
             str_data = self.data.values[:, [self.data.columns.get_loc(p) for p in parents]].astype('str')
@@ -97,8 +102,8 @@ class Structure_learner():
                 for freq in freqs:
                     if freq > 0:
                         total_score += freq * math.log(freq / len(parent_configs[parent_config]))
-            self.nodes[node]["qi"] = self.data.drop_duplicates(list(parents)).shape[0]
-        return total_score
+            qi = self.data.drop_duplicates(list(parents)).shape[0]
+        return total_score, qi
 
     def numericalScore(self, node, cache, bandwidth_cache):
         """
@@ -118,7 +123,6 @@ class Structure_learner():
         qi = self.data.drop_duplicates(list(cols)).shape[0]
 
         return self.nrow * mi - qi, qi
-
 
     def numericalDelta(self, node, parents, cache, bandwidth_cache):
         """
@@ -255,6 +259,7 @@ class Structure_learner():
                     if max_qi is not None:
                         self.nodes[v]["qi"] = max_qi
                     print("LEARN: Delete:", u, "->", v)
+                print("LEARN: Delta:", max_delta)
                 print("LEARN: Model score:", score)
             _iter += 1
 
@@ -262,6 +267,7 @@ class Structure_learner():
         for node in self.nodes.keys():
             for child in self.c_dict[node]:
                 edges.append((node, child))
+
         return edges
 
 
@@ -274,14 +280,20 @@ class Structure_learner():
         for u in self.nodes.keys():
             for v in [n for n in self.c_dict[u] if (u,n) not in self.whitelist]:
                 if self.log.isCategoricalAttribute(v):
-                    old_score, _ = self.categoricalDelta(v, self.p_dict[v], cache)
-                    new_score, new_qi = self.categoricalDelta(v, [i for i in self.p_dict[v] if i != u], cache)
+                    old_cache_cols = (v,) + tuple(self.p_dict[v])
+                    if old_cache_cols not in cache:
+                        cache[old_cache_cols] = self.categoricalScore(v, self.p_dict[v])
+                    old_score, old_qi = cache[old_cache_cols]
+
+                    new_cache_cols = (v,) + tuple([i for i in self.p_dict[v] if i != u])
+                    if new_cache_cols not in cache:
+                        cache[new_cache_cols] = self.categoricalScore(v, [i for i in self.p_dict[v] if i != u])
+                    new_score, new_qi = cache[new_cache_cols]
                 elif self.log.isNumericAttribute(v):
                     old_score = self.numericalDelta(v, [par for par in self.p_dict[v]], cache, bandwidth_cache)
                     new_score = self.numericalDelta(v, [par for par in self.p_dict[v]], cache, bandwidth_cache)
                     new_qi = None
-                delta_score = new_score - old_score
-
+                delta_score = (new_score - new_qi) - (old_score - old_qi)
 
                 if delta_score - max_delta > 10 ** (-10):
                     max_delta = delta_score
@@ -303,8 +315,10 @@ class Structure_learner():
             procs.append(p)
             p.start()
 
+        i = 0
         for p in procs:
             p.join()
+            i += 1
 
         while not result_queue.empty():
             results = result_queue.get()
@@ -329,13 +343,20 @@ class Structure_learner():
             # FOR MMHC ALGORITHM -> Edge Restrictions
             if self.restriction is None or (u, v) in self.restriction:
                 if self.log.isCategoricalAttribute(v):
-                    old_score, _ = self.categoricalDelta(v, self.p_dict[v], cache)
-                    new_score, new_qi = self.categoricalDelta(v, self.p_dict[v] + [u], cache)
+                    old_cache_cols = (v,) + tuple(self.p_dict[v])
+                    if old_cache_cols not in cache:
+                        cache[old_cache_cols] = self.categoricalScore(v, self.p_dict[v])
+                    old_score, old_qi = cache[old_cache_cols]
+
+                    new_cache_cols = (v,) + tuple(self.p_dict[v] + [u])
+                    if new_cache_cols not in cache:
+                        cache[new_cache_cols] = self.categoricalScore(v, self.p_dict[v] + [u])
+                    new_score, new_qi = cache[new_cache_cols]
                 elif self.log.isNumericAttribute(v):
                     old_score = self.numericalDelta(v, [par for par in self.p_dict[v]], cache, bandwidth_cache)
                     new_score = self.numericalDelta(v, [par for par in self.p_dict[v] + [u]], cache, bandwidth_cache)
                     new_qi = None
-                delta_score = new_score - old_score
+                delta_score = (new_score - new_qi) - (old_score - old_qi)
 
                 if delta_score - max_delta > 10 ** (-10):
                     max_delta = delta_score

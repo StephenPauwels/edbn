@@ -7,15 +7,13 @@
       <sourceFolder url="file://$MODULE_DIR$/EDBN" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Experiments" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Utils" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/pyBN/learning/structure/score" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Nolle/binet/april" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Nolle/binet" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Predictions" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Camargo" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/venv" />
     </content>
-    <orderEntry type="jdk" jdkName="Remote Python 3.5.2 (Houweel)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Remote Python 3.6.7 (ssh://spauwels@sub:22/usr/bin/python3)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
-  </component>
-  <component name="TestRunnerService">
-    <option name="PROJECT_TEST_RUNNER" value="Unittests" />
   </component>
 </module>
