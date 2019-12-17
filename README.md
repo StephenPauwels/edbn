@@ -19,6 +19,6 @@ All experiments in the papers can be reproduced using the files in the Experimen
 ## References
 1. [Pauwels, Stephen, and Toon Calders. "An Anomaly Detection Technique for Business Processes based on Extended Dynamic Bayesian Networks." (2019)](http://adrem.uantwerpen.be/bibrem/pubs/PauwelsSAC19.pdf)
 2. [Pauwels, Stephen, and Toon Calders. "Detecting and Explaining Drifts in Yearly Grant Applications." BPI Challenge 2018 (2018)](http://adrem.uantwerpen.be//bibrem/pubs/pauwels2018BPIC.pdf)
-3. Pauwels, Stephen, and Toon Calders. "Detecting Anomalies in Hybrid Business Process Logs." (2019) (under review)
+3. [Pauwels, Stephen, and Toon Calders. "Detecting Anomalies in Hybrid Business Process Logs." Applied Computing Review, Volume 19  Issue 2  Page 18-30 (2019)](http://adrem.uantwerpen.be//bibrem/pubs/AcmAnomaly.pdf)
 4. [Böhmer, Kristof, and Stefanie Rinderle-Ma. "Multi-perspective anomaly detection in business process execution events." OTM Confederated International Conferences" On the Move to Meaningful Internet Systems". Springer, Cham, 2016.](https://eprints.cs.univie.ac.at/4785/1/cr.pdf)
 5. [Nolle, Timo, et al. "BINet: Multi-perspective Business Process Anomaly Classification." arXiv preprint arXiv:1902.03155 (2019).](https://arxiv.org/pdf/1902.03155.pdf)

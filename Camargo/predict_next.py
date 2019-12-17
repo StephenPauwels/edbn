@@ -26,7 +26,7 @@ TBTW = dict()
 EXP = dict()
 
 
-def predict_next(timeformat, parameters, is_single_exec=True):
+def predict_next_old(timeformat, parameters, is_single_exec=True):
     """Main function of the suffix prediction module.
     Args:
         timeformat (str): event-log date-time format.
@@ -115,7 +115,7 @@ def predict_next(timeformat, parameters, is_single_exec=True):
                                                                           'next_event_measures.csv'))
 
 
-def predict_next_old(timeformat, parameters, is_single_exec=True):
+def predict_next(timeformat, output_folder, model_file, is_single_exec=True):
     """Main function of the suffix prediction module.
     Args:
         timeformat (str): event-log date-time format.
@@ -132,14 +132,14 @@ def predict_next_old(timeformat, parameters, is_single_exec=True):
 
     START_TIMEFORMAT = timeformat
 
-    output_route = os.path.join('output_files', parameters['folder'])
-    model_name, _ = os.path.splitext(parameters['model_file'])
+    output_route = os.path.join('..', 'Camargo', 'output_files', output_folder)
+    model_name, _ = os.path.splitext(model_file)
     # Loading of testing dataframe
     df_test = pd.read_csv(os.path.join(output_route, 'parameters', 'test_log.csv'))
-    df_test['start_timestamp'] = pd.to_datetime(df_test['start_timestamp'])
-    df_test['end_timestamp'] = pd.to_datetime(df_test['end_timestamp'])
-    df_test = df_test.drop(columns=['user'])
-    df_test = df_test.rename(index=str, columns={"role": "user"})
+#    df_test['start_timestamp'] = pd.to_datetime(df_test['start_timestamp'])
+#    df_test['end_timestamp'] = pd.to_datetime(df_test['end_timestamp'])
+#    df_test = df_test.drop(columns=['user'])
+#    df_test = df_test.rename(index=str, columns={"role": "user"})
 
     # Loading of parameters from training
     with open(os.path.join(output_route, 'parameters', 'model_parameters.json')) as file:
@@ -169,13 +169,13 @@ def predict_next_old(timeformat, parameters, is_single_exec=True):
     rl_alias = create_alias(len(INDEX_RL))
 
 #   Next event selection method and numbers of repetitions
-    variants = [{'imp': 'Random Choice', 'rep': 15},
+    variants = [{'imp': 'Random Choice', 'rep': 2},
                 {'imp': 'Arg Max', 'rep': 1}]
 #   Generation of predictions
-    model = load_model(os.path.join(output_route, parameters['model_file']))
+    model = load_model(os.path.join(output_route, model_file))
 
+    measurements = list()
     for var in variants:
-        measurements = list()
         for i in range(0, var['rep']):
 
             prefixes = create_pref_suf(df_test, ac_alias, rl_alias)
@@ -188,19 +188,18 @@ def predict_next_old(timeformat, parameters, is_single_exec=True):
                                                                       model_name +'_rep_'+str(i)+'_next.csv'))
             
             # Save results
-            measurements.append({**dict(model=os.path.join(output_route, parameters['model_file']),
-                                        implementation=var['imp']), **{'accuracy': accuracy},
-                                **EXP})
+            measurements.append({**dict(model=os.path.join(output_route, model_file),
+                                        implementation=var['imp']), **{'accuracy': accuracy},**EXP})
         if measurements:    
             if is_single_exec:
                     sup.create_csv_file_header(measurements, os.path.join(output_route,
                                                                           model_name +'_next.csv'))
             else:
                 if os.path.exists(os.path.join('output_files', 'next_event_measures.csv')):
-                    sup.create_csv_file(measurements, os.path.join('output_files',
+                    sup.create_csv_file(measurements, os.path.join('..', 'Camargo', 'output_files',
                                                                    'next_event_measures.csv'), mode='a')
                 else:
-                    sup.create_csv_file_header(measurements, os.path.join('output_files',
+                    sup.create_csv_file_header(measurements, os.path.join('..', 'Camargo', 'output_files',
                                                                               'next_event_measures.csv'))
 
 # =============================================================================
@@ -231,12 +230,14 @@ def predict(model, prefixes, ac_alias, rl_alias, imp):
                 axis=0)[-DIM['time_dim']:].reshape((1,DIM['time_dim']))
 
         # times input shape(1,5,1)
-        x_t_ngram = np.array([np.append(
-                np.zeros(DIM['time_dim']),
-                np.array(prefix['t_pref']),
-                axis=0)[-DIM['time_dim']:].reshape((DIM['time_dim'], 1))])
+#        x_t_ngram = np.array([np.append(
+#                np.zeros(DIM['time_dim']),
+#                np.array(prefix['t_pref']),
+#                axis=0)[-DIM['time_dim']:].reshape((DIM['time_dim'], 1))])
                 
-        predictions = model.predict([x_ac_ngram, x_rl_ngram, x_t_ngram])
+#        predictions = model.predict([x_ac_ngram, x_rl_ngram, x_t_ngram])
+        predictions = model.predict([x_ac_ngram, x_rl_ngram])
+
         if imp == 'Random Choice':
             # Use this to get a random choice following as PDF the predictions
             pos = np.random.choice(np.arange(0, len(predictions[0][0])), p=predictions[0][0])

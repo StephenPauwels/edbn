@@ -87,6 +87,7 @@ def training_model(log_df, outfile, args):
     elif args['model_type'] == 'shared_cat':
         mshcat.training_model(vec, ac_weights, rl_weights, output_folder, args)
 
+    return output_folder
 
 def training_model_old(timeformat, args, no_loops=False):
     """Main method of the training module.

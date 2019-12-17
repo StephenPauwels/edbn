@@ -12,7 +12,7 @@ from sklearn.base import BaseEstimator
 import math
 from scipy.spatial import ConvexHull
 
-import Result
+import Utils.Result as Result
 
 def calculate(trace):
     case = trace[0]

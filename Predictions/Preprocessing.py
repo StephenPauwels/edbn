@@ -2,8 +2,8 @@ import pandas as pd
 import os
 import pickle
 
-from LogFile import LogFile
-from role_discovery import role_discovery
+from Utils.LogFile import LogFile
+from Camargo.support_modules.role_discovery import role_discovery
 
 BPIC15 = "BPIC15"
 BPIC12 = "BPIC12"

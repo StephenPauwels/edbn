@@ -454,9 +454,9 @@ def brier_multi(targets, probs):
 
 
 if __name__ == "__main__":
-    dataset = data.BPIC12
+    dataset = data.BPIC15
     dataset_size = 200000
-    add_end = True
+    add_end = False
     resource_pools =  False
     reduce_tasks = False
     logfile_k = 2
@@ -475,5 +475,5 @@ if __name__ == "__main__":
     print(duplicates)
     model.duplicate_events = duplicates
 
-    #predict_next_event(model, test_log)
-    predict_suffix(model, test_log)
+    predict_next_event(model, test_log)
+    #predict_suffix(model, test_log)
