@@ -30,7 +30,7 @@ def training_model(vec, ac_weights, rl_weights, output_folder, args):
 # =============================================================================
     ac_input = Input(shape=(vec['prefixes']['x_ac_inp'].shape[1], ), name='ac_input')
     rl_input = Input(shape=(vec['prefixes']['x_rl_inp'].shape[1], ), name='rl_input')
-    t_input = Input(shape=(vec['prefixes']['xt_inp'].shape[1], 1), name='t_input')
+#    t_input = Input(shape=(vec['prefixes']['xt_inp'].shape[1], 1), name='t_input')
 
 # =============================================================================
 #    Embedding layer for categorical attributes        
@@ -61,26 +61,26 @@ def training_model(vec, ac_weights, rl_weights, output_folder, args):
                   dropout=0.2,
                   implementation=args['imp'])(rl_embedding)
 
-    if args['lstm_act'] is not None:
-        l1_c3 = LSTM(args['l_size'],
-                     activation=args['lstm_act'],
-                     kernel_initializer='glorot_uniform',
-                     return_sequences=True,
-                     dropout=0.2,
-                     implementation=args['imp'])(t_input)
-    else:
-        l1_c3 = LSTM(args['l_size'],
-                     kernel_initializer='glorot_uniform',
-                     return_sequences=True,
-                     dropout=0.2,
-                     implementation=args['imp'])(t_input)
+#    if args['lstm_act'] is not None:
+#        l1_c3 = LSTM(args['l_size'],
+#                     activation=args['lstm_act'],
+#                     kernel_initializer='glorot_uniform',
+#                     return_sequences=True,
+#                     dropout=0.2,
+#                     implementation=args['imp'])(t_input)
+#    else:
+#        l1_c3 = LSTM(args['l_size'],
+#                     kernel_initializer='glorot_uniform',
+#                     return_sequences=True,
+#                     dropout=0.2,
+#                     implementation=args['imp'])(t_input)
 
 # =============================================================================
 #    Batch Normalization Layer
 # =============================================================================
     batch1 = BatchNormalization()(l1_c1)
     batch2 = BatchNormalization()(l1_c2)
-    batch3 = BatchNormalization()(l1_c3)
+#    batch3 = BatchNormalization()(l1_c3)
     
 # =============================================================================
 # The layer specialized in prediction
@@ -99,19 +99,19 @@ def training_model(vec, ac_weights, rl_weights, output_folder, args):
                     implementation=args['imp'])(batch2)
     
 #   The layer specialized in role prediction
-    if args['lstm_act'] is not None:
-        l2_3 = LSTM(args['l_size'],
-                    activation=args['lstm_act'],
-                    kernel_initializer='glorot_uniform',
-                    return_sequences=False,
-                    dropout=0.2,
-                    implementation=args['imp'])(batch3)
-    else:
-        l2_3 = LSTM(args['l_size'],
-                    kernel_initializer='glorot_uniform',
-                    return_sequences=False,
-                    dropout=0.2,
-                    implementation=args['imp'])(batch3)
+#    if args['lstm_act'] is not None:
+#        l2_3 = LSTM(args['l_size'],
+#                    activation=args['lstm_act'],
+#                    kernel_initializer='glorot_uniform',
+#                    return_sequences=False,
+#                    dropout=0.2,
+#                    implementation=args['imp'])(batch3)
+#    else:
+#        l2_3 = LSTM(args['l_size'],
+#                    kernel_initializer='glorot_uniform',
+#                    return_sequences=False,
+#                    dropout=0.2,
+#                    implementation=args['imp'])(batch3)
     
 
     
@@ -128,16 +128,17 @@ def training_model(vec, ac_weights, rl_weights, output_folder, args):
                        kernel_initializer='glorot_uniform',
                        name='role_output')(l2_c2)
 
-    if args['dense_act'] is not None:
-        time_output = Dense(1, activation=args['dense_act'],
-                            kernel_initializer='glorot_uniform',
-                            name='time_output')(l2_3)
-    else:
-        time_output = Dense(1,
-                            kernel_initializer='glorot_uniform',
-                            name='time_output')(l2_3)
+#    if args['dense_act'] is not None:
+#        time_output = Dense(1, activation=args['dense_act'],
+#                            kernel_initializer='glorot_uniform',
+#                            name='time_output')(l2_3)
+#    else:
+#        time_output = Dense(1,
+#                            kernel_initializer='glorot_uniform',
+#                            name='time_output')(l2_3)
 
-    model = Model(inputs=[ac_input, rl_input, t_input], outputs=[act_output, role_output, time_output])
+    #    model = Model(inputs=[ac_input, rl_input, t_input], outputs=[act_output, role_output, time_output])
+    model = Model(inputs=[ac_input, rl_input], outputs=[act_output, role_output])
 
     if args['optim'] == 'Nadam':
         opt = Nadam(lr=0.002, beta_1=0.9, beta_2=0.999,
@@ -179,11 +180,9 @@ def training_model(vec, ac_weights, rl_weights, output_folder, args):
                                    min_lr=0)
 
     model.fit({'ac_input':vec['prefixes']['x_ac_inp'],
-               'rl_input':vec['prefixes']['x_rl_inp'],
-               't_input':vec['prefixes']['xt_inp']},
+               'rl_input':vec['prefixes']['x_rl_inp']},
               {'act_output':vec['next_evt']['y_ac_inp'],
-               'role_output':vec['next_evt']['y_rl_inp'],
-               'time_output':vec['next_evt']['yt_inp']},
+               'role_output':vec['next_evt']['y_rl_inp']},
               validation_split=0.2,
               verbose=2,
               callbacks=[early_stopping, model_checkpoint, lr_reducer],

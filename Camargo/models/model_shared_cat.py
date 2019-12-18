@@ -15,6 +15,8 @@ from keras.optimizers import Nadam, Adam, SGD, Adagrad
 from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
 from keras.layers.normalization import BatchNormalization
 
+from keras.utils import multi_gpu_model
+
 def training_model(vec, ac_weights, rl_weights, output_folder, args):
 
     print('Build model...')
@@ -45,7 +47,6 @@ def training_model(vec, ac_weights, rl_weights, output_folder, args):
 # =============================================================================
     
     merged = Concatenate(name = 'concatenated', axis = 2)([ac_embedding, rl_embedding])
-
 
     l1_c1 = LSTM(args['l_size'],
                   kernel_initializer='glorot_uniform',

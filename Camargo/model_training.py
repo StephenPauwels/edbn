@@ -203,27 +203,18 @@ def vectorization(log_df, ac_index, rl_index, args):
         dict: Dictionary that contains all the LSTM inputs.
     """
     if args['norm_method'] == 'max':
-        max_tbtw = np.max(log_df.tbtw)
-        norm = lambda x: x['tbtw']/max_tbtw
-        log_df['tbtw_norm'] = log_df.apply(norm, axis=1)
         log_df = reformat_events(log_df, ac_index, rl_index)
     elif args['norm_method'] == 'lognorm':
-        logit = lambda x: math.log1p(x['tbtw'])
-        log_df['tbtw_log'] = log_df.apply(logit, axis=1)
-        max_tbtw = np.max(log_df.tbtw_log)
-        norm = lambda x: x['tbtw_log']/max_tbtw
-        log_df['tbtw_norm'] = log_df.apply(norm, axis=1)
         log_df = reformat_events(log_df, ac_index, rl_index)
 
-    vec = {'prefixes':dict(), 'next_evt':dict(), 'max_tbtw':max_tbtw}
+    vec = {'prefixes':dict(), 'next_evt':dict()}
     # n-gram definition
     for i, _ in enumerate(log_df):
         ac_n_grams = list(ngrams(log_df[i]['ac_order'], args['n_size'],
                                  pad_left=True, left_pad_symbol=0))
         rl_n_grams = list(ngrams(log_df[i]['rl_order'], args['n_size'],
                                  pad_left=True, left_pad_symbol=0))
-        tn_grams = list(ngrams(log_df[i]['tbtw'], args['n_size'],
-                               pad_left=True, left_pad_symbol=0))
+
         st_idx = 0
         if i == 0:
             vec['prefixes']['x_ac_inp'] = np.array([ac_n_grams[0]])
@@ -238,18 +229,12 @@ def vectorization(log_df, ac_index, rl_index, args):
                                                           np.array([ac_n_grams[j]])), axis=0)
             vec['prefixes']['x_rl_inp'] = np.concatenate((vec['prefixes']['x_rl_inp'],
                                                           np.array([rl_n_grams[j]])), axis=0)
-            vec['prefixes']['xt_inp'] = np.concatenate((vec['prefixes']['xt_inp'],
-                                                        np.array([tn_grams[j]])), axis=0)
             vec['next_evt']['y_ac_inp'] = np.append(vec['next_evt']['y_ac_inp'],
                                                     np.array(ac_n_grams[j+1][-1]))
             vec['next_evt']['y_rl_inp'] = np.append(vec['next_evt']['y_rl_inp'],
                                                     np.array(rl_n_grams[j+1][-1]))
-            vec['next_evt']['yt_inp'] = np.append(vec['next_evt']['yt_inp'],
-                                                  np.array(tn_grams[j+1][-1]))
 
-    vec['prefixes']['xt_inp'] = vec['prefixes']['xt_inp'].reshape(
-        (vec['prefixes']['xt_inp'].shape[0],
-         vec['prefixes']['xt_inp'].shape[1], 1))
+
     vec['next_evt']['y_ac_inp'] = ku.to_categorical(vec['next_evt']['y_ac_inp'],
                                                     num_classes=len(ac_index))
     vec['next_evt']['y_rl_inp'] = ku.to_categorical(vec['next_evt']['y_rl_inp'],
