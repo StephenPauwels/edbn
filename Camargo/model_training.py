@@ -53,7 +53,7 @@ def training_model(log_df, outfile, args):
     # Input vectorization
     vec = vectorization(log_df_train, ac_index, rl_index, args)
     # Parameters export
-    output_folder = os.path.join('..', 'Camargo', 'output_files', sup.folder_id())
+    output_folder = os.path.join('..', 'Camargo', 'output_files', outfile)
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
         os.makedirs(os.path.join(output_folder, 'parameters'))
@@ -66,7 +66,6 @@ def training_model(log_df, outfile, args):
     parameters['dim'] = dict(samples=str(vec['prefixes']['x_ac_inp'].shape[0]),
                              time_dim=str(vec['prefixes']['x_ac_inp'].shape[1]),
                              features=str(len(ac_index)))
-    parameters['max_tbtw'] = vec['max_tbtw']
 
     sup.create_json(parameters, os.path.join(output_folder,
                                              'parameters',
@@ -219,10 +218,8 @@ def vectorization(log_df, ac_index, rl_index, args):
         if i == 0:
             vec['prefixes']['x_ac_inp'] = np.array([ac_n_grams[0]])
             vec['prefixes']['x_rl_inp'] = np.array([rl_n_grams[0]])
-            vec['prefixes']['xt_inp'] = np.array([tn_grams[0]])
             vec['next_evt']['y_ac_inp'] = np.array(ac_n_grams[1][-1])
             vec['next_evt']['y_rl_inp'] = np.array(rl_n_grams[1][-1])
-            vec['next_evt']['yt_inp'] = np.array(tn_grams[1][-1])
             st_idx = 1
         for j in range(st_idx, len(ac_n_grams)-1):
             vec['prefixes']['x_ac_inp'] = np.concatenate((vec['prefixes']['x_ac_inp'],

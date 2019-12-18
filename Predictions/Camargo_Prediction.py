@@ -6,23 +6,26 @@ import Camargo.embedding_training as em
 import Camargo.model_training as mo
 
 def main(argv):
-    dataset = data.BPIC12
-    dataset_size = 200000
+    dataset = argv[0]
+    dataset_size = 2000
     add_end = True
-    resource_pools = False
+    if argv[1] == "1":
+        resource_pools = True
+    else:
+        resource_pools = False
     reduce_tasks = False
     logfile_k = 2
     bpic_file = 5
 
-    remove_resource = False
+    remove_resource = True
 
-    logfile = data.get_data(dataset, dataset_size, logfile_k, add_end, reduce_tasks, resource_pools, remove_resource)
+    logfile, dataset_name = data.get_data(dataset, dataset_size, logfile_k, add_end, reduce_tasks, resource_pools, remove_resource)
     logfile_df = logfile.data
     logfile_df.columns = ["caseid", "task", "role"]
 
     args = {}
     args["file_name"] = dataset
-    args["model_type"] = "shared_cat" # Choose from 'joint', 'shared', 'concatenated', 'specialized', 'shared_cat'
+    args["model_type"] = argv[2] # Choose from 'joint', 'shared', 'concatenated', 'specialized', 'shared_cat'
     args["norm_method"] = "lognorm" # Choose from 'lognorm' or 'max'
     args["n_size"] = 5 # n-gram size
     args['lstm_act'] = None # optimization function see keras doc
@@ -31,8 +34,8 @@ def main(argv):
     args['dense_act'] = None # optimization function see keras doc
     args['optim'] = 'Nadam' # optimization function see keras doc
 
-    em.training_model(logfile.data, dataset)
-    mo.training_model(logfile.data, dataset, args)
+    em.training_model(logfile.data, dataset_name)
+    mo.training_model(logfile.data, dataset_name, args)
 
 if __name__ == "__main__":
     main(sys.argv[1:])

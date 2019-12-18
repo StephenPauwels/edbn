@@ -41,11 +41,9 @@ def preprocess(logfile, add_end, reduce_tasks, resource_pools, resource_attr, re
 
         logfile.data = pd.DataFrame.from_records(new_data)
 
-    logfile.convert2int()
-
     # Discover Roles
     if resource_pools and resource_attr is not None:
-        resources, resource_table = role_discovery(logfile, resource_attr, 0.5)
+        resources, resource_table = role_discovery(logfile.get_data(), resource_attr, 0.5)
         log_df_resources = pd.DataFrame.from_records(resource_table)
         log_df_resources = log_df_resources.rename(index=str, columns={"resource": resource_attr})
 
@@ -73,9 +71,9 @@ def preprocess(logfile, add_end, reduce_tasks, resource_pools, resource_attr, re
         logfile.data = pd.DataFrame.from_records(reduced)
         print("Removed duplicated events")
 
+    logfile.convert2int()
+
     return logfile
-
-
 
 def get_data(dataset, dataset_size, k, add_end, reduce_tasks, resource_pools, remove_resource):
     filename_parts = [dataset, str(dataset_size), str(k)]
@@ -131,4 +129,4 @@ def get_data(dataset, dataset_size, k, add_end, reduce_tasks, resource_pools, re
         preprocessed_log.create_k_context()
         with open(cache_file, "wb") as pickle_file:
             pickle.dump(preprocessed_log, pickle_file)
-    return preprocessed_log
+    return preprocessed_log, "_".join(filename_parts)
