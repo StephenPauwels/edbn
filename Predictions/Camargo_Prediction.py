@@ -7,7 +7,7 @@ import Camargo.model_training as mo
 
 def main(argv):
     dataset = argv[0]
-    dataset_size = 2000
+    dataset_size = 20000000
     add_end = True
     if argv[1] == "1":
         resource_pools = True
