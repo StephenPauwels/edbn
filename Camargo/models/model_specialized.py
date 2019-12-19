@@ -151,7 +151,7 @@ def training_model(vec, ac_weights, rl_weights, output_folder, args):
     elif args['optim'] == 'Adagrad':
         opt = Adagrad(lr=0.01, epsilon=None, decay=0.0)
 
-    model.compile(loss={'act_output':'categorical_crossentropy', 'role_output':'categorical_crossentropy', 'time_output':'mae'}, optimizer=opt)
+    model.compile(loss={'act_output':'categorical_crossentropy', 'role_output':'categorical_crossentropy'}, optimizer=opt)
     
     model.summary()
     
