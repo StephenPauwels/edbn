@@ -53,7 +53,7 @@ def training_model(log_df, outfile, args):
     # Input vectorization
     vec = vectorization(log_df_train, ac_index, rl_index, args)
     # Parameters export
-    output_folder = os.path.join('..', 'Camargo', 'output_files', outfile)
+    output_folder = os.path.join('..', 'Camargo', 'output_files', outfile, args['model_type'])
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
         os.makedirs(os.path.join(output_folder, 'parameters'))

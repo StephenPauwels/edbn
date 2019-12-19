@@ -102,9 +102,10 @@ def get_data(dataset, dataset_size, k, add_end, reduce_tasks, resource_pools, re
             logfile.filter_case_length(5)
         elif dataset == BPIC12W:
             logfile = LogFile("../Data/Camargo_BPIC12W.csv", ",", 0, dataset_size, "completeTime", "case", activity_attr="event", convert=False, k=k)
-            logfile.remove_attributes(["startTime","completeTime", "REG_DATE", "(case)_AMOUNT_REQ"])
+            logfile.keep_attributes(["case", "event", "org:resource"])
             resource_attr = "org:resource"
             logfile.filter_case_length(5)
+            print(logfile.get_data())
         elif dataset == HELPDESK:
             logfile = LogFile("../Data/Camargo_Helpdesk.csv", ",", 0, dataset_size, "completeTime", "case", activity_attr="event", convert=False, k=k)
             resource_attr = "Resource"
