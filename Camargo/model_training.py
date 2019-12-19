@@ -56,7 +56,7 @@ def training_model(log_df, outfile, args):
     output_folder = os.path.join('..', 'Camargo', 'output_files', outfile, args['model_type'])
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
-        os.makedirs(os.path.join(output_folder, 'parameters'))
+        os.makedirs(os.path.join(output_folder, 'data'))
 
     parameters = {}
     parameters['event_log'] = args['file_name']
@@ -68,12 +68,15 @@ def training_model(log_df, outfile, args):
                              features=str(len(ac_index)))
 
     sup.create_json(parameters, os.path.join(output_folder,
-                                             'parameters',
                                              'model_parameters.json'))
     sup.create_csv_file_header(log_df_test.to_dict('records'),
                                os.path.join(output_folder,
-                                            'parameters',
+                                            'data',
                                             'test_log.csv'))
+    sup.create_csv_file_header(log_df_train.to_dict('record'),
+                               os.path.join(output_folder,
+                                            'data',
+                                            'train_log.csv'))
 
     if args['model_type'] == 'joint':
         mj.training_model(vec, ac_weights, rl_weights, output_folder, args)
@@ -135,7 +138,7 @@ def training_model_old(timeformat, args, no_loops=False):
     output_folder = os.path.join('output_files', sup.folder_id())
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
-        os.makedirs(os.path.join(output_folder, 'parameters'))
+        os.makedirs(os.path.join(output_folder, 'data'))
 
     parameters['event_log'] = args['file_name']
     parameters['exp_desc'] = args
@@ -147,12 +150,15 @@ def training_model_old(timeformat, args, no_loops=False):
     parameters['max_tbtw'] = vec['max_tbtw']
 
     sup.create_json(parameters, os.path.join(output_folder,
-                                             'parameters',
                                              'model_parameters.json'))
     sup.create_csv_file_header(log_df_test.to_dict('records'),
                                os.path.join(output_folder,
-                                            'parameters',
+                                            'data',
                                             'test_log.csv'))
+    sup.create_csv_file_header(log_df_train.to_dict('record'),
+                               os.path.join(output_folder,
+                                            'data',
+                                            'train_log.csv'))
 
     if args['model_type'] == 'joint':
         mj.training_model(vec, ac_weights, rl_weights, output_folder, args)

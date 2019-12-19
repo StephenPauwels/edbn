@@ -34,7 +34,7 @@ def main(argv):
     args['dense_act'] = None # optimization function see keras doc
     args['optim'] = 'Nadam' # optimization function see keras doc
 
-    em.training_model(logfile.data, dataset_name)
+    #em.training_model(logfile.data, dataset_name)
     mo.training_model(logfile.data, dataset_name, args)
 
 if __name__ == "__main__":
