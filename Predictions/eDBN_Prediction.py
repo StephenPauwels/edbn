@@ -44,7 +44,7 @@ def get_probabilities(variable, val_tuple, parents):
             if len(prediction_options) > 0:
                 return prediction_options, False
             else:
-                return {0:0}, False
+                return {0:0}, True
 
 
 
@@ -64,7 +64,10 @@ def predict_next_event(model, test_log):
             value.append(getattr(row[1], parent.attr_name))
         tuple_val = tuple(value)
 
-        probs, _ = get_probabilities(model.variables[test_log.activity], tuple_val, parents)
+        probs, unknown = get_probabilities(model.variables[test_log.activity], tuple_val, parents)
+
+        if unknown:
+            print("unknown")
 
         # Select value with highest probability
         predicted_val = max(probs, key=lambda l: probs[l])
@@ -453,7 +456,7 @@ def brier_multi(targets, probs):
     return np.mean(np.sum((probs - targets)**2))
 
 
-if __name__ == "__main__":
+def run_dataset():
     dataset = data.BPIC15
     dataset_size = 200000
     add_end = False
@@ -477,3 +480,21 @@ if __name__ == "__main__":
 
     predict_next_event(model, test_log)
     #predict_suffix(model, test_log)
+
+
+if __name__ == "__main__":
+    from LogFile import LogFile
+
+    train_log = LogFile("../Camargo/output_files/output_run3/BPIC12_20000000_2_1_0_0_1/shared_cat/data/train_log.csv", ",", 0, 200000, None, "caseid",
+                      activity_attr="task", convert=False, k=2)
+    train_log.keep_attributes(["caseid", "task", "role"])
+
+    model = edbn.train(train_log)
+
+    test_log = LogFile("../Camargo/output_files/output_run3/BPIC12_20000000_2_1_0_0_1/shared_cat/data/test_log.csv",
+                        ",", 0, 20000000, None, "caseid",
+                        activity_attr="task", convert=False, k=2, values=train_log.values)
+    test_log.keep_attributes(["caseid", "task", "role"])
+
+    test_log.create_k_context()
+    predict_next_event(model, test_log)

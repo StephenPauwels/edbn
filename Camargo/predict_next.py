@@ -115,7 +115,7 @@ def predict_next_old(timeformat, parameters, is_single_exec=True):
                                                                           'next_event_measures.csv'))
 
 
-def predict_next(timeformat, output_folder, model_file, is_single_exec=True):
+def predict_next(output_folder, model_file, is_single_exec=True):
     """Main function of the suffix prediction module.
     Args:
         timeformat (str): event-log date-time format.
@@ -123,47 +123,32 @@ def predict_next(timeformat, output_folder, model_file, is_single_exec=True):
         is_single_exec (boolean): generate measurments stand alone or share
                     results with other runing experiments (optional)
     """
-    global START_TIMEFORMAT
     global INDEX_AC
     global INDEX_RL
     global DIM
     global TBTW
     global EXP
 
-    START_TIMEFORMAT = timeformat
-
     output_route = os.path.join('..', 'Camargo', 'output_files', output_folder)
     model_name, _ = os.path.splitext(model_file)
     # Loading of testing dataframe
-    df_test = pd.read_csv(os.path.join(output_route, 'parameters', 'test_log.csv'))
+    df_test = pd.read_csv(os.path.join(output_route, 'data', 'test_log.csv'))
 #    df_test['start_timestamp'] = pd.to_datetime(df_test['start_timestamp'])
 #    df_test['end_timestamp'] = pd.to_datetime(df_test['end_timestamp'])
 #    df_test = df_test.drop(columns=['user'])
 #    df_test = df_test.rename(index=str, columns={"role": "user"})
 
     # Loading of parameters from training
-    with open(os.path.join(output_route, 'parameters', 'model_parameters.json')) as file:
+    with open(os.path.join(output_route, 'model_parameters.json')) as file:
         data = json.load(file)
         EXP = {k: v for k, v in data['exp_desc'].items()}
         print(EXP)
         DIM['samples'] = int(data['dim']['samples'])
         DIM['time_dim'] = int(data['dim']['time_dim'])
         DIM['features'] = int(data['dim']['features'])
-        TBTW['max_tbtw'] = float(data['max_tbtw'])
         INDEX_AC = {int(k): v for k, v in data['index_ac'].items()}
         INDEX_RL = {int(k): v for k, v in data['index_rl'].items()}
         file.close()
-
-    if EXP['norm_method'] == 'max':
-        max_tbtw = np.max(df_test.tbtw)
-        norm = lambda x: x['tbtw']/max_tbtw
-        df_test['tbtw_norm'] = df_test.apply(norm, axis=1)
-    elif EXP['norm_method'] == 'lognorm':
-        logit = lambda x: math.log1p(x['tbtw'])
-        df_test['tbtw_log'] = df_test.apply(logit, axis=1)
-        max_tbtw = np.max(df_test.tbtw_log)
-        norm = lambda x: x['tbtw_log']/max_tbtw
-        df_test['tbtw_norm'] = df_test.apply(norm, axis=1)
 
     ac_alias = create_alias(len(INDEX_AC))
     rl_alias = create_alias(len(INDEX_RL))
