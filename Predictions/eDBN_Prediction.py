@@ -1,3 +1,5 @@
+import copy
+
 import EDBN.Execute as edbn
 
 import Preprocessing as data
@@ -26,7 +28,36 @@ def get_probabilities(variable, val_tuple, parents):
 
         if None in value_probs:
             # TODO iterate over all possible values of None valued attributes
-            return {0: 0}, True
+            possible_values = [[]]
+            for idx in range(len(parents)):
+                if value_probs[idx] is None:
+                    new_possible_values = []
+                    for poss_val in possible_values:
+                        for val in parents[idx].values.keys():
+                                new_possible_values.append(poss_val + [val])
+                    possible_values = new_possible_values
+                else:
+                    for poss_val in possible_values:
+                        poss_val.append(val_tuple[idx])
+
+            prediction_options = {}
+
+            for value in possible_values:
+                value_prob = 1
+                for idx in range(len(parents)):
+                    if value_probs[idx] is None:
+                        value_prob *= parents[idx].values[value[idx]]
+                parent_tuple_val = tuple(value)
+                if parent_tuple_val in variable.cpt:
+                    for pred_val, prob in variable.cpt[parent_tuple_val].items():
+                        if pred_val not in prediction_options:
+                            prediction_options[pred_val] = 0
+                        prediction_options[pred_val] += value_prob * prob
+
+            if len(prediction_options) > 0:
+                return prediction_options, False
+            else:
+                return {0: 0}, True
         else:
             list_val_orig = list(val_tuple)
             prediction_options = {}
@@ -47,61 +78,57 @@ def get_probabilities(variable, val_tuple, parents):
                 return {0:0}, True
 
 
+def predict_next_event_row(row, model, test_log):
+    if getattr(row[1], test_log.activity + "_Prev" + str(test_log.k - 1)) == 0:
+        return -1
 
-def predict_next_event(model, test_log):
-    correct = 0
-    false = 0
-    brier_score = []
+    parents = model.variables[test_log.activity].conditional_parents
 
-    for row in test_log.contextdata.iterrows():
-        if getattr(row[1], test_log.activity + "_Prev" + str(test_log.k - 1)) == 0:
-            continue
+    value = []
+    for parent in parents:
+        value.append(getattr(row[1], parent.attr_name))
+    tuple_val = tuple(value)
 
-        parents = model.variables[test_log.activity].conditional_parents
+    probs, unknown = get_probabilities(model.variables[test_log.activity], tuple_val, parents)
 
-        value = []
-        for parent in parents:
-            value.append(getattr(row[1], parent.attr_name))
-        tuple_val = tuple(value)
+    # Select value with highest probability
+    predicted_val = max(probs, key=lambda l: probs[l])
 
-        probs, unknown = get_probabilities(model.variables[test_log.activity], tuple_val, parents)
+    # Select value random according to probabilities
+    """
+    values = list(probs.keys())
+    random_choice = random.random()
+    values_idx = 0
+    total_prob = probs[values[values_idx]]
+    while total_prob < random_choice and values_idx < len(values) - 1:
+        values_idx += 1
+        total_prob += probs[values[values_idx]]
+    predicted_val = values[values_idx]
+    """
 
-        if unknown:
-            print("unknown")
+    if getattr(row[1], test_log.activity) == predicted_val:
+        return 1
+    else:
+    #    if getattr(row[1], test_log.activity) in probs:
+    #        print("Predicted prob:", probs[predicted_val], " Correct prob:", probs[getattr(row[1], test_log.activity)], probs)
+    #    else:
+    #        print("Unknown: not in probs")
+        return 0
 
-        # Select value with highest probability
-        predicted_val = max(probs, key=lambda l: probs[l])
 
-        # Select value random according to probabilities
-        """
-        values = list(probs.keys())
-        random_choice = random.random()
-        values_idx = 0
-        total_prob = probs[values[values_idx]]
-        while total_prob < random_choice and values_idx < len(values) - 1:
-            values_idx += 1
-            total_prob += probs[values[values_idx]]
-        predicted_val = values[values_idx]
-        """
+def predict_next_event(edbn_model, log):
+    result = []
 
-        if getattr(row[1], test_log.activity) == predicted_val:
-            correct += 1
-        else:
-            false += 1
+    with mp.Pool(mp.cpu_count()) as p:
+        result = p.map(functools.partial(predict_next_event_row, model=edbn_model, test_log=log), log.contextdata.iterrows())
 
-        target = []
-        prediction = []
-        for val, prob in probs.items():
-            if val == getattr(row[1], test_log.activity):
-                target.append(1)
-            else:
-                target.append(0)
-            prediction.append(prob)
-        brier_score.append(brier_multi(np.array(target), np.array(prediction)))
+    result = [r for r in result if r != -1]
+    correct = np.sum(result)
+    false = len(result) - correct
 
     print(correct, false)
-    print(correct / (correct + false))
-    print("Brier Score:", np.average(brier_score))
+    print(correct / len(result))
+    print(np.average(result))
 
 def predict_suffix(model, test_log):
     all_parents, attributes = get_prediction_attributes(model, test_log.activity)
@@ -457,44 +484,107 @@ def brier_multi(targets, probs):
 
 
 def run_dataset():
-    dataset = data.BPIC15
-    dataset_size = 200000
-    add_end = False
+    dataset = data.HELPDESK
+    dataset_size = 2000000000
+    add_end = True
     resource_pools =  False
     reduce_tasks = False
     logfile_k = 2
     bpic_file = 5
 
-    remove_resource = False
+    remove_resource = True
 
-    logfile = data.get_data(dataset, dataset_size, logfile_k, add_end, reduce_tasks, resource_pools, remove_resource)
+    logfile, log_filename = data.get_data(dataset, dataset_size, logfile_k, add_end, reduce_tasks, resource_pools, remove_resource)
     #logfile.keep_attributes(["case", "event"])
 
     train_log, test_log = logfile.splitTrainTest(70)
     model = edbn.train(train_log)
 
     # Train average number of duplicated events
-    duplicates = learn_duplicated_events(train_log)
-    print(duplicates)
-    model.duplicate_events = duplicates
+#    duplicates = learn_duplicated_events(train_log)
+#    print(duplicates)
+#    model.duplicate_events = duplicates
 
     predict_next_event(model, test_log)
     #predict_suffix(model, test_log)
 
 
-if __name__ == "__main__":
+def test_datasets():
     from LogFile import LogFile
+    import pandas as pd
+    from Utils.Uncertainty_Coefficient import calculate_mutual_information, calculate_entropy
 
-    train_log = LogFile("../Camargo/output_files/output_run3/BPIC12_20000000_2_1_0_0_1/shared_cat/data/train_log.csv", ",", 0, 200000, None, "caseid",
-                      activity_attr="task", convert=False, k=2)
-    train_log.keep_attributes(["caseid", "task", "role"])
+    camargo_folder = "../Camargo/output_files/output_run3/BPIC15_20000000_2_1_0_0_1/shared_cat/data/"
 
-    model = edbn.train(train_log)
+    train_camargo = LogFile(camargo_folder + "train_log.csv", ",", 0, 20000000, None, "caseid",
+                        activity_attr="task", convert=False, k=2)
+    train_camargo.keep_attributes(["caseid", "task", "role"])
 
-    test_log = LogFile("../Camargo/output_files/output_run3/BPIC12_20000000_2_1_0_0_1/shared_cat/data/test_log.csv",
+    test_camargo = LogFile(camargo_folder + "test_log.csv",
+                       ",", 0, 20000000, None, "caseid",
+                       activity_attr="task", convert=False, k=2, values=train_camargo.values)
+    test_camargo.keep_attributes(["caseid", "task", "role"])
+
+    total_camargo = pd.concat([test_camargo.data, train_camargo.data])
+
+    total, name = data.get_data(data.BPIC15, 20000000, 2, True, False, False, True)
+    total_data = total.data
+
+    print(total_camargo)
+    print(total_data)
+
+    print(total_camargo.columns, total_data.columns)
+    for idx in range(3):
+        col1 = total_camargo[total_camargo.columns[idx]]
+        col2 = total_data[total_data.columns[idx]]
+        print(calculate_mutual_information(col1, col2), calculate_entropy(col1), calculate_entropy(col2))
+
+if __name__ == "__main__":
+    test_datasets()
+    #run_dataset()
+
+    """
+    from LogFile import LogFile
+    import os
+    import pickle
+
+    trainings = []
+    trainings.append({"folder": "../Camargo/output_files/output_run3/BPIC12_20000000_2_1_0_0_1/shared_cat/data/", "model": "BPIC12_20000000_2_1_0_0_1"})
+    trainings.append({"folder": "../Camargo/output_files/output_run3/BPIC12_20000000_2_1_0_1_1/shared_cat/data/", "model": "BPIC12_20000000_2_1_0_1_1"})
+    #trainings.append({"folder": "../Camargo/output_files/output_run3/BPIC12W_20000000_2_1_0_0_1/shared_cat/data/", "model": "BPIC12W_20000000_2_1_0_0_1"})
+    #trainings.append({"folder": "../Camargo/output_files/output_run3/BPIC12W_20000000_2_1_0_1_1/shared_cat/data/", "model": "BPIC12W_20000000_2_1_0_1_1"})
+    #trainings.append({"folder": "../Camargo/output_files/output_run3/BPIC15_20000000_2_1_0_0_1/shared_cat/data/", "model": "BPIC15_20000000_2_1_0_0_1"})
+    #trainings.append({"folder": "../Camargo/output_files/output_run3/BPIC15_20000000_2_1_0_1_1/shared_cat/data/", "model": "BPIC15_20000000_2_1_0_1_1"})
+    #trainings.append({"folder": "../Camargo/output_files/output_run3/HELPDESK_20000000_2_1_0_0_1/shared_cat/data/", "model": "HELPDESK_20000000_2_1_0_0_1"})
+    #trainings.append({"folder": "../Camargo/output_files/output_run3/HELPDESK_20000000_2_1_0_1_1/shared_cat/data/", "model": "HELPDESK_20000000_2_1_0_1_1"})
+
+    for training in trainings:
+        print("TRAIN:", training["model"])
+
+        camargo_folder = training["folder"]
+        model_file = training["model"]
+
+        train_log = LogFile(camargo_folder + "train_log.csv", ",", 0, 20000000, None, "caseid",
+                          activity_attr="task", convert=False, k=2)
+        train_log.keep_attributes(["caseid", "task", "role"])
+
+        model = None
+        if os.path.exists(model_file):
+            print("Reading model from file")
+            with open(model_file, "rb") as pickle_file:
+                model = pickle.load(pickle_file)
+        else:
+            print("Writing model to file")
+            model = edbn.train(train_log)
+            with open(model_file, "wb") as pickle_file:
+                pickle.dump(model, pickle_file)
+
+        test_log = LogFile(camargo_folder + "test_log.csv",
                         ",", 0, 20000000, None, "caseid",
                         activity_attr="task", convert=False, k=2, values=train_log.values)
-    test_log.keep_attributes(["caseid", "task", "role"])
+        test_log.keep_attributes(["caseid", "task", "role"])
 
-    test_log.create_k_context()
-    predict_next_event(model, test_log)
+        test_log.create_k_context()
+        predict_next_event(model, test_log)
+        input("Done, waiting...")
+        """

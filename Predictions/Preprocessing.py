@@ -84,6 +84,8 @@ def get_data(dataset, dataset_size, k, add_end, reduce_tasks, resource_pools, re
             filename_parts.append(str(0))
     cache_file = LOGFILE_PATH + "/" + "_".join(filename_parts)
 
+    colTitles = []
+
     if os.path.exists(cache_file):
         print("Loading file from cache")
         with open(cache_file, "rb") as pickle_file:
@@ -93,24 +95,26 @@ def get_data(dataset, dataset_size, k, add_end, reduce_tasks, resource_pools, re
         if dataset == BPIC15:
             logfile = LogFile("../Data/BPIC15_1_sorted_new.csv", ",", 0, dataset_size, "Complete Timestamp", "Case ID", activity_attr="Activity", convert=False, k=k)
             resource_attr = "Resource"
-            logfile.keep_attributes(["Case ID", "Activity", "Resource"])
+            colTitles = ["Case ID", "Activity", "Resource"]
+            logfile.keep_attributes(colTitles)
             logfile.filter_case_length(5)
         elif dataset == BPIC12:
             logfile = LogFile("../Data/Camargo_BPIC2012.csv", ",", 0, dataset_size, "completeTime", "case", activity_attr="event", convert=False, k=k)
-            logfile.remove_attributes(["startTime","completeTime", "REG_DATE", "AMOUNT_REQ"])
             resource_attr = "org:resource"
+            colTitles = ["case", "event", "org:resource"]
+            logfile.keep_attributes(colTitles)
             logfile.filter_case_length(5)
         elif dataset == BPIC12W:
             logfile = LogFile("../Data/Camargo_BPIC12W.csv", ",", 0, dataset_size, "completeTime", "case", activity_attr="event", convert=False, k=k)
-            logfile.keep_attributes(["case", "event", "org:resource"])
             resource_attr = "org:resource"
+            colTitles = ["case", "event", "org:resource"]
+            logfile.keep_attributes(colTitles)
             logfile.filter_case_length(5)
-            print(logfile.get_data())
         elif dataset == HELPDESK:
             logfile = LogFile("../Data/Camargo_Helpdesk.csv", ",", 0, dataset_size, "completeTime", "case", activity_attr="event", convert=False, k=k)
             resource_attr = "Resource"
-            logfile.keep_attributes(["case", "event", "Resource"])
-            #logfile.keep_attributes(["case", "event"])
+            colTitles = ["case", "event", "Resource"]
+            logfile.keep_attributes(colTitles)
             logfile.filter_case_length(3)
         elif dataset == CLICKS:
             logfile = LogFile("../Data/BPI2016_Clicks_Logged_In.csv", ";", 0, dataset_size, "TIMESTAMP", "SessionID", activity_attr="URL_FILE", convert=False, k=k)
@@ -127,6 +131,9 @@ def get_data(dataset, dataset_size, k, add_end, reduce_tasks, resource_pools, re
             print("Unknown Dataset")
             return None
         preprocessed_log = preprocess(logfile, add_end, reduce_tasks, resource_pools, resource_attr, remove_resource)
+
+        preprocessed_log.data = preprocessed_log.data.reindex(columns=colTitles)
+
         preprocessed_log.create_k_context()
         with open(cache_file, "wb") as pickle_file:
             pickle.dump(preprocessed_log, pickle_file)

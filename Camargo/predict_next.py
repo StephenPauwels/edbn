@@ -168,9 +168,9 @@ def predict_next(output_folder, model_file, is_single_exec=True):
             
             accuracy = (np.sum([x['ac_true'] for x in prefixes])/len(prefixes))
 
-            if is_single_exec:
-                sup.create_csv_file_header(prefixes, os.path.join(output_route,
-                                                                      model_name +'_rep_'+str(i)+'_next.csv'))
+            #if is_single_exec:
+            #    sup.create_csv_file_header(prefixes, os.path.join(output_route,
+            #                                                          model_name +'_rep_'+str(i)+'_next.csv'))
             
             # Save results
             measurements.append({**dict(model=os.path.join(output_route, model_file),
@@ -180,11 +180,11 @@ def predict_next(output_folder, model_file, is_single_exec=True):
                     sup.create_csv_file_header(measurements, os.path.join(output_route,
                                                                           model_name +'_next.csv'))
             else:
-                if os.path.exists(os.path.join('output_files', 'next_event_measures.csv')):
-                    sup.create_csv_file(measurements, os.path.join('..', 'Camargo', 'output_files',
+                if os.path.exists(os.path.join(output_route, 'next_event_measures.csv')):
+                    sup.create_csv_file(measurements, os.path.join(output_route,
                                                                    'next_event_measures.csv'), mode='a')
                 else:
-                    sup.create_csv_file_header(measurements, os.path.join('..', 'Camargo', 'output_files',
+                    sup.create_csv_file_header(measurements, os.path.join(output_route,
                                                                               'next_event_measures.csv'))
 
 # =============================================================================

@@ -56,7 +56,7 @@ class LogFile:
         for case in cases:
             if len(case[1]) > min_length:
                 filtered_cases.append(case[1])
-        self.data = pd.concat(filtered_cases)
+        self.data = pd.concat(filtered_cases, ignore_index=True)
 
     def convert2int(self):
         self.convert2ints("../converted_ints.csv")
