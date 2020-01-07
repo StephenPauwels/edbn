@@ -130,8 +130,10 @@ def get_data(dataset, dataset_size, k, add_end, reduce_tasks, resource_pools, re
         else:
             print("Unknown Dataset")
             return None
-        preprocessed_log = preprocess(logfile, add_end, reduce_tasks, resource_pools, resource_attr, remove_resource)
 
+        preprocessed_log = preprocess(logfile, add_end, reduce_tasks, resource_pools, resource_attr, remove_resource)
+        if resource_pools:
+            colTitles[2] = "role"
         preprocessed_log.data = preprocessed_log.data.reindex(columns=colTitles)
 
         preprocessed_log.create_k_context()

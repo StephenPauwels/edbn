@@ -35,7 +35,7 @@ def main(argv):
     args['optim'] = 'Nadam' # optimization function see keras doc
 
     em.training_model(logfile.data, dataset_name)
-    #mo.training_model(logfile.data, dataset_name, args)
+#    mo.training_model(logfile.data, dataset_name, args)
 
 if __name__ == "__main__":
     main(sys.argv[1:])

@@ -1,17 +1,13 @@
-import copy
-
 import EDBN.Execute as edbn
 
 import Preprocessing as data
 import re
 
 import numpy as np
-import jellyfish as jf
 import multiprocessing as mp
 import functools
 import matplotlib.pyplot as plt
 import random
-import math
 
 
 def get_probabilities(variable, val_tuple, parents):
@@ -514,7 +510,7 @@ def test_datasets():
     import pandas as pd
     from Utils.Uncertainty_Coefficient import calculate_mutual_information, calculate_entropy
 
-    camargo_folder = "../Camargo/output_files/output_run3/BPIC15_20000000_2_1_0_0_1/shared_cat/data/"
+    camargo_folder = "../Camargo/output_files/output_run3/BPIC15_20000000_2_1_0_1_1/shared_cat/data/"
 
     train_camargo = LogFile(camargo_folder + "train_log.csv", ",", 0, 20000000, None, "caseid",
                         activity_attr="task", convert=False, k=2)
@@ -527,7 +523,7 @@ def test_datasets():
 
     total_camargo = pd.concat([test_camargo.data, train_camargo.data])
 
-    total, name = data.get_data(data.BPIC15, 20000000, 2, True, False, False, True)
+    total, name = data.get_data(data.BPIC15, 20000000, 2, True, False, True, True)
     total_data = total.data
 
     print(total_camargo)
@@ -549,14 +545,14 @@ if __name__ == "__main__":
     import pickle
 
     trainings = []
-    trainings.append({"folder": "../Camargo/output_files/output_run3/BPIC12_20000000_2_1_0_0_1/shared_cat/data/", "model": "BPIC12_20000000_2_1_0_0_1"})
-    trainings.append({"folder": "../Camargo/output_files/output_run3/BPIC12_20000000_2_1_0_1_1/shared_cat/data/", "model": "BPIC12_20000000_2_1_0_1_1"})
+    #trainings.append({"folder": "../Camargo/output_files/output_run3/BPIC12_20000000_2_1_0_0_1/shared_cat/data/", "model": "BPIC12_20000000_2_1_0_0_1"})
+    #trainings.append({"folder": "../Camargo/output_files/output_run3/BPIC12_20000000_2_1_0_1_1/shared_cat/data/", "model": "BPIC12_20000000_2_1_0_1_1"})
     #trainings.append({"folder": "../Camargo/output_files/output_run3/BPIC12W_20000000_2_1_0_0_1/shared_cat/data/", "model": "BPIC12W_20000000_2_1_0_0_1"})
     #trainings.append({"folder": "../Camargo/output_files/output_run3/BPIC12W_20000000_2_1_0_1_1/shared_cat/data/", "model": "BPIC12W_20000000_2_1_0_1_1"})
-    #trainings.append({"folder": "../Camargo/output_files/output_run3/BPIC15_20000000_2_1_0_0_1/shared_cat/data/", "model": "BPIC15_20000000_2_1_0_0_1"})
-    #trainings.append({"folder": "../Camargo/output_files/output_run3/BPIC15_20000000_2_1_0_1_1/shared_cat/data/", "model": "BPIC15_20000000_2_1_0_1_1"})
-    #trainings.append({"folder": "../Camargo/output_files/output_run3/HELPDESK_20000000_2_1_0_0_1/shared_cat/data/", "model": "HELPDESK_20000000_2_1_0_0_1"})
-    #trainings.append({"folder": "../Camargo/output_files/output_run3/HELPDESK_20000000_2_1_0_1_1/shared_cat/data/", "model": "HELPDESK_20000000_2_1_0_1_1"})
+    trainings.append({"folder": "../Camargo/output_files/output_run3b/BPIC15_20000000_2_1_0_0_1/shared_cat/data/", "model": "BPIC15_20000000_2_1_0_0_1"})
+    trainings.append({"folder": "../Camargo/output_files/output_run3b/BPIC15_20000000_2_1_0_1_1/shared_cat/data/", "model": "BPIC15_20000000_2_1_0_1_1"})
+    trainings.append({"folder": "../Camargo/output_files/output_run3b/HELPDESK_20000000_2_1_0_0_1/shared_cat/data/", "model": "HELPDESK_20000000_2_1_0_0_1"})
+    trainings.append({"folder": "../Camargo/output_files/output_run3b/HELPDESK_20000000_2_1_0_1_1/shared_cat/data/", "model": "HELPDESK_20000000_2_1_0_1_1"})
 
     for training in trainings:
         print("TRAIN:", training["model"])
