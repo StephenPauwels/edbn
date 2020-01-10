@@ -529,9 +529,27 @@ def test_datasets():
         col2 = total_data[total_data.columns[idx]]
         print(calculate_mutual_information(col1, col2), calculate_entropy(col1), calculate_entropy(col2))
 
+def run_Tax():
+    from LogFile import LogFile
+
+    logfile = LogFile("../Tax/data/helpdesk.csv", ",", 0, 20000000, None, "CaseID", activity_attr="ActivityID", convert=True, k=2)
+    logfile.keep_attributes(["CaseID", "ActivityID"])
+    logfile.create_k_context()
+
+    train_log, test_log = logfile.splitTrainTest(70)
+    model = edbn.train(train_log)
+
+    # Train average number of duplicated events
+    model.duplicate_events = learn_duplicated_events(train_log)
+
+    predict_next_event(model, test_log)
+    #predict_suffix(model, test_log)
+
+
 if __name__ == "__main__":
     #test_datasets()
     #run_dataset()
+    #run_Tax()
 
 
     from LogFile import LogFile
@@ -540,14 +558,14 @@ if __name__ == "__main__":
     import pickle
 
     trainings = []
-    trainings.append({"folder": "../Camargo/output_files/output_run3/BPIC12_20000000_2_1_0_0_1/shared_cat/data/", "model": "BPIC12_20000000_2_1_0_0_1"})
+    # trainings.append({"folder": "../Camargo/output_files/output_run3/BPIC12_20000000_2_1_0_0_1/shared_cat/data/", "model": "BPIC12_20000000_2_1_0_0_1"})
     # trainings.append({"folder": "../Camargo/output_files/output_run3/BPIC12_20000000_2_1_0_1_1/shared_cat/data/", "model": "BPIC12_20000000_2_1_0_1_1"})
     # trainings.append({"folder": "../Camargo/output_files/output_run3/BPIC12W_20000000_2_1_0_0_1/shared_cat/data/", "model": "BPIC12W_20000000_2_1_0_0_1"})
     # trainings.append({"folder": "../Camargo/output_files/output_run3/BPIC12W_20000000_2_1_0_1_1/shared_cat/data/", "model": "BPIC12W_20000000_2_1_0_1_1"})
     # trainings.append({"folder": "../Camargo/output_files/output_run3b/BPIC15_20000000_2_1_0_0_1/shared_cat/data/", "model": "BPIC15_20000000_2_1_0_0_1"})
     # trainings.append({"folder": "../Camargo/output_files/output_run3b/BPIC15_20000000_2_1_0_1_1/shared_cat/data/", "model": "BPIC15_20000000_2_1_0_1_1"})
-    # trainings.append({"folder": "../Camargo/output_files/output_run3b/HELPDESK_20000000_2_1_0_0_1/shared_cat/data/", "model": "HELPDESK_20000000_2_1_0_0_1"})
-    # trainings.append({"folder": "../Camargo/output_files/output_run3b/HELPDESK_20000000_2_1_0_1_1/shared_cat/data/", "model": "HELPDESK_20000000_2_1_0_1_1"})
+    trainings.append({"folder": "../Camargo/output_files/output_run3b/HELPDESK_20000000_2_1_0_0_1/shared_cat/data/", "model": "HELPDESK_20000000_2_1_0_0_1"})
+    trainings.append({"folder": "../Camargo/output_files/output_run3b/HELPDESK_20000000_2_1_0_1_1/shared_cat/data/", "model": "HELPDESK_20000000_2_1_0_1_1"})
 
     if not os.path.exists("Results.csv"):
         with open("Results.csv", "w") as fout:
@@ -585,12 +603,12 @@ if __name__ == "__main__":
         test_log.keep_attributes(["caseid", "task", "role"])
         test_log.create_k_context()
 
-        """
+        
         acc = predict_next_event(model, test_log)
         with open("Results.csv", "a") as fout:
             fout.write(",".join([str(datetime.now()), model_file, "Predict_Next", str(acc)]))
             fout.write("\n")
-        """
+        
 
         sim = predict_suffix(model, test_log)
         with open("Results.csv", "a") as fout:
