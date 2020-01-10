@@ -42,8 +42,6 @@ def calculate_mappings(data, attributes, threshold):
                     prev_attr2 = attr2 + "_Prev%i" % (i)
                     if prev_attr2 in data.get_data().columns:
                         debug = False
-                        if attr1 == "planned" and prev_attr2 == "planned_Prev0":
-                            debug = True
                         if is_mapping(filtered_data[attr1], filtered_data[prev_attr2], threshold, debug):
                             mappings.append((prev_attr2, attr1))
     return mappings

@@ -25,7 +25,7 @@ DIM = dict()
 TBTW = dict()
 EXP = dict()
 
-def predict_prefix(timeformat, parameters, is_single_exec=True):
+def predict_suffix_old(timeformat, parameters, is_single_exec=True):
     """Main function of the suffix prediction module.
     Args:
         timeformat (str): event-log date-time format.
@@ -111,6 +111,82 @@ def predict_prefix(timeformat, parameters, is_single_exec=True):
                     sup.create_csv_file_header(measurements, os.path.join('output_files',
                                                                       'sufix_measures.csv'))
 
+
+def predict_suffix(output_folder, model_file, is_single_exec=True):
+    """Main function of the suffix prediction module.
+    Args:
+        timeformat (str): event-log date-time format.
+        parameters (dict): parameters used in the training step.
+        is_single_exec (boolean): generate measurments stand alone or share
+                    results with other runing experiments (optional)
+    """
+    global START_TIMEFORMAT
+    global INDEX_AC
+    global INDEX_RL
+    global DIM
+    global TBTW
+    global EXP
+
+    START_TIMEFORMAT = timeformat
+
+    max_trace_size = 100
+
+    output_route = os.path.join('..', 'Camargo', 'output_files', output_folder)
+    model_name, _ = os.path.splitext(model_file)
+    # Loading of testing dataframe
+    df_test = pd.read_csv(os.path.join(output_route, 'parameters', 'test_log.csv'))
+    #df_test['start_timestamp'] = pd.to_datetime(df_test['start_timestamp'])
+    #df_test['end_timestamp'] = pd.to_datetime(df_test['end_timestamp'])
+    #df_test = df_test.drop(columns=['user'])
+    #df_test = df_test.rename(index=str, columns={"role": "user"})
+
+    # Loading of parameters from training
+    with open(os.path.join(output_route, 'parameters', 'model_parameters.json')) as file:
+        data = json.load(file)
+        EXP = {k: v for k, v in data['exp_desc'].items()}
+        print(EXP)
+        DIM['samples'] = int(data['dim']['samples'])
+        DIM['time_dim'] = int(data['dim']['time_dim'])
+        DIM['features'] = int(data['dim']['features'])
+        INDEX_AC = {int(k): v for k, v in data['index_ac'].items()}
+        INDEX_RL = {int(k): v for k, v in data['index_rl'].items()}
+        file.close()
+
+    ac_alias = create_alias(len(INDEX_AC))
+    rl_alias = create_alias(len(INDEX_RL))
+
+    #   Next event selection method and numbers of repetitions
+    variants = [{'imp': 'Random Choice', 'rep': 2},
+                {'imp': 'Arg Max', 'rep': 1}]
+
+    #   Generation of predictions
+    model = load_model(os.path.join(output_route, model_file))
+
+    for var in variants:
+        args = dict(df_test=df_test, ac_alias=ac_alias, rl_alias=rl_alias,
+                    output_route=output_route, model_file=model_file,
+                    imp=var['imp'], max_trace_size=max_trace_size)
+
+        measurements = list()
+        for i in range(0, var['rep']):
+            results = execute_experiments([2, 5, 8, 10, 15, 20], model, args)
+            # Save results
+            measurements.append({**dict(model=os.path.join(output_route, model_file),
+                                        implementation=var['imp']), **results,
+                                 **EXP})
+        if measurements:
+            if is_single_exec:
+                sup.create_csv_file_header(measurements, os.path.join(output_route,
+                                                                      model_name + '_sufix.csv'))
+            else:
+                if os.path.exists(os.path.join(output_route, 'sufix_measures.csv')):
+                    sup.create_csv_file(measurements, os.path.join(output_route,
+                                                                   'sufix_measures.csv'), mode='a')
+                else:
+                    sup.create_csv_file_header(measurements, os.path.join(output_route,
+                                                                          'sufix_measures.csv'))
+
+
 # =============================================================================
 # Generate experiments
 # =============================================================================
@@ -129,19 +205,19 @@ def execute_experiments(prefix_sizes, model, args):
                            args['rl_alias'], args['imp'], args['max_trace_size'])
         prefixes = dl_measure(prefixes, 'ac')
         prefixes = dl_measure(prefixes, 'rl')
-        prefixes = ae_measure(prefixes)
+
         # Calculate metrics
         dl_task = np.mean([x['ac_dl'] for x in prefixes])
         dl_user = np.mean([x['rl_dl'] for x in prefixes])
-        mae = np.mean([x['ae'] for x in prefixes])
+
         # Print reresults
         print('DL task distance pref '+ str(size) +':', dl_task, sep=' ')
         print('DL role distance pref '+ str(size) +':', dl_user, sep=' ')
-        print('MAE pref '+ str(size) +':', mae, sep=' ')
+
         print('----------')
         results['dl_ac_'+str(size)] = dl_task
         results['dl_rl_'+str(size)] = dl_user
-        results['mae_'+str(size)] = mae
+
     return results
 
 # =============================================================================
@@ -231,21 +307,16 @@ def create_pref_suf(df_test, ac_alias, rl_alias, pref_size):
                 if i < pref_size:
                     dictionary['ac_pref'].append(traces.iloc[i]['ac_index'])
                     dictionary['rl_pref'].append(traces.iloc[i]['rl_index'])
-                    dictionary['t_pref'].append(traces.iloc[i]['tbtw_norm'])
                 else:
                     dictionary['ac_suf'] += ac_alias[traces.iloc[i]['ac_index']]
                     dictionary['rl_suf'] += rl_alias[traces.iloc[i]['rl_index']]
-                    dictionary['rem_time'] += traces.iloc[i]['tbtw']
 
             x_ngram = np.zeros((1, (DIM['time_dim'])), dtype=np.float32)
             dictionary['ac_pref'] = np.append(x_ngram, dictionary['ac_pref'])
             dictionary['rl_pref'] = np.append(x_ngram, dictionary['rl_pref'])
-            dictionary['t_pref'] = np.append(x_ngram, dictionary['t_pref'])
             index = [x for x in range(0, ((DIM['time_dim'] + pref_size) - DIM['time_dim']))]
             dictionary['ac_pref'] = np.delete(dictionary['ac_pref'], index, 0)
             dictionary['rl_pref'] = np.delete(dictionary['rl_pref'], index, 0)
-            dictionary['t_pref'] = np.delete(dictionary['t_pref'], index, 0)
-            dictionary['t_pref'] = dictionary['t_pref'].reshape((dictionary['t_pref'].shape[0], 1))
 
             splits.append(dictionary)
     return splits

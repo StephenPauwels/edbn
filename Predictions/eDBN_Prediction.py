@@ -23,32 +23,26 @@ def get_probabilities(variable, val_tuple, parents):
                 value_probs.append(parents[i].values[val_tuple[i]])
 
         if None in value_probs:
-            # TODO iterate over all possible values of None valued attributes
-            possible_values = [[]]
-            for idx in range(len(parents)):
-                if value_probs[idx] is None:
-                    new_possible_values = []
-                    for poss_val in possible_values:
-                        for val in parents[idx].values.keys():
-                                new_possible_values.append(poss_val + [val])
-                    possible_values = new_possible_values
-                else:
-                    for poss_val in possible_values:
-                        poss_val.append(val_tuple[idx])
+            possible_values = []
+            # Iterate over all known parent configurations
+            for par_config in variable.cpt:
+                match_config = True
+                config_prob = 1
+                for i in range(len(par_config)):
+                    if value_probs[i] is None:
+                        config_prob *= parents[i].values[par_config[i]]
+                    elif value_probs[i] != par_config[i]:
+                        match_config = False
+                        break
+                if match_config:
+                    possible_values.append((par_config, config_prob))
 
             prediction_options = {}
-
-            for value in possible_values:
-                value_prob = 1
-                for idx in range(len(parents)):
-                    if value_probs[idx] is None:
-                        value_prob *= parents[idx].values[value[idx]]
-                parent_tuple_val = tuple(value)
-                if parent_tuple_val in variable.cpt:
-                    for pred_val, prob in variable.cpt[parent_tuple_val].items():
-                        if pred_val not in prediction_options:
-                            prediction_options[pred_val] = 0
-                        prediction_options[pred_val] += value_prob * prob
+            for parent_value, parent_prob in possible_values:
+                for pred_val, prob in variable.cpt[parent_value].items():
+                    if pred_val not in prediction_options:
+                        prediction_options[pred_val] = 0
+                    prediction_options[pred_val] += parent_prob * prob
 
             if len(prediction_options) > 0:
                 return prediction_options, False
@@ -85,30 +79,16 @@ def predict_next_event_row(row, model, test_log):
         value.append(getattr(row[1], parent.attr_name))
     tuple_val = tuple(value)
 
-    probs, unknown = get_probabilities(model.variables[test_log.activity], tuple_val, parents)
+    activity_var = model.variables[test_log.activity]
+    probs, unknown = get_probabilities(activity_var, tuple_val, parents)
 
     # Select value with highest probability
     predicted_val = max(probs, key=lambda l: probs[l])
 
-    # Select value random according to probabilities
-    """
-    values = list(probs.keys())
-    random_choice = random.random()
-    values_idx = 0
-    total_prob = probs[values[values_idx]]
-    while total_prob < random_choice and values_idx < len(values) - 1:
-        values_idx += 1
-        total_prob += probs[values[values_idx]]
-    predicted_val = values[values_idx]
-    """
-
+    #print(getattr(row[1], test_log.activity), predicted_val, unknown, probs)
     if getattr(row[1], test_log.activity) == predicted_val:
         return 1
     else:
-    #    if getattr(row[1], test_log.activity) in probs:
-    #        print("Predicted prob:", probs[predicted_val], " Correct prob:", probs[getattr(row[1], test_log.activity)], probs)
-    #    else:
-    #        print("Unknown: not in probs")
         return 0
 
 
@@ -125,59 +105,38 @@ def predict_next_event(edbn_model, log):
     print(correct, false)
     print(correct / len(result))
     print(np.average(result))
+    return np.average(result)
 
 def predict_suffix(model, test_log):
     all_parents, attributes = get_prediction_attributes(model, test_log.activity)
 
-    END_EVENT = test_log.convert_string2int(test_log.activity, "END")
-
-    predicted_cases = []
     prefix_results = {}
-    unknown_values = 0
     total_predictions = 0
 
-    for case_name, case in test_log.get_cases():
-        case_events = case[test_log.activity].values
-        for prefix_size in range(1, case.shape[0]): # Iterate over the different prefixes of the case
-            total_predictions += 1
-            # Create last known row (including known history, depending on k of the model)
-            current_row = {}
-            for iter_k in range(test_log.k, -1, -1):
-                index = prefix_size - 1 - iter_k
-                if index >= 0:
-                    row = []
-                    for attr in attributes:
-                        row.append(getattr(case.iloc[index], attr))
-                    current_row[iter_k] = row
-                else:
-                    current_row[iter_k] = [0] * len(attributes)
+    predict_case_func = functools.partial(predict_case, all_parents=all_parents, attributes=attributes, model=model,
+                                          end_event=test_log.convert_string2int(test_log.activity, "END"),
+                                          activity_attr=test_log.activity, k=test_log.k)
+    with mp.Pool(mp.cpu_count()) as p:
+        results = p.map(predict_case_func, test_log.get_cases())
 
-            # Predict suffix given the last known rows. Stop predicting when END_EVENT has been predicted or predicted size >= 100
-            #predicted_rows, unknown_value = predict_case_suffix_highest_prob(all_parents, attributes, current_row, model, test_log.activity, END_EVENT)
-            #predicted_rows, unknown_value = predict_case_suffix_random(all_parents, attributes, current_row, model, test_log.activity, END_EVENT, case[test_log.activity].values[prefix_size:])
-            predicted_rows, unknown_value = predict_case_suffix_loop_threshold(all_parents, attributes, current_row, model, test_log.activity, END_EVENT)
-            #predicted_rows, unknown_value = predict_case_suffix_return_end(all_parents, attributes, current_row, model, test_log.activity, END_EVENT)
+    #results = []
+    #for case in test_log.get_cases():
+    #    results.append(predict_case(case, all_parents, attributes, model, test_log.convert_string2int(test_log.activity, "END"), test_log.activity ))
 
-            if unknown_value:
-                unknown_values += 1
-
-            # Get predicted trace
-            predicted_events = [i[0] for i in predicted_rows]
+    for result in results:
+        for prefix_size in result:
             if prefix_size not in prefix_results:
                 prefix_results[prefix_size] = []
-            # Store similarity for predicted trace according to size of prefix
-            prefix_results[prefix_size].append(1 - (damerau_levenshtein_distance(predicted_events, case_events[prefix_size:]) / max(len(predicted_events), len(case_events[prefix_size:]))))
-            if prefix_size == 1:
-                predicted_cases.append(predicted_events)
+            prefix_results[prefix_size].extend(result[prefix_size])
+
     avg_sims = []
     all_sims = []
     for prefix in sorted(prefix_results.keys()):
-        print(prefix, np.average(prefix_results[prefix]))
         avg_sims.append(np.average(prefix_results[prefix]))
         all_sims.extend(prefix_results[prefix])
             #predicted_cases.append(predicted_rows)
-    plt.plot(sorted(prefix_results.keys()), avg_sims)
-    plt.show()
+    #plt.plot(sorted(prefix_results.keys()), avg_sims)
+    #plt.show()
     #with mp.Pool(mp.cpu_count()) as p:
     #    sims = p.map(functools.partial(calculate_similarity, reference_logfile=test_log), predicted_cases)
     #print("Average Sim (DL - entire log):", np.average(sims))
@@ -186,8 +145,8 @@ def predict_suffix(model, test_log):
 
     print("Average Sim (DL - exact trace):", np.average(prefix_results[1]))
 
-    print("Total Average Sim:", np.average(all_sims))
-    print("Total unknown values:", unknown_values)
+    total_sim = np.average(all_sims)
+    print("Total Average Sim:", total_sim)
     print("Total predictions:", total_predictions )
     #print(sims)
         #print(case[attributes])
@@ -197,6 +156,41 @@ def predict_suffix(model, test_log):
         #    print([test_log.convert_int2string(attributes[i], row[i]) for i in range(len(row))])
 
         #break
+    return total_sim
+
+
+def predict_case(case, all_parents, attributes, model, end_event, activity_attr, k):
+    prefix_results = {}
+    case = case[1]
+    case_events = case[activity_attr].values
+    for prefix_size in range(1, case.shape[0]):  # Iterate over the different prefixes of the case
+        # Create last known row (including known history, depending on k of the model)
+        current_row = {}
+        for iter_k in range(k, -1, -1):
+            index = prefix_size - 1 - iter_k
+            if index >= 0:
+                row = []
+                for attr in attributes:
+                    row.append(getattr(case.iloc[index], attr))
+                current_row[iter_k] = row
+            else:
+                current_row[iter_k] = [0] * len(attributes)
+
+        # Predict suffix given the last known rows. Stop predicting when END_EVENT has been predicted or predicted size >= 100
+        #predicted_rows, unknown_value = predict_case_suffix_highest_prob(all_parents, attributes, current_row, model, activity_attr, end_event)
+        #predicted_rows, unknown_value = predict_case_suffix_random(all_parents, attributes, current_row, model, test_log.activity, end_event)
+        predicted_rows, unknown_value = predict_case_suffix_loop_threshold(all_parents, attributes, current_row, model,activity_attr, end_event)
+        # predicted_rows, unknown_value = predict_case_suffix_return_end(all_parents, attributes, current_row, model, test_log.activity, END_EVENT)
+
+        # Get predicted trace
+        predicted_events = [i[0] for i in predicted_rows if i[0] is not None]
+        if prefix_size not in prefix_results:
+            prefix_results[prefix_size] = []
+        # Store similarity for predicted trace according to size of prefix
+        prefix_results[prefix_size].append(1 - (
+                    damerau_levenshtein_distance(predicted_events, case_events[prefix_size:]) / max(
+                len(predicted_events), len(case_events[prefix_size:]))))
+    return prefix_results
 
 
 def predict_case_suffix_highest_prob(all_parents, attributes, current_row, model, activity_attr, end_event):
@@ -371,7 +365,7 @@ def get_prediction_attributes(model, activity_attribute):
             if current_attribute_version not in all_parents:
                 to_check.append(current_attribute_version)
         to_check.remove(attr)
-    print(all_parents)
+
     for par_attr in all_parents:
         detailed_attributes = []
         for parent in all_parents[par_attr]:
@@ -480,10 +474,10 @@ def brier_multi(targets, probs):
 
 
 def run_dataset():
-    dataset = data.HELPDESK
-    dataset_size = 2000000000
+    dataset = data.BPIC12
+    dataset_size = 200000000
     add_end = True
-    resource_pools =  False
+    resource_pools = False
     reduce_tasks = False
     logfile_k = 2
     bpic_file = 5
@@ -510,7 +504,7 @@ def test_datasets():
     import pandas as pd
     from Utils.Uncertainty_Coefficient import calculate_mutual_information, calculate_entropy
 
-    camargo_folder = "../Camargo/output_files/output_run3/BPIC15_20000000_2_1_0_1_1/shared_cat/data/"
+    camargo_folder = "../Camargo/output_files/output_run3/BPIC12_20000000_2_1_0_0_1/shared_cat/data/"
 
     train_camargo = LogFile(camargo_folder + "train_log.csv", ",", 0, 20000000, None, "caseid",
                         activity_attr="task", convert=False, k=2)
@@ -523,7 +517,7 @@ def test_datasets():
 
     total_camargo = pd.concat([test_camargo.data, train_camargo.data])
 
-    total, name = data.get_data(data.BPIC15, 20000000, 2, True, False, True, True)
+    total, name = data.get_data(data.BPIC12, 20000000, 2, True, False, False, True)
     total_data = total.data
 
     print(total_camargo)
@@ -536,23 +530,29 @@ def test_datasets():
         print(calculate_mutual_information(col1, col2), calculate_entropy(col1), calculate_entropy(col2))
 
 if __name__ == "__main__":
-    test_datasets()
+    #test_datasets()
     #run_dataset()
 
-    """
+
     from LogFile import LogFile
+    from datetime import datetime
     import os
     import pickle
 
     trainings = []
-    #trainings.append({"folder": "../Camargo/output_files/output_run3/BPIC12_20000000_2_1_0_0_1/shared_cat/data/", "model": "BPIC12_20000000_2_1_0_0_1"})
-    #trainings.append({"folder": "../Camargo/output_files/output_run3/BPIC12_20000000_2_1_0_1_1/shared_cat/data/", "model": "BPIC12_20000000_2_1_0_1_1"})
-    #trainings.append({"folder": "../Camargo/output_files/output_run3/BPIC12W_20000000_2_1_0_0_1/shared_cat/data/", "model": "BPIC12W_20000000_2_1_0_0_1"})
-    #trainings.append({"folder": "../Camargo/output_files/output_run3/BPIC12W_20000000_2_1_0_1_1/shared_cat/data/", "model": "BPIC12W_20000000_2_1_0_1_1"})
-    trainings.append({"folder": "../Camargo/output_files/output_run3b/BPIC15_20000000_2_1_0_0_1/shared_cat/data/", "model": "BPIC15_20000000_2_1_0_0_1"})
-    trainings.append({"folder": "../Camargo/output_files/output_run3b/BPIC15_20000000_2_1_0_1_1/shared_cat/data/", "model": "BPIC15_20000000_2_1_0_1_1"})
-    trainings.append({"folder": "../Camargo/output_files/output_run3b/HELPDESK_20000000_2_1_0_0_1/shared_cat/data/", "model": "HELPDESK_20000000_2_1_0_0_1"})
-    trainings.append({"folder": "../Camargo/output_files/output_run3b/HELPDESK_20000000_2_1_0_1_1/shared_cat/data/", "model": "HELPDESK_20000000_2_1_0_1_1"})
+    trainings.append({"folder": "../Camargo/output_files/output_run3/BPIC12_20000000_2_1_0_0_1/shared_cat/data/", "model": "BPIC12_20000000_2_1_0_0_1"})
+    # trainings.append({"folder": "../Camargo/output_files/output_run3/BPIC12_20000000_2_1_0_1_1/shared_cat/data/", "model": "BPIC12_20000000_2_1_0_1_1"})
+    # trainings.append({"folder": "../Camargo/output_files/output_run3/BPIC12W_20000000_2_1_0_0_1/shared_cat/data/", "model": "BPIC12W_20000000_2_1_0_0_1"})
+    # trainings.append({"folder": "../Camargo/output_files/output_run3/BPIC12W_20000000_2_1_0_1_1/shared_cat/data/", "model": "BPIC12W_20000000_2_1_0_1_1"})
+    # trainings.append({"folder": "../Camargo/output_files/output_run3b/BPIC15_20000000_2_1_0_0_1/shared_cat/data/", "model": "BPIC15_20000000_2_1_0_0_1"})
+    # trainings.append({"folder": "../Camargo/output_files/output_run3b/BPIC15_20000000_2_1_0_1_1/shared_cat/data/", "model": "BPIC15_20000000_2_1_0_1_1"})
+    # trainings.append({"folder": "../Camargo/output_files/output_run3b/HELPDESK_20000000_2_1_0_0_1/shared_cat/data/", "model": "HELPDESK_20000000_2_1_0_0_1"})
+    # trainings.append({"folder": "../Camargo/output_files/output_run3b/HELPDESK_20000000_2_1_0_1_1/shared_cat/data/", "model": "HELPDESK_20000000_2_1_0_1_1"})
+
+    if not os.path.exists("Results.csv"):
+        with open("Results.csv", "w") as fout:
+            fout.write("Date,Model,Type,Average Similarity")
+            fout.write("\n")
 
     for training in trainings:
         print("TRAIN:", training["model"])
@@ -561,7 +561,7 @@ if __name__ == "__main__":
         model_file = training["model"]
 
         train_log = LogFile(camargo_folder + "train_log.csv", ",", 0, 20000000, None, "caseid",
-                          activity_attr="task", convert=False, k=2)
+                          activity_attr="task", convert=True, k=2)
         train_log.keep_attributes(["caseid", "task", "role"])
 
         model = None
@@ -572,15 +572,28 @@ if __name__ == "__main__":
         else:
             print("Writing model to file")
             model = edbn.train(train_log)
+
+            # Train average number of duplicated events
+            model.duplicate_events = learn_duplicated_events(train_log)
+
             with open(model_file, "wb") as pickle_file:
                 pickle.dump(model, pickle_file)
 
         test_log = LogFile(camargo_folder + "test_log.csv",
                         ",", 0, 20000000, None, "caseid",
-                        activity_attr="task", convert=False, k=2, values=train_log.values)
+                        activity_attr="task", convert=True, k=2, values=train_log.values)
         test_log.keep_attributes(["caseid", "task", "role"])
-
         test_log.create_k_context()
-        predict_next_event(model, test_log)
-        input("Done, waiting...")
+
         """
+        acc = predict_next_event(model, test_log)
+        with open("Results.csv", "a") as fout:
+            fout.write(",".join([str(datetime.now()), model_file, "Predict_Next", str(acc)]))
+            fout.write("\n")
+        """
+
+        sim = predict_suffix(model, test_log)
+        with open("Results.csv", "a") as fout:
+            fout.write(",".join([str(datetime.now()), model_file, "Predict_Suffix", str(sim)]))
+            fout.write("\n")
+
