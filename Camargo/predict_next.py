@@ -154,7 +154,7 @@ def predict_next(output_folder, model_file, is_single_exec=True):
     rl_alias = create_alias(len(INDEX_RL))
 
 #   Next event selection method and numbers of repetitions
-    variants = [{'imp': 'Random Choice', 'rep': 2},
+    variants = [{'imp': 'Random Choice', 'rep': 1},
                 {'imp': 'Arg Max', 'rep': 1}]
 #   Generation of predictions
     model = load_model(os.path.join(output_route, model_file))
@@ -168,9 +168,9 @@ def predict_next(output_folder, model_file, is_single_exec=True):
             
             accuracy = (np.sum([x['ac_true'] for x in prefixes])/len(prefixes))
 
-            #if is_single_exec:
-            #    sup.create_csv_file_header(prefixes, os.path.join(output_route,
-            #                                                          model_name +'_rep_'+str(i)+'_next.csv'))
+            if is_single_exec:
+                sup.create_csv_file_header(prefixes, os.path.join(output_route,
+                                                                      model_name +'_rep_'+str(i)+'_next.csv'))
             
             # Save results
             measurements.append({**dict(model=os.path.join(output_route, model_file),

@@ -100,13 +100,21 @@ def role_definition(sub_graphs,users):
 def role_discovery(data, drawing, sim_percentage):
     tasks = list(set(list(map(lambda x: x[0], data))))
     try:
-        tasks.remove('Start')
+        tasks.remove('start')
+    except Exception:
+    	pass
+    try:
+        tasks.remove('end')
     except Exception:
     	pass
     tasks = [dict(index=i,data=tasks[i]) for i in range(0,len(tasks))]
     users = list(set(list(map(lambda x: x[1], data))))
     try:
-        users.remove('Start')
+        users.remove('start')
+    except Exception:
+    	pass
+    try:
+        users.remove('end')
     except Exception:
     	pass
     users = [dict(index=i,data=users[i]) for i in range(0,len(users))]

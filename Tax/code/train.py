@@ -27,7 +27,6 @@ import os
 import copy
 import csv
 import time
-from itertools import izip
 from datetime import datetime
 from math import log
 
@@ -73,7 +72,7 @@ for row in spamreader: #the rows are "CaseID,ActivityID,CompleteTimestamp"
         times = []
         times2 = []
         numlines+=1
-    line+=unichr(int(row[1])+ascii_offset)
+    line+=chr(int(row[1])+ascii_offset)
     timesincelastevent = datetime.fromtimestamp(time.mktime(t))-datetime.fromtimestamp(time.mktime(lasteventtime))
     timesincecasestart = datetime.fromtimestamp(time.mktime(t))-datetime.fromtimestamp(time.mktime(casestarttime))
     timediff = 86400 * timesincelastevent.days + timesincelastevent.seconds
@@ -88,6 +87,7 @@ lines.append(line)
 timeseqs.append(times)
 timeseqs2.append(times2)
 numlines+=1
+
 
 ########################################
 
@@ -124,7 +124,7 @@ step = 1
 sentences = []
 softness = 0
 next_chars = []
-lines = map(lambda x: x+'!',lines) #put delimiter symbol
+lines = list(map(lambda x: x+'!',lines)) #put delimiter symbol
 maxlen = max(map(lambda x: len(x),lines)) #find maximum line size
 
 # next lines here to get all possible characters for events and annotate them with numbers
@@ -177,7 +177,7 @@ for row in spamreader:
         times3 = []
         times4 = []
         numlines+=1
-    line+=unichr(int(row[1])+ascii_offset)
+    line+=chr(int(row[1])+ascii_offset)
     timesincelastevent = datetime.fromtimestamp(time.mktime(t))-datetime.fromtimestamp(time.mktime(lasteventtime))
     timesincecasestart = datetime.fromtimestamp(time.mktime(t))-datetime.fromtimestamp(time.mktime(casestarttime))
     midnight = datetime.fromtimestamp(time.mktime(t)).replace(hour=0, minute=0, second=0, microsecond=0)
@@ -207,30 +207,30 @@ fold1_t = timeseqs[:elems_per_fold]
 fold1_t2 = timeseqs2[:elems_per_fold]
 fold1_t3 = timeseqs3[:elems_per_fold]
 fold1_t4 = timeseqs4[:elems_per_fold]
-with open('output_files/folds/fold1.csv', 'wb') as csvfile:
+with open('output_files/folds/fold1.csv', 'w') as csvfile:
     spamwriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-    for row, timeseq in izip(fold1, fold1_t):
-        spamwriter.writerow([unicode(s).encode("utf-8") +'#{}'.format(t) for s, t in izip(row, timeseq)])
+    for row, timeseq in zip(fold1, fold1_t):
+        spamwriter.writerow([str(s) + '#{}'.format(t) for s, t in zip(row, timeseq)])
 
 fold2 = lines[elems_per_fold:2*elems_per_fold]
 fold2_t = timeseqs[elems_per_fold:2*elems_per_fold]
 fold2_t2 = timeseqs2[elems_per_fold:2*elems_per_fold]
 fold2_t3 = timeseqs3[elems_per_fold:2*elems_per_fold]
 fold2_t4 = timeseqs4[elems_per_fold:2*elems_per_fold]
-with open('output_files/folds/fold2.csv', 'wb') as csvfile:
+with open('output_files/folds/fold2.csv', 'w') as csvfile:
     spamwriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-    for row, timeseq in izip(fold2, fold2_t):
-        spamwriter.writerow([unicode(s).encode("utf-8") +'#{}'.format(t) for s, t in izip(row, timeseq)])
+    for row, timeseq in zip(fold2, fold2_t):
+        spamwriter.writerow([str(s) +'#{}'.format(t) for s, t in zip(row, timeseq)])
 
 fold3 = lines[2*elems_per_fold:]
 fold3_t = timeseqs[2*elems_per_fold:]
 fold3_t2 = timeseqs2[2*elems_per_fold:]
 fold3_t3 = timeseqs3[2*elems_per_fold:]
 fold3_t4 = timeseqs4[2*elems_per_fold:]
-with open('output_files/folds/fold3.csv', 'wb') as csvfile:
+with open('output_files/folds/fold3.csv', 'w') as csvfile:
     spamwriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-    for row, timeseq in izip(fold3, fold3_t):
-        spamwriter.writerow([unicode(s).encode("utf-8") +'#{}'.format(t) for s, t in izip(row, timeseq)])
+    for row, timeseq in zip(fold3, fold3_t):
+        spamwriter.writerow([str(s) +'#{}'.format(t) for s, t in zip(row, timeseq)])
 
 lines = fold1 + fold2
 lines_t = fold1_t + fold2_t
@@ -252,7 +252,7 @@ next_chars_t = []
 next_chars_t2 = []
 next_chars_t3 = []
 next_chars_t4 = []
-for line, line_t, line_t2, line_t3, line_t4 in izip(lines, lines_t, lines_t2, lines_t3, lines_t4):
+for line, line_t, line_t2, line_t3, line_t4 in zip(lines, lines_t, lines_t2, lines_t3, lines_t4):
     for i in range(0, len(line), step):
         if i==0:
             continue
@@ -295,6 +295,7 @@ for i, sentence in enumerate(sentences):
         for c in chars:
             if c==char: #this will encode present events to the right places
                 X[i, t+leftpad, char_indices[c]] = 1
+                break
         X[i, t+leftpad, len(chars)] = t+1
         X[i, t+leftpad, len(chars)+1] = sentence_t[t]/divisor
         X[i, t+leftpad, len(chars)+2] = sentence_t2[t]/divisor2
@@ -306,7 +307,7 @@ for i, sentence in enumerate(sentences):
         else:
             y_a[i, target_char_indices[c]] = softness/(len(target_chars)-1)
     y_t[i] = next_t/divisor
-    np.set_printoptions(threshold=np.nan)
+    #np.set_printoptions(threshold=np.nan)
 
 # build the model: 
 print('Build model...')

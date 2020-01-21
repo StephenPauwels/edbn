@@ -19,17 +19,37 @@ from support_modules import role_discovery as rl
 from support_modules import support as sup
 from support_modules import nn_support as nsup
 
-def training_model(log_df, outfile):
+def training_model(log, outfile):
     """Main method of the embedding training module.
     """
 
     # Index creation
-    ac_index = create_index(log_df, 'task')
+    # ac_index = {}
+    # index_ac = {}
+    # i = 1
+    # for val in log.values[log.activity]:
+    #     ac_index[val] = i
+    #     index_ac[i] = val
+    #     i += 1
+    # ac_index["None"] = 0
+    # index_ac[0] = "None"
+    #
+    # rl_index = {}
+    # index_rl = {}
+    # i = 1
+    # for val in log.values["role"]:
+    #     rl_index[val] = i
+    #     index_rl[i] = val
+    #     i += 1
+    # rl_index["None"] = 0
+    # index_rl[0] = "None"
+
+    ac_index = create_index(log.data, 'task')
     ac_index['start'] = 0
     ac_index['end'] = len(ac_index)
     index_ac = {v: k for k, v in ac_index.items()}
 
-    rl_index = create_index(log_df, 'role')
+    rl_index = create_index(log.data, 'role')
     rl_index['start'] = 0
     rl_index['end'] = len(rl_index)
     index_rl = {v: k for k, v in rl_index.items()}
@@ -38,7 +58,7 @@ def training_model(log_df, outfile):
     dim_number = math.ceil(len(list(itertools.product(*[list(ac_index.items()),
                                                         list(rl_index.items())])))**0.25)
 
-    ac_weights, rl_weights = train_embedded(log_df, ac_index, rl_index, dim_number)
+    ac_weights, rl_weights = train_embedded(log.data, ac_index, rl_index, dim_number)
 
     sup.create_file_from_list(reformat_matrix(index_ac, ac_weights),
                               os.path.join(os.path.join('..', 'Camargo', 'input_files', 'embedded_matix'),
@@ -107,6 +127,7 @@ def train_embedded(log_df, ac_index, rl_index, dim_number):
     pairs = list()
     for i in range(0, len(log_df)):
         # Iterate through the links in the book
+        #pairs.append((log_df.iloc[i]['task'], log_df.iloc[i]['role']))
         pairs.append((ac_index[log_df.iloc[i]['task']], rl_index[log_df.iloc[i]['role']]))
 
     model = ac_rl_embedding_model(ac_index, rl_index, dim_number)

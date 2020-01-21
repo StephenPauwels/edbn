@@ -95,7 +95,6 @@ class LogFile:
         if self.isNumericAttribute(x.name):
             return x
 
-
         print("PREPROCESSING: Converting", x.name)
         if x.name not in self.values:
             x = x.astype("str")
@@ -171,6 +170,23 @@ class LogFile:
             for trace in traces:
                 labels[trace[0]] = getattr(trace[1].iloc[0], label)
         return labels
+
+    def create_trace_attribute(self):
+        print("Create trace attribute")
+        with mp.Pool(mp.cpu_count()) as p:
+            result = p.map(self.create_trace_attribute_case, self.data.groupby([self.trace]))
+        self.data = pd.concat(result)
+        self.categoricalAttributes.add("trace")
+
+    def create_trace_attribute_case(self, case_tuple):
+        trace = []
+        case_data = pd.DataFrame()
+        for row in case_tuple[1].iterrows():
+            row_content = row[1]
+            trace.append(row_content[self.activity])
+            row_content["trace"] = str(trace)
+            case_data = case_data.append(row_content)
+        return case_data
 
     def create_k_context(self):
         """
@@ -260,11 +276,16 @@ class LogFile:
         grouped = self.get_data().groupby([self.trace])
         train_cases = []
         test_cases = []
+        test_length = len(grouped) * 0.3
         for group in grouped:
-            if random.randint(0,100) < train_percentage:
-                train_cases.append(group[1])
-            else:
+            if len(test_cases) < test_length:
                 test_cases.append(group[1])
+            else:
+                train_cases.append(group[1])
+            # if random.randint(0,100) < train_percentage:
+            #     train_cases.append(group[1])
+            # else:
+            #     test_cases.append(group[1])
 
         train = pd.concat(train_cases)
         test = pd.concat(test_cases)
@@ -275,7 +296,7 @@ class LogFile:
         train_logfile.contextdata = train
         train_logfile.categoricalAttributes = self.categoricalAttributes
         train_logfile.numericalAttributes = self.numericalAttributes
-        train_logfile.data = self.data
+        train_logfile.data = self.data # TODO Fix
         train_logfile.k = self.k
 
         test_logfile = LogFile(None, None, None, None, self.time, self.trace, self.activity, self.values, False, False)
@@ -284,7 +305,7 @@ class LogFile:
         test_logfile.contextdata = test
         test_logfile.categoricalAttributes = self.categoricalAttributes
         test_logfile.numericalAttributes = self.numericalAttributes
-        test_logfile.data = self.data
+        test_logfile.data = self.data # TODO Fix
         test_logfile.k = self.k
 
         return train_logfile, test_logfile

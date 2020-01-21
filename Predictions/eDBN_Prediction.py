@@ -45,7 +45,7 @@ def get_probabilities(variable, val_tuple, parents):
                     prediction_options[pred_val] += parent_prob * prob
 
             if len(prediction_options) > 0:
-                return prediction_options, False
+                return prediction_options, True
             else:
                 return {0: 0}, True
         else:
@@ -63,14 +63,14 @@ def get_probabilities(variable, val_tuple, parents):
                                 prediction_options[pred_val] = 0
                             prediction_options[pred_val] += curr_variable.values[val] * prob
             if len(prediction_options) > 0:
-                return prediction_options, False
+                return prediction_options, True
             else:
                 return {0:0}, True
 
 
 def predict_next_event_row(row, model, test_log):
-    if getattr(row[1], test_log.activity + "_Prev" + str(test_log.k - 1)) == 0:
-        return -1
+    # if getattr(row[1], test_log.activity + "_Prev0") == 0:
+    #     return -1, None
 
     parents = model.variables[test_log.activity].conditional_parents
 
@@ -83,13 +83,17 @@ def predict_next_event_row(row, model, test_log):
     probs, unknown = get_probabilities(activity_var, tuple_val, parents)
 
     # Select value with highest probability
-    predicted_val = max(probs, key=lambda l: probs[l])
+    if not unknown:
+        predicted_val = max(probs, key=lambda l: probs[l] * activity_var.values[l])
+    else:
+        predicted_val = max(probs, key=lambda l: probs[l])
 
     #print(getattr(row[1], test_log.activity), predicted_val, unknown, probs)
     if getattr(row[1], test_log.activity) == predicted_val:
-        return 1
+        return 1#, getattr(row[1], "trace")
     else:
-        return 0
+        return 0#, getattr(row[1], "trace")
+
 
 
 def predict_next_event(edbn_model, log):
@@ -98,6 +102,13 @@ def predict_next_event(edbn_model, log):
     with mp.Pool(mp.cpu_count()) as p:
         result = p.map(functools.partial(predict_next_event_row, model=edbn_model, test_log=log), log.contextdata.iterrows())
 
+    # with open("results_next_event.csv", "w") as fout:
+    #     for r in result:
+    #         if r[1] is not None:
+    #             fout.write(",".join(['"' +log.convert_int2string("trace", r[1]).replace("'", "") + '"', str(r[0])]))
+    #             fout.write("\n")
+
+    # result = [r[0] for r in result if r[0] != -1]
     result = [r for r in result if r != -1]
     correct = np.sum(result)
     false = len(result) - correct
@@ -178,7 +189,7 @@ def predict_case(case, all_parents, attributes, model, end_event, activity_attr,
 
         # Predict suffix given the last known rows. Stop predicting when END_EVENT has been predicted or predicted size >= 100
         #predicted_rows, unknown_value = predict_case_suffix_highest_prob(all_parents, attributes, current_row, model, activity_attr, end_event)
-        #predicted_rows, unknown_value = predict_case_suffix_random(all_parents, attributes, current_row, model, test_log.activity, end_event)
+        # predicted_rows, unknown_value = predict_case_suffix_random(all_parents, attributes, current_row, model, test_log.activity, end_event)
         predicted_rows, unknown_value = predict_case_suffix_loop_threshold(all_parents, attributes, current_row, model,activity_attr, end_event)
         # predicted_rows, unknown_value = predict_case_suffix_return_end(all_parents, attributes, current_row, model, test_log.activity, END_EVENT)
 
@@ -476,7 +487,7 @@ def brier_multi(targets, probs):
 def run_dataset():
     dataset = data.BPIC12
     dataset_size = 200000000
-    add_end = True
+    add_end = False
     resource_pools = False
     reduce_tasks = False
     logfile_k = 2
@@ -485,18 +496,15 @@ def run_dataset():
     remove_resource = True
 
     logfile, log_filename = data.get_data(dataset, dataset_size, logfile_k, add_end, reduce_tasks, resource_pools, remove_resource)
-    #logfile.keep_attributes(["case", "event"])
 
     train_log, test_log = logfile.splitTrainTest(70)
     model = edbn.train(train_log)
 
     # Train average number of duplicated events
-#    duplicates = learn_duplicated_events(train_log)
 #    print(duplicates)
-#    model.duplicate_events = duplicates
-
+    model.duplicate_events = learn_duplicated_events(train_log)
     predict_next_event(model, test_log)
-    #predict_suffix(model, test_log)
+    predict_suffix(model, test_log)
 
 
 def test_datasets():
@@ -564,8 +572,9 @@ if __name__ == "__main__":
     # trainings.append({"folder": "../Camargo/output_files/output_run3/BPIC12W_20000000_2_1_0_1_1/shared_cat/data/", "model": "BPIC12W_20000000_2_1_0_1_1"})
     # trainings.append({"folder": "../Camargo/output_files/output_run3b/BPIC15_20000000_2_1_0_0_1/shared_cat/data/", "model": "BPIC15_20000000_2_1_0_0_1"})
     # trainings.append({"folder": "../Camargo/output_files/output_run3b/BPIC15_20000000_2_1_0_1_1/shared_cat/data/", "model": "BPIC15_20000000_2_1_0_1_1"})
-    trainings.append({"folder": "../Camargo/output_files/output_run3b/HELPDESK_20000000_2_1_0_0_1/shared_cat/data/", "model": "HELPDESK_20000000_2_1_0_0_1"})
-    trainings.append({"folder": "../Camargo/output_files/output_run3b/HELPDESK_20000000_2_1_0_1_1/shared_cat/data/", "model": "HELPDESK_20000000_2_1_0_1_1"})
+    # trainings.append({"folder": "../Camargo/output_files/output_run3b/HELPDESK_20000000_2_1_0_0_1/shared_cat/data/", "model": "HELPDESK_20000000_2_1_0_0_1"})
+    # trainings.append({"folder": "../Camargo/output_files/output_run3b/HELPDESK_20000000_2_1_0_1_1/shared_cat/data/", "model": "HELPDESK_20000000_2_1_0_1_1"})
+    trainings.append({"folder": "../Camargo/output_files/BPIC12_20000000_0_0_0_0_1/shared_cat/data/", "model": "BPIC12_20000000_2_0_0_0_1"})
 
     if not os.path.exists("Results.csv"):
         with open("Results.csv", "w") as fout:
@@ -579,14 +588,18 @@ if __name__ == "__main__":
         model_file = training["model"]
 
         train_log = LogFile(camargo_folder + "train_log.csv", ",", 0, 20000000, None, "caseid",
-                          activity_attr="task", convert=True, k=2)
+                          activity_attr="task", convert=False, k=2)
+        # train_log.create_trace_attribute()
         train_log.keep_attributes(["caseid", "task", "role"])
+        train_log.convert2int()
+        train_log.create_k_context()
 
         model = None
         if os.path.exists(model_file):
             print("Reading model from file")
             with open(model_file, "rb") as pickle_file:
                 model = pickle.load(pickle_file)
+            model.print_parents()
         else:
             print("Writing model to file")
             model = edbn.train(train_log)
@@ -599,19 +612,22 @@ if __name__ == "__main__":
 
         test_log = LogFile(camargo_folder + "test_log.csv",
                         ",", 0, 20000000, None, "caseid",
-                        activity_attr="task", convert=True, k=2, values=train_log.values)
+                        activity_attr="task", convert=False, k=2, values=train_log.values)
+        # test_log.create_trace_attribute()
         test_log.keep_attributes(["caseid", "task", "role"])
+        test_log.convert2int()
         test_log.create_k_context()
 
-        
+
         acc = predict_next_event(model, test_log)
         with open("Results.csv", "a") as fout:
             fout.write(",".join([str(datetime.now()), model_file, "Predict_Next", str(acc)]))
             fout.write("\n")
-        
 
-        sim = predict_suffix(model, test_log)
-        with open("Results.csv", "a") as fout:
-            fout.write(",".join([str(datetime.now()), model_file, "Predict_Suffix", str(sim)]))
-            fout.write("\n")
+
+        
+        # sim = predict_suffix(model, test_log)
+        # with open("Results.csv", "a") as fout:
+        #     fout.write(",".join([str(datetime.now()), model_file, "Predict_Suffix", str(sim)]))
+        #     fout.write("\n")
 

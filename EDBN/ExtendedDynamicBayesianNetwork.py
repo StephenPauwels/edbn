@@ -39,6 +39,13 @@ class ExtendedDynamicBayesianNetwork():
         self.trace_attr = trace_attr
         self.durations = None
 
+    def print_parents(self):
+        for var_name, var in self.variables.items():
+            for parent in var.conditional_parents:
+                print(parent.attr_name, "->", var_name)
+            for parent in var.functional_parents:
+                print(parent.attr_name, "=>", var_name)
+
     def add_discrete_variable(self, name, new_values, empty_val):
         self.variables[name] = Discrete_Variable(name, new_values, self.num_attrs, empty_val)
         m = re.search(r'Prev\d+$', name)

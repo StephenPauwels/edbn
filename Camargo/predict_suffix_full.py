@@ -159,6 +159,10 @@ def predict(model, prefixes, imp, max_trace_size):
             # otherwise until the defined max_size
             ac_suf.append(pos)
             rl_suf.append(pos1)
+
+            if INDEX_AC[pos] == 'end':
+                break
+
         prefix['ac_suff_pred'] = ac_suf
         prefix['rl_suff_pred'] = rl_suf
     sup.print_done_task()

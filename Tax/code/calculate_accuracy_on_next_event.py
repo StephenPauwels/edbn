@@ -7,24 +7,25 @@ Author: Niek Tax
 
 from __future__ import division
 import unicodecsv
+import csv
 
 eventlog = "helpdesk.csv"
-csvfile = open('output_files/results/suffix_and_remaining_time_%s' % eventlog, 'r')
-r = unicodecsv.reader(csvfile ,encoding='utf-8')
-r.next() # header
+csvfile = open('output_files/results/next_activity_and_time_%s' % eventlog, 'r')
+r = csv.reader(csvfile)
+next(r,None) # header
 vals = dict()
 for row in r:
     l = list()
     if row[0] in vals.keys():
         l = vals.get(row[0])
-    if len(row[1])==0 and len(row[2])==0:
+    if len(row[2])==0 and len(row[3])==0:
         l.append(1)
-    elif len(row[1])==0 and len(row[2])>0:
+    elif len(row[2])==0 and len(row[3])>0:
         l.append(0)
-    elif len(row[1])>0 and len(row[2])==0:
+    elif len(row[2])>0 and len(row[3])==0:
         l.append(0)
     else:
-        l.append(int(row[1][0]==row[2][0]))
+        l.append(int(row[2][0]==row[3][0]))
     vals[row[0]] = l
     #print(vals)
     

@@ -1,6 +1,7 @@
 import pandas as pd
 import os
 import pickle
+from datetime import datetime
 
 from Utils.LogFile import LogFile
 from Camargo.support_modules.role_discovery import role_discovery
@@ -12,10 +13,27 @@ HELPDESK = "HELPDESK"
 CLICKS = "CLICKS"
 BPIC14 = "BPIC14"
 BPIC18 = "BPIC18"
+HELPDESK_EXTRA = "HELPDESK_EXTRA"
 
 LOGFILE_PATH = "../Data/Logfiles"
 
 def preprocess(logfile, add_end, reduce_tasks, resource_pools, resource_attr, remove_resource):
+    # Discover Roles
+    if resource_pools and resource_attr is not None:
+        resources, resource_table = role_discovery(logfile.get_data(), resource_attr, 0.5)
+        log_df_resources = pd.DataFrame.from_records(resource_table)
+        log_df_resources = log_df_resources.rename(index=str, columns={"role": resource_attr})
+
+        logfile.data = logfile.data.merge(log_df_resources, on=resource_attr, how='left')
+        logfile.categoricalAttributes.add("role")
+        if remove_resource:
+            logfile.data = logfile.data.drop([resource_attr], axis=1)
+
+        resource_attr = "role"
+    else:
+        logfile.data = logfile.data.rename(columns={resource_attr: "role"})
+        logfile.categoricalAttributes.add("role")
+
     if add_end:
         cases = logfile.get_cases()
         new_data = []
@@ -40,19 +58,6 @@ def preprocess(logfile, add_end, reduce_tasks, resource_pools, resource_attr, re
             new_data.append(record)
 
         logfile.data = pd.DataFrame.from_records(new_data)
-
-    # Discover Roles
-    if resource_pools and resource_attr is not None:
-        resources, resource_table = role_discovery(logfile.get_data(), resource_attr, 0.5)
-        log_df_resources = pd.DataFrame.from_records(resource_table)
-        log_df_resources = log_df_resources.rename(index=str, columns={"resource": resource_attr})
-
-        logfile.data = logfile.data.merge(log_df_resources, on=resource_attr, how='left')
-        logfile.categoricalAttributes.add("role")
-        if remove_resource:
-            logfile.data = logfile.data.drop([resource_attr], axis=1)
-
-        resource_attr = "role"
 
     # Check for dublicate events with same resource
     if reduce_tasks and resource_attr is not None:
@@ -116,6 +121,14 @@ def get_data(dataset, dataset_size, k, add_end, reduce_tasks, resource_pools, re
             colTitles = ["case", "event", "Resource"]
             logfile.keep_attributes(colTitles)
             logfile.filter_case_length(3)
+        elif dataset == HELPDESK_EXTRA:
+            logfile = LogFile("../Data/Camargo_Helpdesk.csv", ",", 0, dataset_size, "completeTime", "case", activity_attr="event", convert=False, k=k)
+            resource_attr = "Resource"
+            logfile.data["Weekday"] = logfile.data.apply(lambda row: datetime.strptime(row["completeTime"], "%Y/%m/%d %H:%M:%S.%f").weekday(), axis=1)
+            logfile.categoricalAttributes.add("Weekday")
+            colTitles = ["case", "event", "Resource", "Weekday"]
+            logfile.keep_attributes(colTitles)
+            logfile.filter_case_length(3)
         elif dataset == CLICKS:
             logfile = LogFile("../Data/BPI2016_Clicks_Logged_In.csv", ";", 0, dataset_size, "TIMESTAMP", "SessionID", activity_attr="URL_FILE", convert=False, k=k)
             #logfile.keep_attributes(["SessionID", "URL_FILE", "REF_URL_category"])
@@ -132,8 +145,7 @@ def get_data(dataset, dataset_size, k, add_end, reduce_tasks, resource_pools, re
             return None
 
         preprocessed_log = preprocess(logfile, add_end, reduce_tasks, resource_pools, resource_attr, remove_resource)
-        if resource_pools:
-            colTitles[2] = "role"
+        colTitles[2] = "role"
         preprocessed_log.data = preprocessed_log.data.reindex(columns=colTitles)
 
         preprocessed_log.create_k_context()

@@ -28,17 +28,37 @@ from support_modules import nn_support as nsup
 from support_modules import support as sup
 
 
-def training_model(log_df, outfile, args):
+def training_model(log_train, log_test, outfile, args):
     """Main method of the training module.
     """
 
     # Index creation
-    ac_index = create_index(log_df, 'task')
+    # ac_index = {}
+    # index_ac = {}
+    # i = 1
+    # for val in log_train.values[log_train.activity]:
+    #     ac_index[val] = i
+    #     index_ac[i] = val
+    #     i += 1
+    # ac_index["None"] = 0
+    # index_ac[0] = "None"
+    #
+    # rl_index = {}
+    # index_rl = {}
+    # i = 1
+    # for val in log_train.values["role"]:
+    #     rl_index[val] = i
+    #     index_rl[i] = val
+    #     i += 1
+    # rl_index["None"] = 0
+    # index_rl[0] = "None"
+
+    ac_index = create_index(log_train.data, 'task')
     ac_index['start'] = 0
     ac_index['end'] = len(ac_index)
     index_ac = {v: k for k, v in ac_index.items()}
 
-    rl_index = create_index(log_df, 'role')
+    rl_index = create_index(log_train.data, 'role')
     rl_index['start'] = 0
     rl_index['end'] = len(rl_index)
     index_rl = {v: k for k, v in rl_index.items()}
@@ -47,9 +67,10 @@ def training_model(log_df, outfile, args):
     ac_weights = load_embedded(index_ac, 'ac_'+ outfile + '.emb')
     rl_weights = load_embedded(index_rl, 'rl_'+ outfile + '.emb')
     # Calculate relative times
-    log_df = add_calculated_features(log_df, ac_index, rl_index)
+    log_df_train = add_calculated_features(log_train.data, ac_index, rl_index)
+    log_df_test = add_calculated_features(log_test.data, ac_index, rl_index)
     # Split validation datasets
-    log_df_train, log_df_test = nsup.split_train_test(log_df, 0.3) # 70%/30%
+    # log_df_train, log_df_test = nsup.split_train_test(log_df, 0.3) # 70%/30%
     # Input vectorization
     vec = vectorization(log_df_train, ac_index, rl_index, args)
     # Parameters export
@@ -253,11 +274,13 @@ def add_calculated_features(log_df, ac_index, rl_index):
     Returns:
         Dataframe: The dataframe with the calculated features added.
     """
-    ac_idx = lambda x: ac_index[x['task']]
-    log_df['ac_index'] = log_df.apply(ac_idx, axis=1)
+    # ac_idx = lambda x: ac_index[x['task']]
+    # log_df['ac_index'] = log_df.apply(ac_idx, axis=1)
+    log_df['ac_index'] = log_df['task']
 
-    rl_idx = lambda x: rl_index[x['role']]
-    log_df['rl_index'] = log_df.apply(rl_idx, axis=1)
+    # rl_idx = lambda x: rl_index[x['role']]
+    # log_df['rl_index'] = log_df.apply(rl_idx, axis=1)
+    log_df['rl_index'] = log_df['role']
 
     log_df['tbtw'] = 0
     log_df['tbtw_norm'] = 0
@@ -284,7 +307,7 @@ def reformat_events(log_df, ac_index, rl_index):
         list: lists of activities, roles and relative times.
     """
     log_df = log_df.to_dict('records')
-
+    print(rl_index)
     temp_data = list()
 #    log_df = sorted(log_df, key=lambda x: (x['caseid'], x['end_timestamp']))
     for key, group in itertools.groupby(log_df, key=lambda x: x['caseid']):
