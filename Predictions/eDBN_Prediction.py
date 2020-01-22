@@ -574,7 +574,11 @@ if __name__ == "__main__":
     # trainings.append({"folder": "../Camargo/output_files/output_run3b/BPIC15_20000000_2_1_0_1_1/shared_cat/data/", "model": "BPIC15_20000000_2_1_0_1_1"})
     # trainings.append({"folder": "../Camargo/output_files/output_run3b/HELPDESK_20000000_2_1_0_0_1/shared_cat/data/", "model": "HELPDESK_20000000_2_1_0_0_1"})
     # trainings.append({"folder": "../Camargo/output_files/output_run3b/HELPDESK_20000000_2_1_0_1_1/shared_cat/data/", "model": "HELPDESK_20000000_2_1_0_1_1"})
-    trainings.append({"folder": "../Camargo/output_files/BPIC12_20000000_0_0_0_0_1/shared_cat/data/", "model": "BPIC12_20000000_2_0_0_0_1"})
+    trainings.append({"folder": "../Camargo/output_files/BPIC12_20000000_0_0_0_0_1/shared_cat/data/", "model": "BPIC12_20000000_0_0_0_0_1"})
+    trainings.append({"folder": "../Camargo/output_files/BPIC12W_20000000_0_0_0_0_1/shared_cat/data/", "model": "BPIC12W_20000000_0_0_0_0_1"})
+    trainings.append({"folder": "../Camargo/output_files/BPIC15_20000000_0_0_0_0_1/shared_cat/data/", "model": "BPIC15_20000000_0_0_0_0_1"})
+    trainings.append({"folder": "../Camargo/output_files/HELPDESK_20000000_0_0_0_0_1/shared_cat/data/", "model": "HELPDESK_20000000_0_0_0_0_1"})
+
 
     if not os.path.exists("Results.csv"):
         with open("Results.csv", "w") as fout:

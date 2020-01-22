@@ -5,8 +5,8 @@ import Preprocessing as data
 import Camargo.embedding_training as em
 import Camargo.model_training as mo
 
-def main():
-    dataset = data.BPIC12
+def main(argv):
+    dataset = argv
     dataset_size = 20000000
     add_end = False
     resource_pools = False
@@ -28,7 +28,7 @@ def main():
 
     args = {}
     args["file_name"] = dataset
-    args["model_type"] = "shared_cat" # Choose from 'joint', 'shared', 'concatenated', 'specialized', 'shared_cat'
+    args["model_type"] = argv[2] # Choose from 'joint', 'shared', 'concatenated', 'specialized', 'shared_cat'
     args["norm_method"] = "lognorm" # Choose from 'lognorm' or 'max'
     args["n_size"] = 5 # n-gram size
     args['lstm_act'] = None # optimization function see keras doc
@@ -41,4 +41,4 @@ def main():
     mo.training_model(train, test, dataset_name, args)
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[2:])

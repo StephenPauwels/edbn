@@ -9,8 +9,8 @@ from __future__ import division
 import unicodecsv
 import csv
 
-eventlog = "helpdesk.csv"
-csvfile = open('output_files/results/next_activity_and_time_%s' % eventlog, 'r')
+eventlog_name = "BPIC12"
+csvfile = open('output_files/results/next_activity_and_time_%s' % eventlog_name, 'r')
 r = csv.reader(csvfile)
 next(r,None) # header
 vals = dict()

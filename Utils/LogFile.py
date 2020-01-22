@@ -296,7 +296,7 @@ class LogFile:
         train_logfile.contextdata = train
         train_logfile.categoricalAttributes = self.categoricalAttributes
         train_logfile.numericalAttributes = self.numericalAttributes
-        train_logfile.data = self.data # TODO Fix
+        train_logfile.data = train
         train_logfile.k = self.k
 
         test_logfile = LogFile(None, None, None, None, self.time, self.trace, self.activity, self.values, False, False)
@@ -305,7 +305,7 @@ class LogFile:
         test_logfile.contextdata = test
         test_logfile.categoricalAttributes = self.categoricalAttributes
         test_logfile.numericalAttributes = self.numericalAttributes
-        test_logfile.data = self.data # TODO Fix
+        test_logfile.data = test
         test_logfile.k = self.k
 
         return train_logfile, test_logfile
