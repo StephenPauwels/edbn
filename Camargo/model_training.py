@@ -28,7 +28,7 @@ from support_modules import nn_support as nsup
 from support_modules import support as sup
 
 
-def training_model(log_train, log_test, outfile, args):
+def training_model(full_log, log_train, log_test, outfile, args):
     """Main method of the training module.
     """
 
@@ -53,12 +53,12 @@ def training_model(log_train, log_test, outfile, args):
     # rl_index["None"] = 0
     # index_rl[0] = "None"
 
-    ac_index = create_index(log_train.data, 'task')
+    ac_index = create_index(full_log.data, 'task')
     ac_index['start'] = 0
     ac_index['end'] = len(ac_index)
     index_ac = {v: k for k, v in ac_index.items()}
 
-    rl_index = create_index(log_train.data, 'role')
+    rl_index = create_index(full_log.data, 'role')
     rl_index['start'] = 0
     rl_index['end'] = len(rl_index)
     index_rl = {v: k for k, v in rl_index.items()}

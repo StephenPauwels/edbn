@@ -1,8 +1,8 @@
 import numpy as np
 seed = 123
 np.random.seed(seed)
-from tensorflow import set_random_seed
-set_random_seed(seed)
+import tensorflow
+tensorflow.random.set_seed(seed)
 
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, Concatenate, Conv1D, GlobalAveragePooling1D, GlobalMaxPooling1D, Reshape, MaxPooling1D, Flatten, Dense, Embedding, Dropout
@@ -81,19 +81,8 @@ class DataGenerator(Sequence):
 def get_model(input_length=10, n_filters=3, vocab_size=10, n_classes=9, embedding_size=5, n_modules=5, model_type='ACT', learning_rate=0.002):
     #inception model
 
-    inputs = []
-    for i in range(2):
-        inputs.append(Input(shape=(input_length,)))
-
-    inputs_ = []
-    for i in range(2):
-        if (i==0):
-            a = Embedding(vocab_size, embedding_size, input_length=input_length)(inputs[0])
-            inputs_.append(Embedding(vocab_size, embedding_size, input_length=input_length)(inputs[i]))
-        else:
-            inputs_.append(Reshape((input_length, 1))(inputs[i]))
-
-    filters_inputs = Concatenate(axis=2)(inputs_)
+    input = Input(shape=(input_length,))
+    filters_inputs = Embedding(vocab_size, embedding_size, input_length=input_length)(input)
 
     for m in range(n_modules):
         filters = []
@@ -115,16 +104,16 @@ def get_model(input_length=10, n_filters=3, vocab_size=10, n_classes=9, embeddin
     if (model_type == 'BOTH'):
         out_a = Dense(n_classes, activation='softmax', name='output_a')(pool)
         out_t = Dense(1, activation='linear', name='output_t')(pool)
-        model = Model(inputs=inputs, outputs=[out_a, out_t])
+        model = Model(inputs=input, outputs=[out_a, out_t])
         model.compile(optimizer=optimizer, loss={'output_a':'categorical_crossentropy', 'output_t':'mae'})
     else:
         if (model_type=='ACT'):
             out = Dense(n_classes, activation='softmax')(pool)
-            model = Model(inputs=inputs, outputs=out)
+            model = Model(inputs=input, outputs=out)
             model.compile(optimizer=optimizer, loss='mse',metrics=['acc'])
         elif (model_type=='TIME'):
             out = Dense(1, activation='linear')(pool)
-            model = Model(inputs=inputs, outputs=out)
+            model = Model(inputs=input, outputs=out)
             model.compile(optimizer=optimizer, loss='mae')
 
     model.summary()
@@ -158,7 +147,7 @@ def fit_and_score(params):
     """
    
     if (params['model_type'] == 'ACT'):
-        h = model.fit([X_a_train, X_t_train],
+        h = model.fit(X_a_train,
                       y_a_train, epochs=200, verbose=0, 
                       validation_split=0.2, callbacks=[early_stopping], batch_size=2**params['batch_size'])
     elif (params['model_type'] == 'TIME'):
@@ -187,60 +176,50 @@ def fit_and_score(params):
 
     return {'loss': score, 'status': STATUS_OK,  'n_epochs':  len(h.history['loss']), 'n_params':model.count_params(), 'time':end_time - start_time}
 
+for dataset in ["bpic12", "bpic12W", "bpic15_1", "bpic15_2", "bpic15_3", "bpic15_4", "bpic15_5", "helpdesk"]:
+    train_log = "../Camargo/output_files/data/" + dataset + "/train_log.csv"
+    test_log = "../Camargo/output_files/data/" + dataset + "/test_log.csv"
 
-logfile = sys.argv[1]
-model_type = sys.argv[2]
-output_file = sys.argv[3]
+    model_type = "ACT"
+    output_file = "output_" + dataset + ".log"
 
-current_time = time.strftime("%d.%m.%y-%H.%M", time.localtime())
-outfile = open(output_file, 'w')
+    current_time = time.strftime("%d.%m.%y-%H.%M", time.localtime())
+    outfile = open(output_file, 'w')
 
-outfile.write("Starting time: %s\n" % current_time)
+    outfile.write("Starting time: %s\n" % current_time)
 
-((X_a, X_t),
- (y_a, y_t),
- vocab_size,
- max_length,
- n_classes,
- divisor,
- prefix_sizes) = load_data(logfile)
+    (X_train, y_train,
+     X_test, y_test,
+     vocab_size,
+     max_length,
+     n_classes,
+     prefix_sizes) = load_data(train_log, test_log, case_index=1, act_index=0)
 
-emb_size = (vocab_size + 1 ) // 2 # --> ceil(vocab_size/2)
+    emb_size = (vocab_size + 1 ) // 2 # --> ceil(vocab_size/2)
 
-# normalizing times
-X_t = X_t / np.max(X_t)
-# categorical output
-y_a = to_categorical(y_a)
+    # categorical output
+    y_train = to_categorical(y_train)
+    y_test = to_categorical(y_test)
 
+    n_iter = 20
 
-n_iter = 20
-
-space = {'input_length':max_length, 'vocab_size':vocab_size, 'n_classes':n_classes, 'model_type':model_type, 'embedding_size':emb_size,
-         'n_modules':hp.choice('n_modules', [1,2,3]),
-         'batch_size': hp.choice('batch_size', [9,10]),
-         'learning_rate': hp.loguniform("learning_rate", np.log(0.00001), np.log(0.01))}
-
+    space = {'input_length':max_length, 'vocab_size':vocab_size, 'n_classes':n_classes, 'model_type':model_type, 'embedding_size':emb_size,
+             'n_modules':hp.choice('n_modules', [1,2,3]),
+             'batch_size': hp.choice('batch_size', [9,10]),
+             'learning_rate': hp.loguniform("learning_rate", np.log(0.00001), np.log(0.01))}
 
 
-final_brier_scores = []
-final_accuracy_scores = []
-final_mae_scores = []
-final_mse_scores = []
-for f in range(3):
-    print("Fold", f)
-    outfile.write("\nFold: %d" % f)
-    # split into train and test set
-    p = np.random.RandomState(seed=seed+f).permutation(X_a.shape[0])
-    elems_per_fold = int(round(X_a.shape[0]/3))
 
-    X_a_train = X_a[p[:2*elems_per_fold]]
-    X_t_train = X_t[p[:2*elems_per_fold]]
-    X_a_test = X_a[p[2*elems_per_fold:]]
-    X_t_test = X_t[p[2*elems_per_fold:]]
-    y_a_train = y_a[p[:2*elems_per_fold]]
-    y_a_test = y_a[p[2*elems_per_fold:]]
-    y_t_train = y_t[p[:2*elems_per_fold]]
-    y_t_test = y_t[p[2*elems_per_fold:]]
+    final_brier_scores = []
+    final_accuracy_scores = []
+    final_mae_scores = []
+    final_mse_scores = []
+
+    X_a_train = X_train
+    y_a_train = y_train
+
+    X_a_test = X_test
+    y_a_test = y_test
 
     # model selection
     print('Starting model selection...')
@@ -250,8 +229,14 @@ for f in range(3):
     best_numparameters = 0
 
     trials = Trials()
-    best = fmin(fit_and_score, space, algo=tpe.suggest, max_evals=n_iter, trials=trials, rstate= np.random.RandomState(seed+f))
+    best = fmin(fit_and_score, space, algo=tpe.suggest, max_evals=n_iter, trials=trials, rstate= np.random.RandomState(seed))
     best_params = hyperopt.space_eval(space, best)
+
+    fit_and_score(best_params)
+
+    # best_model = get_model(input_length=best_params['input_length'], vocab_size=best_params['vocab_size'], n_classes=best_params['n_classes'],
+    #                   model_type=best_params['model_type'], learning_rate=best_params['learning_rate'], embedding_size=best_params['embedding_size'],
+    #                   n_modules=best_params['n_modules'])
 
     outfile.write("\nHyperopt trials")
     outfile.write("\ntid,loss,learning_rate,n_modules,batch_size,time,n_epochs,n_params,perf_time")
@@ -273,26 +258,30 @@ for f in range(3):
 
     # evaluate
     print('Evaluating final model...')
-    preds_a = best_model.predict([X_a_test,X_t_test])
+    preds_a = best_model.predict([X_a_test])
+
     brier_score = np.mean(list(map(lambda x: brier_score_loss(y_a_test[x],preds_a[x]),[i[0] for i in enumerate(y_a_test)])))
 
     y_a_test = np.argmax(y_a_test, axis=1)
     preds_a = np.argmax(preds_a, axis=1)
 
-    outfile.write("\nBrier score: %f" % brier_score)
-    final_brier_scores.append(brier_score)
+    # outfile.write("\nBrier score: %f" % brier_score)
+    # final_brier_scores.append(brier_score)
 
+    print(y_a_test)
+    print(preds_a)
     accuracy = accuracy_score(y_a_test, preds_a)
     outfile.write("\nAccuracy: %f" % accuracy)
+    print("Accuracy:", accuracy)
     final_accuracy_scores.append(accuracy)
 
     outfile.write(np.array2string(confusion_matrix(y_a_test, preds_a), separator=", "))
-    
+
 
 
     outfile.flush()
 
-print("\n\nFinal Brier score: ", final_brier_scores, file=outfile)
-print("Final Accuracy score: ", final_accuracy_scores, file=outfile)
+    print("\n\nFinal Brier score: ", final_brier_scores, file=outfile)
+    print("Final Accuracy score: ", final_accuracy_scores, file=outfile)
 
-outfile.close()
+    outfile.close()

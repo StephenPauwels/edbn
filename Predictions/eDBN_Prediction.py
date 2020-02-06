@@ -483,29 +483,40 @@ def learn_duplicated_events(logfile):
 def brier_multi(targets, probs):
     return np.mean(np.sum((probs - targets)**2))
 
+def run_dataset(dataset = None, k = 2):
+    from datetime import datetime
 
-def run_dataset():
-    dataset = data.BPIC12
+    if dataset is None:
+        dataset = data.BPIC15_1
     dataset_size = 200000000
-    add_end = False
+    add_end = True
     resource_pools = False
     reduce_tasks = False
-    logfile_k = 2
+    logfile_k = k
     bpic_file = 5
 
-    remove_resource = True
+    remove_resource = False
 
     logfile, log_filename = data.get_data(dataset, dataset_size, logfile_k, add_end, reduce_tasks, resource_pools, remove_resource)
-
+    logfile.convert2int()
     train_log, test_log = logfile.splitTrainTest(70)
+    train_log.create_k_context()
+    test_log.create_k_context()
+
     model = edbn.train(train_log)
 
     # Train average number of duplicated events
 #    print(duplicates)
     model.duplicate_events = learn_duplicated_events(train_log)
-    predict_next_event(model, test_log)
-    predict_suffix(model, test_log)
+    acc = predict_next_event(model, test_log)
+    with open("Results.csv", "a") as fout:
+        fout.write(",".join([str(datetime.now()), dataset + "_" + str(logfile_k), "Predict_Next", str(acc)]))
+        fout.write("\n")
 
+    # sim =predict_suffix(model, test_log)
+    # with open("Results.csv", "a") as fout:
+    #     fout.write(",".join([str(datetime.now()), dataset + "_" + str(logfile_k), "Predict_Suffix", str(sim)]))
+    #     fout.write("\n")
 
 def test_datasets():
     from LogFile import LogFile
@@ -556,7 +567,10 @@ def run_Tax():
 
 if __name__ == "__main__":
     #test_datasets()
-    #run_dataset()
+    # run_dataset(data.BPIC15_1, 2)
+    # for k in [2]: #[1,2,3,4,5]:
+    #     for dataset in [data.BPIC12, data.BPIC12W, data.BPIC15_1, data.BPIC15_2, data.BPIC15_3, data.BPIC15_4, data.BPIC15_5, data.HELPDESK]:
+    #        run_dataset(dataset, k)
     #run_Tax()
 
 
@@ -566,18 +580,15 @@ if __name__ == "__main__":
     import pickle
 
     trainings = []
-    # trainings.append({"folder": "../Camargo/output_files/output_run3/BPIC12_20000000_2_1_0_0_1/shared_cat/data/", "model": "BPIC12_20000000_2_1_0_0_1"})
-    # trainings.append({"folder": "../Camargo/output_files/output_run3/BPIC12_20000000_2_1_0_1_1/shared_cat/data/", "model": "BPIC12_20000000_2_1_0_1_1"})
-    # trainings.append({"folder": "../Camargo/output_files/output_run3/BPIC12W_20000000_2_1_0_0_1/shared_cat/data/", "model": "BPIC12W_20000000_2_1_0_0_1"})
-    # trainings.append({"folder": "../Camargo/output_files/output_run3/BPIC12W_20000000_2_1_0_1_1/shared_cat/data/", "model": "BPIC12W_20000000_2_1_0_1_1"})
-    # trainings.append({"folder": "../Camargo/output_files/output_run3b/BPIC15_20000000_2_1_0_0_1/shared_cat/data/", "model": "BPIC15_20000000_2_1_0_0_1"})
-    # trainings.append({"folder": "../Camargo/output_files/output_run3b/BPIC15_20000000_2_1_0_1_1/shared_cat/data/", "model": "BPIC15_20000000_2_1_0_1_1"})
-    # trainings.append({"folder": "../Camargo/output_files/output_run3b/HELPDESK_20000000_2_1_0_0_1/shared_cat/data/", "model": "HELPDESK_20000000_2_1_0_0_1"})
-    # trainings.append({"folder": "../Camargo/output_files/output_run3b/HELPDESK_20000000_2_1_0_1_1/shared_cat/data/", "model": "HELPDESK_20000000_2_1_0_1_1"})
-    trainings.append({"folder": "../Camargo/output_files/BPIC12_20000000_0_0_0_0_1/shared_cat/data/", "model": "BPIC12_20000000_0_0_0_0_1"})
-    trainings.append({"folder": "../Camargo/output_files/BPIC12W_20000000_0_0_0_0_1/shared_cat/data/", "model": "BPIC12W_20000000_0_0_0_0_1"})
-    trainings.append({"folder": "../Camargo/output_files/BPIC15_20000000_0_0_0_0_1/shared_cat/data/", "model": "BPIC15_20000000_0_0_0_0_1"})
-    trainings.append({"folder": "../Camargo/output_files/HELPDESK_20000000_0_0_0_0_1/shared_cat/data/", "model": "HELPDESK_20000000_0_0_0_0_1"})
+    # trainings.append({"folder": "../Camargo/output_files/data/bpic15_1/", "model": "BPIC15_1"})
+    trainings.append({"folder": "../Camargo/output_files/data/bpic15_2/", "model": "BPIC15_2"})
+    trainings.append({"folder": "../Camargo/output_files/data/bpic15_3/", "model": "BPIC15_3"})
+    trainings.append({"folder": "../Camargo/output_files/data/bpic15_4/", "model": "BPIC15_4"})
+    trainings.append({"folder": "../Camargo/output_files/data/bpic15_5/", "model": "BPIC15_5"})
+    trainings.append({"folder": "../Camargo/output_files/data/bpic12W/", "model": "BPIC12W"})
+    trainings.append({"folder": "../Camargo/output_files/data/bpic12/", "model": "BPIC12"})
+    trainings.append({"folder": "../Camargo/output_files/data/helpdesk/", "model": "HELPDESK"})
+
 
 
     if not os.path.exists("Results.csv"):
@@ -595,7 +606,9 @@ if __name__ == "__main__":
                           activity_attr="task", convert=False, k=2)
         # train_log.create_trace_attribute()
         train_log.keep_attributes(["caseid", "task", "role"])
+        train_log.add_end_events()
         train_log.convert2int()
+
         train_log.create_k_context()
 
         model = None
@@ -619,6 +632,7 @@ if __name__ == "__main__":
                         activity_attr="task", convert=False, k=2, values=train_log.values)
         # test_log.create_trace_attribute()
         test_log.keep_attributes(["caseid", "task", "role"])
+        test_log.add_end_events()
         test_log.convert2int()
         test_log.create_k_context()
 
@@ -629,7 +643,7 @@ if __name__ == "__main__":
             fout.write("\n")
 
 
-        
+
         # sim = predict_suffix(model, test_log)
         # with open("Results.csv", "a") as fout:
         #     fout.write(",".join([str(datetime.now()), model_file, "Predict_Suffix", str(sim)]))

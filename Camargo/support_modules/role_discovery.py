@@ -97,7 +97,7 @@ def role_definition(sub_graphs,users):
     return records, resource_table
 # --kernel--
 
-def role_discovery(data, drawing, sim_percentage):
+def role_discovery(data, resource_attr, sim_percentage):
     tasks = list(set(list(map(lambda x: x[0], data))))
     try:
         tasks.remove('start')
@@ -108,7 +108,7 @@ def role_discovery(data, drawing, sim_percentage):
     except Exception:
     	pass
     tasks = [dict(index=i,data=tasks[i]) for i in range(0,len(tasks))]
-    users = list(set(list(map(lambda x: x[1], data))))
+    users = data[resource_attr].unique()
     try:
         users.remove('start')
     except Exception:
@@ -145,8 +145,7 @@ def role_discovery(data, drawing, sim_percentage):
     # role definition from graph
     roles = role_definition(sub_graphs,users)
     # plot creation (optional)
-    if drawing == True:
-        graph_network(g, sub_graphs)
+
 #    sup.print_progress(((100 / 100)* 100),'Analysing resource pool ')
     sup.print_done_task()
     return roles

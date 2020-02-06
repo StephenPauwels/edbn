@@ -6,7 +6,7 @@ import Camargo.embedding_training as em
 import Camargo.model_training as mo
 
 def main(argv):
-    dataset = argv
+    dataset = argv[0]
     dataset_size = 20000000
     add_end = False
     resource_pools = False
@@ -14,7 +14,7 @@ def main(argv):
     logfile_k = 0
     bpic_file = 5
 
-    remove_resource = True
+    remove_resource = False
 
     logfile, dataset_name = data.get_data(dataset, dataset_size, logfile_k, add_end, reduce_tasks, resource_pools, remove_resource)
     logfile_df = logfile.data
@@ -37,8 +37,8 @@ def main(argv):
     args['dense_act'] = None # optimization function see keras doc
     args['optim'] = 'Nadam' # optimization function see keras doc
 
-    em.training_model(train, dataset_name)
-    mo.training_model(train, test, dataset_name, args)
+    # em.training_model(logfile, dataset_name)
+    mo.training_model(logfile, train, test, dataset_name, args)
 
 if __name__ == "__main__":
-    main(sys.argv[2:])
+    main(sys.argv[1:])

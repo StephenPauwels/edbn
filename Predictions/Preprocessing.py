@@ -7,6 +7,11 @@ from Utils.LogFile import LogFile
 from Camargo.support_modules.role_discovery import role_discovery
 
 BPIC15 = "BPIC15"
+BPIC15_1 = "BPIC15_1"
+BPIC15_2 = "BPIC15_2"
+BPIC15_3 = "BPIC15_3"
+BPIC15_4 = "BPIC15_4"
+BPIC15_5 = "BPIC15_5"
 BPIC12 = "BPIC12"
 BPIC12W = "BPIC12W"
 HELPDESK = "HELPDESK"
@@ -14,6 +19,7 @@ CLICKS = "CLICKS"
 BPIC14 = "BPIC14"
 BPIC18 = "BPIC18"
 HELPDESK_EXTRA = "HELPDESK_EXTRA"
+HELPDESK_2 = "HELPDESK_2"
 
 LOGFILE_PATH = "../Data/Logfiles"
 
@@ -22,8 +28,8 @@ def preprocess(logfile, add_end, reduce_tasks, resource_pools, resource_attr, re
     if resource_pools and resource_attr is not None:
         resources, resource_table = role_discovery(logfile.get_data(), resource_attr, 0.5)
         log_df_resources = pd.DataFrame.from_records(resource_table)
-        log_df_resources = log_df_resources.rename(index=str, columns={"role": resource_attr})
-
+        log_df_resources = log_df_resources.rename(index=str, columns={"resource": resource_attr})
+        print(logfile.data)
         logfile.data = logfile.data.merge(log_df_resources, on=resource_attr, how='left')
         logfile.categoricalAttributes.add("role")
         if remove_resource:
@@ -33,6 +39,8 @@ def preprocess(logfile, add_end, reduce_tasks, resource_pools, resource_attr, re
     else:
         logfile.data = logfile.data.rename(columns={resource_attr: "role"})
         logfile.categoricalAttributes.add("role")
+
+    print(logfile.data)
 
     if add_end:
         cases = logfile.get_cases()
@@ -87,6 +95,7 @@ def get_data(dataset, dataset_size, k, add_end, reduce_tasks, resource_pools, re
             filename_parts.append(str(1))
         else:
             filename_parts.append(str(0))
+    print(filename_parts)
     cache_file = LOGFILE_PATH + "/" + "_".join(filename_parts)
 
     colTitles = []
@@ -99,6 +108,37 @@ def get_data(dataset, dataset_size, k, add_end, reduce_tasks, resource_pools, re
         resource_attr = None
         if dataset == BPIC15:
             logfile = LogFile("../Data/BPIC15_1_sorted_new.csv", ",", 0, dataset_size, "Complete Timestamp", "Case ID", activity_attr="Activity", convert=False, k=k)
+            resource_attr = "Resource"
+            colTitles = ["Case ID", "Activity", "Resource"]
+            logfile.keep_attributes(colTitles)
+            logfile.filter_case_length(5)
+        elif dataset == BPIC15_1:
+            logfile = LogFile("../Data/BPIC15_1_sorted_new.csv", ",", 0, dataset_size, "Complete Timestamp", "Case ID", activity_attr="Activity", convert=False, k=k)
+            resource_attr = "Resource"
+            colTitles = ["Case ID", "Activity", "Resource"]
+            logfile.keep_attributes(colTitles)
+            #logfile.filter_case_length(5)
+        elif dataset == BPIC15_2:
+            logfile = LogFile("../Data/BPIC15_2_sorted_new.csv", ",", 0, dataset_size, "Complete Timestamp", "Case ID",
+                              activity_attr="Activity", convert=False, k=k)
+            resource_attr = "Resource"
+            colTitles = ["Case ID", "Activity", "Resource"]
+            logfile.keep_attributes(colTitles)
+            logfile.filter_case_length(5)
+        elif dataset == BPIC15_3:
+            logfile = LogFile("../Data/BPIC15_3_sorted_new.csv", ",", 0, dataset_size, "Complete Timestamp", "Case ID", activity_attr="Activity", convert=False, k=k)
+            resource_attr = "Resource"
+            colTitles = ["Case ID", "Activity", "Resource"]
+            logfile.keep_attributes(colTitles)
+            logfile.filter_case_length(5)
+        elif dataset == BPIC15_4:
+            logfile = LogFile("../Data/BPIC15_4_sorted_new.csv", ",", 0, dataset_size, "Complete Timestamp", "Case ID", activity_attr="Activity", convert=False, k=k)
+            resource_attr = "Resource"
+            colTitles = ["Case ID", "Activity", "Resource"]
+            logfile.keep_attributes(colTitles)
+            logfile.filter_case_length(5)
+        elif dataset == BPIC15_5:
+            logfile = LogFile("../Data/BPIC15_5_sorted_new.csv", ",", 0, dataset_size, "Complete Timestamp", "Case ID", activity_attr="Activity", convert=False, k=k)
             resource_attr = "Resource"
             colTitles = ["Case ID", "Activity", "Resource"]
             logfile.keep_attributes(colTitles)
@@ -124,9 +164,13 @@ def get_data(dataset, dataset_size, k, add_end, reduce_tasks, resource_pools, re
         elif dataset == HELPDESK_EXTRA:
             logfile = LogFile("../Data/Camargo_Helpdesk.csv", ",", 0, dataset_size, "completeTime", "case", activity_attr="event", convert=False, k=k)
             resource_attr = "Resource"
-            logfile.data["Weekday"] = logfile.data.apply(lambda row: datetime.strptime(row["completeTime"], "%Y/%m/%d %H:%M:%S.%f").weekday(), axis=1)
-            logfile.categoricalAttributes.add("Weekday")
-            colTitles = ["case", "event", "Resource", "Weekday"]
+            colTitles = ["case", "event", "Resource", "variant"]
+            logfile.keep_attributes(colTitles)
+            logfile.filter_case_length(3)
+        elif dataset == HELPDESK_2:
+            logfile = LogFile("../Data/helpdesk2.csv", ",", 0, dataset_size, "Complete Timestamp", "case", activity_attr="event", convert=False, k=k)
+            resource_attr = "Resource"
+            colTitles = ["case", "event", "Resource", "Variant", "seriousness", "customer", "product", "responsible_section", "seriousness_2", "service_level", "service_type", "support_section", "workgroup"]
             logfile.keep_attributes(colTitles)
             logfile.filter_case_length(3)
         elif dataset == CLICKS:
@@ -139,16 +183,34 @@ def get_data(dataset, dataset_size, k, add_end, reduce_tasks, resource_pools, re
             logfile.keep_attributes(["Change ID", "Change Type"])
         elif dataset == BPIC18:
             logfile = LogFile("../Data/bpic2018.csv", ",", 0, dataset_size, "startTime", "case", activity_attr="event", convert=False, k=k)
-            logfile.keep_attributes(["case", "event", "subprocess" ])
+            colTitles = ["case", "event", "subprocess"]
+            logfile.keep_attributes(colTitles)
         else:
             print("Unknown Dataset")
             return None
 
         preprocessed_log = preprocess(logfile, add_end, reduce_tasks, resource_pools, resource_attr, remove_resource)
-        colTitles[2] = "role"
-        preprocessed_log.data = preprocessed_log.data.reindex(columns=colTitles)
+
+#        colTitles[2] = "role"
+#        logfile.data = logfile.data.reindex(columns=colTitles)
 
         preprocessed_log.create_k_context()
         with open(cache_file, "wb") as pickle_file:
             pickle.dump(preprocessed_log, pickle_file)
     return preprocessed_log, "_".join(filename_parts)
+
+if __name__ == "__main__":
+    import numpy as np
+    print("Calculating characteristics")
+    datasets = [BPIC12, BPIC12W, BPIC15_1, BPIC15_2, BPIC15_3, BPIC15_4, BPIC15_5, HELPDESK]
+    for dataset in datasets:
+        logfile, name = get_data(dataset, 20000000, 0, False, False, False, True)
+        cases = logfile.get_cases()
+        case_lengths = [len(c[1]) for c in cases]
+        print("Logfile:", name)
+        print("Num events:", len(logfile.get_data()))
+        print("Num cases:", len(cases))
+        print("Num activities:", len(logfile.get_data()[logfile.activity].unique()))
+        print("Avg activities in case:", np.average(case_lengths))
+        print("Max activities in case:", max(case_lengths))
+        print()

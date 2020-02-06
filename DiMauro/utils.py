@@ -1,127 +1,151 @@
 
-def load_data(logfile=None):
+def load_data(train, test, case_index = 0, act_index = 1):
 
-    import datetime
-    import time
     import numpy as np
     import csv
-    from datetime import datetime
     from keras.preprocessing.sequence import pad_sequences
+
+    ACT_INDEX = act_index
+    CASE_INDEX = case_index
 
     vocabulary = set()
 
-    csvfile = open(logfile, 'r')
-    logreader = csv.reader(csvfile, delimiter=',')
-    next(logreader, None)  # skip the headers
+    csvfile = open(train, 'r')
+    trainreader = csv.reader(csvfile, delimiter=',')
+    next(trainreader, None)  # skip the headers
 
-    lastcase = '' 
-    casestarttime = None
-    lasteventtime = None
-    firstLine = True
+    csvfile = open(test, 'r')
+    testreader = csv.reader(csvfile, delimiter=',')
+    next(testreader, None)  # skip the headers
 
-    lines = [] #these are all the activity seq
-    timeseqs = [] #time sequences (differences between two events)
+
+
+    train_lines = [] #these are all the activity seq
+    test_lines = []
 
     numcases = 0
     max_length = 0
 
-    for row in logreader:
-        t = datetime.strptime(row[2], "%Y/%m/%d %H:%M:%S.%f")
-        if row[0]!=lastcase:  #'lastcase' is to save the last executed case for the loop
-            casestarttime = t
-            lasteventtime = t
-            lastcase = row[0]
+    lastcase = ''
+    firstLine = True
+    for row in trainreader:
+        if row[CASE_INDEX]!=lastcase:  #'lastcase' is to save the last executed case for the loop
+            lastcase = row[CASE_INDEX]
             if not firstLine:
-                lines.append(line)
-                timeseqs.append(times)
+                train_lines.append(line)
                 if len(line) > max_length:
                     max_length = len(line)
             line = []
-            times = []
             numcases += 1
 
-        vocabulary.add(row[1])
-        line.append(row[1])
-        timesincelastevent = t - lasteventtime
-        timediff = 86400 * timesincelastevent.days + timesincelastevent.seconds + timesincelastevent.microseconds/1000000
-        # +1 avoid zero
-        times.append(timediff+1)
-        lasteventtime = t
+        vocabulary.add(row[ACT_INDEX])
+        line.append(row[ACT_INDEX])
         firstLine = False
+    train_lines.append(line)
 
-    lines.append(line)
-    timeseqs.append(times)
+    lastcase = ''
+    firstLine = True
+    for row in testreader:
+        if row[CASE_INDEX]!=lastcase:  #'lastcase' is to save the last executed case for the loop
+            lastcase = row[CASE_INDEX]
+            if not firstLine:
+                test_lines.append(line)
+                if len(line) > max_length:
+                    max_length = len(line)
+            line = []
+            numcases += 1
+
+        vocabulary.add(row[ACT_INDEX])
+        line.append(row[ACT_INDEX])
+        firstLine = False
+    test_lines.append(line)
 
     vocabulary = {key: idx for idx, key in enumerate(vocabulary)}
 
-    divisor = np.mean([item for sublist in timeseqs for item in sublist]) #average time between events
     numcases += 1
     print("Num cases: ", numcases)
-    elems_per_fold = int(round(numcases/3))
 
-    if len(line) > max_length:
-        max_length = len(line)
+    X_train = []
+    y_train = []
 
-    X = []
-    X1 = []
-    y = []
-    y_t = []
+    X_test = []
+    y_test = []
 
     max_length = 0
-    prefix_sizes = []
+    prefix_sizes_train = []
+    prefix_sizes_test = []
     seqs = 0
     vocab = set()
-    for seq, time in zip(lines, timeseqs):
+    for seq in train_lines:
         code = []
         code.append(vocabulary[seq[0]])
-        code1 = []
-        code1.append(np.log(time[0]+1))
 
         vocab.add(seq[0])
 
         for i in range(1,len(seq)):
-            prefix_sizes.append(len(code))
+            prefix_sizes_train.append(len(code))
 
             if len(code)>max_length:
                 max_length = len(code)
-            X.append(code[:])
-            X1.append(code1[:])
-            y.append(vocabulary[seq[i]])
-            y_t.append(time[i]/divisor)
+            X_train.append(code[:])
+            y_train.append(vocabulary[seq[i]])
 
             code.append(vocabulary[seq[i]])
-            code1.append(np.log(time[i]+1))
             seqs += 1
 
             vocab.add(seq[i])
 
+    for seq in test_lines:
+        code = []
+        code.append(vocabulary[seq[0]])
 
-    prefix_sizes = np.array(prefix_sizes)
+        vocab.add(seq[0])
+
+        for i in range(1,len(seq)):
+            prefix_sizes_test.append(len(code))
+
+            if len(code)>max_length:
+                max_length = len(code)
+            X_test.append(code[:])
+            y_test.append(vocabulary[seq[i]])
+
+            code.append(vocabulary[seq[i]])
+            seqs += 1
+
+            vocab.add(seq[i])
+
+    prefix_sizes_train = np.array(prefix_sizes_train)
+    prefix_sizes_test = np.array(prefix_sizes_test)
 
     print("Num sequences:", seqs)
 
     print("Activities: ",vocab )
     vocab_size = len(vocab)
 
-    X = np.array(X)
-    X1 = np.array(X1)
-    y = np.array(y)
-    y_t = np.array(y_t)
+    X_train = np.array(X_train)
+    y_train = np.array(y_train)
 
+    X_test = np.array(X_test)
+    y_test = np.array(y_test)
 
-    y_unique = np.unique(y)
+    combined_y = np.concatenate((y_train, y_test))
+
+    y_unique = np.unique(combined_y)
     dict_y = {}
     i = 0
     for el in y_unique:
         dict_y[el] = i
         i += 1
-    for i in range(len(y)):
-        y[i] = dict_y[y[i]]
-    y_unique = np.unique(y, return_counts=True)
+    for i in range(len(y_train)):
+        y_train[i] = dict_y[y_train[i]]
+    for i in range(len(y_test)):
+        y_test[i] = dict_y[y_test[i]]
+    y_unique = np.unique(combined_y, return_counts=True)
     print("Classes: ", y_unique)
     n_classes = y_unique[0].shape[0]
+    print("Num classes:", n_classes)
     # padding
-    padded_X = pad_sequences(X, maxlen=max_length, padding='pre', dtype='float64')
-    padded_X1 = pad_sequences(X1, maxlen=max_length, padding='pre', dtype='float64')
+    padded_X_train = pad_sequences(X_train, maxlen=max_length, padding='pre', dtype='float64')
+    padded_X_test = pad_sequences(X_test, maxlen=max_length, padding='pre', dtype='float64')
 
-    return ( (padded_X, padded_X1), (y, y_t), vocab_size, max_length, n_classes, divisor, prefix_sizes)
+    return ( padded_X_train, y_train, padded_X_test, y_test, vocab_size, max_length, n_classes, prefix_sizes_train)

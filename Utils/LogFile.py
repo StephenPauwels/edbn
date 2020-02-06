@@ -270,10 +270,27 @@ class LogFile:
                     return True
         return False
 
+    def add_end_events(self):
+        cases = self.get_cases()
+        new_data = []
+        for case_name, case in cases:
+            for i in range(0, len(case)):
+                new_data.append(case.iloc[i].to_dict())
+
+            record = {}
+            for col in self.data:
+                if col == self.trace:
+                    record[col] = case_name
+                else:
+                    record[col] = "end"
+            new_data.append(record)
+
+        self.data = pd.DataFrame.from_records(new_data)
+
     def splitTrainTest(self, train_percentage):
         import random
 
-        grouped = self.get_data().groupby([self.trace])
+        grouped = self.data.groupby([self.trace])
         train_cases = []
         test_cases = []
         test_length = len(grouped) * 0.3
@@ -293,7 +310,7 @@ class LogFile:
         train_logfile = LogFile(None, None, None, None, self.time, self.trace, self.activity, self.values, False, False)
         train_logfile.filename = self.filename
         train_logfile.values = self.values
-        train_logfile.contextdata = train
+        train_logfile.contextdata = None
         train_logfile.categoricalAttributes = self.categoricalAttributes
         train_logfile.numericalAttributes = self.numericalAttributes
         train_logfile.data = train
@@ -302,7 +319,7 @@ class LogFile:
         test_logfile = LogFile(None, None, None, None, self.time, self.trace, self.activity, self.values, False, False)
         test_logfile.filename = self.filename
         test_logfile.values = self.values
-        test_logfile.contextdata = test
+        test_logfile.contextdata = None
         test_logfile.categoricalAttributes = self.categoricalAttributes
         test_logfile.numericalAttributes = self.numericalAttributes
         test_logfile.data = test

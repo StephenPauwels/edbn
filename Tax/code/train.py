@@ -31,8 +31,12 @@ from datetime import datetime
 from math import log
 
 
-train_eventlog = "../../Camargo/output_files/HELPDESK_20000000_0_0_0_0_1/shared_cat/data/train_log.csv"
-test_eventlog = "../../Camargo/output_files/HELPDESK_20000000_0_0_0_0_1/shared_cat/data/test_log.csv"
+# train_eventlog = "../../Camargo/output_files/data/bpic15_5/train_log.csv"
+# test_eventlog = "../../Camargo/output_files/data/bpic15_5/test_log.csv"
+
+train_eventlog = "../../Camargo/output_files/BPIC15_1_20000000_0_0_0_0_1/shared_cat/data/train_log.csv"
+test_eventlog = "../../Camargo/output_files/BPIC15_1_20000000_0_0_0_0_1/shared_cat/data/test_log.csv"
+
 caseid_col = 1
 role_col = 3
 task_col = 4
@@ -68,10 +72,27 @@ for row in spamreader: #the rows are "CaseID,ActivityID,CompleteTimestamp"
 lines.append(line)
 numlines+=1
 
+csvfile = open(test_eventlog, 'r')
+spamreader = csv.reader(csvfile, delimiter=',', quotechar='|')
+next(spamreader, None)  # skip the headers
+ascii_offset = 161
+
+for row in spamreader: #the rows are "CaseID,ActivityID,CompleteTimestamp"
+    if row[caseid_col]!=lastcase:  #'lastcase' is to save the last executed case for the loop
+        lastcase = row[caseid_col]
+        if not firstLine:
+            lines.append(line)
+        line = ''
+        numlines+=1
+    line+=chr(int(row[task_col])+ascii_offset)
+    firstLine = False
+
+# add last case
+lines.append(line)
+numlines+=1
+
 
 #########################################################################################################
-
-# separate training data into 3 parts
 
 step = 1
 sentences = []
