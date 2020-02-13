@@ -10,7 +10,7 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 
-from utils import load_data
+from DiMauro.utils import load_data
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 from sklearn.metrics import mean_absolute_error, mean_squared_error, brier_score_loss
 
@@ -22,6 +22,7 @@ import sys
 import csv 
 from time import perf_counter
 import time
+import os
 
 from tensorflow.keras.utils import Sequence
 
@@ -147,8 +148,8 @@ def fit_and_score(params):
     """
    
     if (params['model_type'] == 'ACT'):
-        h = model.fit(X_a_train,
-                      y_a_train, epochs=200, verbose=0, 
+        h = model.fit(params["X_train"],
+                      params["Y_train"], epochs=200, verbose=0,
                       validation_split=0.2, callbacks=[early_stopping], batch_size=2**params['batch_size'])
     elif (params['model_type'] == 'TIME'):
         h = model.fit([X_a_train, X_t],
@@ -176,12 +177,11 @@ def fit_and_score(params):
 
     return {'loss': score, 'status': STATUS_OK,  'n_epochs':  len(h.history['loss']), 'n_params':model.count_params(), 'time':end_time - start_time}
 
-for dataset in ["bpic12", "bpic12W", "bpic15_1", "bpic15_2", "bpic15_3", "bpic15_4", "bpic15_5", "helpdesk"]:
-    train_log = "../Camargo/output_files/data/" + dataset + "/train_log.csv"
-    test_log = "../Camargo/output_files/data/" + dataset + "/test_log.csv"
+#for dataset in ["bpic12", "bpic12W", "bpic15_1", "bpic15_2", "bpic15_3", "bpic15_4", "bpic15_5", "helpdesk"]:
 
+def train(train_log, test_log, model_folder):
     model_type = "ACT"
-    output_file = "output_" + dataset + ".log"
+    output_file = os.path.join(model_folder, "output.log")
 
     current_time = time.strftime("%d.%m.%y-%H.%M", time.localtime())
     outfile = open(output_file, 'w')
@@ -193,7 +193,7 @@ for dataset in ["bpic12", "bpic12W", "bpic15_1", "bpic15_2", "bpic15_3", "bpic15
      vocab_size,
      max_length,
      n_classes,
-     prefix_sizes) = load_data(train_log, test_log, case_index=1, act_index=0)
+     prefix_sizes) = load_data(train_log, test_log, case_index=0, act_index=1)
 
     emb_size = (vocab_size + 1 ) // 2 # --> ceil(vocab_size/2)
 
@@ -206,7 +206,8 @@ for dataset in ["bpic12", "bpic12W", "bpic15_1", "bpic15_2", "bpic15_3", "bpic15
     space = {'input_length':max_length, 'vocab_size':vocab_size, 'n_classes':n_classes, 'model_type':model_type, 'embedding_size':emb_size,
              'n_modules':hp.choice('n_modules', [1,2,3]),
              'batch_size': hp.choice('batch_size', [9,10]),
-             'learning_rate': hp.loguniform("learning_rate", np.log(0.00001), np.log(0.01))}
+             'learning_rate': hp.loguniform("learning_rate", np.log(0.00001), np.log(0.01)),
+             'X_train': X_train, 'Y_train': y_train}
 
 
 
@@ -255,7 +256,9 @@ for dataset in ["bpic12", "bpic12W", "bpic15_1", "bpic15_2", "bpic15_3", "bpic15
     print(best_params, file=outfile)
     outfile.write("\nModel parameters: %d" % best_numparameters)
     outfile.write('\nBest Time taken: %f'%best_time)
+    best_model.save(os.path.join(model_folder, "model.h5"))
 
+def evalute():
     # evaluate
     print('Evaluating final model...')
     preds_a = best_model.predict([X_a_test])

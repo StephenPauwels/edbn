@@ -69,9 +69,6 @@ def get_probabilities(variable, val_tuple, parents):
 
 
 def predict_next_event_row(row, model, test_log):
-    # if getattr(row[1], test_log.activity + "_Prev0") == 0:
-    #     return -1, None
-
     parents = model.variables[test_log.activity].conditional_parents
 
     value = []
@@ -88,11 +85,10 @@ def predict_next_event_row(row, model, test_log):
     else:
         predicted_val = max(probs, key=lambda l: probs[l])
 
-    #print(getattr(row[1], test_log.activity), predicted_val, unknown, probs)
     if getattr(row[1], test_log.activity) == predicted_val:
-        return 1#, getattr(row[1], "trace")
+        return 1
     else:
-        return 0#, getattr(row[1], "trace")
+        return 0
 
 
 
@@ -489,7 +485,7 @@ def run_dataset(dataset = None, k = 2):
     if dataset is None:
         dataset = data.BPIC15_1
     dataset_size = 200000000
-    add_end = True
+    add_end = False
     resource_pools = False
     reduce_tasks = False
     logfile_k = k
@@ -567,7 +563,7 @@ def run_Tax():
 
 if __name__ == "__main__":
     #test_datasets()
-    # run_dataset(data.BPIC15_1, 2)
+    run_dataset(data.BPIC15_1, 3)
     # for k in [2]: #[1,2,3,4,5]:
     #     for dataset in [data.BPIC12, data.BPIC12W, data.BPIC15_1, data.BPIC15_2, data.BPIC15_3, data.BPIC15_4, data.BPIC15_5, data.HELPDESK]:
     #        run_dataset(dataset, k)
@@ -580,14 +576,14 @@ if __name__ == "__main__":
     import pickle
 
     trainings = []
-    # trainings.append({"folder": "../Camargo/output_files/data/bpic15_1/", "model": "BPIC15_1"})
-    trainings.append({"folder": "../Camargo/output_files/data/bpic15_2/", "model": "BPIC15_2"})
-    trainings.append({"folder": "../Camargo/output_files/data/bpic15_3/", "model": "BPIC15_3"})
-    trainings.append({"folder": "../Camargo/output_files/data/bpic15_4/", "model": "BPIC15_4"})
-    trainings.append({"folder": "../Camargo/output_files/data/bpic15_5/", "model": "BPIC15_5"})
-    trainings.append({"folder": "../Camargo/output_files/data/bpic12W/", "model": "BPIC12W"})
-    trainings.append({"folder": "../Camargo/output_files/data/bpic12/", "model": "BPIC12"})
-    trainings.append({"folder": "../Camargo/output_files/data/helpdesk/", "model": "HELPDESK"})
+    trainings.append({"folder": "../Camargo/output_files/data/bpic15_1/", "model": "BPIC15_1"})
+    # trainings.append({"folder": "../Camargo/output_files/data/bpic15_2/", "model": "BPIC15_2"})
+    # trainings.append({"folder": "../Camargo/output_files/data/bpic15_3/", "model": "BPIC15_3"})
+    # trainings.append({"folder": "../Camargo/output_files/data/bpic15_4/", "model": "BPIC15_4"})
+    # trainings.append({"folder": "../Camargo/output_files/data/bpic15_5/", "model": "BPIC15_5"})
+    # trainings.append({"folder": "../Camargo/output_files/data/bpic12W/", "model": "BPIC12W"})
+    # trainings.append({"folder": "../Camargo/output_files/data/bpic12/", "model": "BPIC12"})
+    # trainings.append({"folder": "../Camargo/output_files/data/helpdesk/", "model": "HELPDESK"})
 
 
 

@@ -106,18 +106,12 @@ def get_data(dataset, dataset_size, k, add_end, reduce_tasks, resource_pools, re
             preprocessed_log = pickle.load(pickle_file)
     else:
         resource_attr = None
-        if dataset == BPIC15:
+        if dataset == BPIC15_1 or dataset == BPIC15:
             logfile = LogFile("../Data/BPIC15_1_sorted_new.csv", ",", 0, dataset_size, "Complete Timestamp", "Case ID", activity_attr="Activity", convert=False, k=k)
             resource_attr = "Resource"
             colTitles = ["Case ID", "Activity", "Resource"]
             logfile.keep_attributes(colTitles)
             logfile.filter_case_length(5)
-        elif dataset == BPIC15_1:
-            logfile = LogFile("../Data/BPIC15_1_sorted_new.csv", ",", 0, dataset_size, "Complete Timestamp", "Case ID", activity_attr="Activity", convert=False, k=k)
-            resource_attr = "Resource"
-            colTitles = ["Case ID", "Activity", "Resource"]
-            logfile.keep_attributes(colTitles)
-            #logfile.filter_case_length(5)
         elif dataset == BPIC15_2:
             logfile = LogFile("../Data/BPIC15_2_sorted_new.csv", ",", 0, dataset_size, "Complete Timestamp", "Case ID",
                               activity_attr="Activity", convert=False, k=k)
@@ -199,7 +193,7 @@ def get_data(dataset, dataset_size, k, add_end, reduce_tasks, resource_pools, re
             pickle.dump(preprocessed_log, pickle_file)
     return preprocessed_log, "_".join(filename_parts)
 
-if __name__ == "__main__":
+def calc_charact():
     import numpy as np
     print("Calculating characteristics")
     datasets = [BPIC12, BPIC12W, BPIC15_1, BPIC15_2, BPIC15_3, BPIC15_4, BPIC15_5, HELPDESK]
@@ -214,3 +208,11 @@ if __name__ == "__main__":
         print("Avg activities in case:", np.average(case_lengths))
         print("Max activities in case:", max(case_lengths))
         print()
+
+
+if __name__ == "__main__":
+    logfile = LogFile("../Data/Camargo_BPIC2012.csv", ",", 0, 20000000000, "Complete Timestamp", "case",
+                      activity_attr="event", convert=False, k=2)
+    train, test = logfile.splitTrainTest(70)
+    print(logfile.data.nunique())
+    print(len(test.data))

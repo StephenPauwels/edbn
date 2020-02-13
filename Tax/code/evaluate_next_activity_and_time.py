@@ -168,7 +168,6 @@ with open('output_files/results/next_activity_and_time_%s' % eventlog_name, 'w')
     for prefix_size in range(1,maxlen):
         print(prefix_size)
         for line, caseid in zip(lines, caseids):
-            # TODO: check: does first event to predict get skipped????
             cropped_line = ''.join(line[:prefix_size])
             if '!' in cropped_line:
                 continue # make no prediction for this case, since this case has ended already

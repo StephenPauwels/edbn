@@ -44,7 +44,7 @@ def training_model(log, outfile):
     # rl_index["None"] = 0
     # index_rl[0] = "None"
 
-    ac_index = create_index(log.data, 'task')
+    ac_index = create_index(log.data, 'event')
     ac_index['start'] = 0
     ac_index['end'] = len(ac_index)
     index_ac = {v: k for k, v in ac_index.items()}
@@ -60,61 +60,9 @@ def training_model(log, outfile):
 
     ac_weights, rl_weights = train_embedded(log.data, ac_index, rl_index, dim_number)
 
-    sup.create_file_from_list(reformat_matrix(index_ac, ac_weights),
-                              os.path.join(os.path.join('..', 'Camargo', 'input_files', 'embedded_matix'),
-                                           'ac_'+ outfile +'.emb'))
-    sup.create_file_from_list(reformat_matrix(index_rl, rl_weights),
-                              os.path.join(os.path.join('..', 'Camargo', 'input_files', 'embedded_matix'),
-                                           'rl_'+ outfile +'.emb'))
+    sup.create_file_from_list(reformat_matrix(index_ac, ac_weights), os.path.join(outfile, 'event.emb'))
+    sup.create_file_from_list(reformat_matrix(index_rl, rl_weights), os.path.join(outfile, 'role.emb'))
 
-
-def training_model_old(parameters, timeformat, no_loops=False):
-    """Main method of the embedding training module.
-    Args:
-        parameters (dict): parameters for training the embeddeding network.
-        timeformat (str): event-log date-time format.
-        no_loops (boolean): remove loops fom the event-log (optional).
-    """
-    log = lr.LogReader(os.path.join('../Data', parameters['file_name']),
-                       timeformat, timeformat, one_timestamp=True)
-
-    # Pre-processing tasks
-    _, resource_table = rl.read_resource_pool(log, sim_percentage=0.50)
-    # Role discovery
-    log_df_resources = pd.DataFrame.from_records(resource_table)
-    log_df_resources = log_df_resources.rename(index=str, columns={"resource": "user"})
-    # Dataframe creation
-    log_df = pd.DataFrame.from_records(log.data)
-    log_df = log_df.merge(log_df_resources, on='user', how='left')
-    log_df = log_df[log_df.task != 'Start']
-    log_df = log_df[log_df.task != 'End']
-    log_df = log_df.reset_index(drop=True)
-
-    if no_loops:
-        log_df = nsup.reduce_loops(log_df)
-    # Index creation
-    ac_index = create_index(log_df, 'task')
-    ac_index['start'] = 0
-    ac_index['end'] = len(ac_index)
-    index_ac = {v: k for k, v in ac_index.items()}
-
-    rl_index = create_index(log_df, 'role')
-    rl_index['start'] = 0
-    rl_index['end'] = len(rl_index)
-    index_rl = {v: k for k, v in rl_index.items()}
-
-    # Define the number of dimensions as the 4th root of the number of categories
-    dim_number = math.ceil(len(list(itertools.product(*[list(ac_index.items()),
-                                                        list(rl_index.items())])))**0.25)
-
-    ac_weights, rl_weights = train_embedded(log_df, ac_index, rl_index, dim_number)
-
-    sup.create_file_from_list(reformat_matrix(index_ac, ac_weights),
-                              os.path.join(os.path.join('input_files', 'embedded_matix'),
-                                           'ac_'+ parameters['file_name'].split('.')[0]+'.emb'))
-    sup.create_file_from_list(reformat_matrix(index_rl, rl_weights),
-                              os.path.join(os.path.join('input_files', 'embedded_matix'),
-                                           'rl_'+ parameters['file_name'].split('.')[0]+'.emb'))
 
 
 # =============================================================================
@@ -128,7 +76,7 @@ def train_embedded(log_df, ac_index, rl_index, dim_number):
     for i in range(0, len(log_df)):
         # Iterate through the links in the book
         #pairs.append((log_df.iloc[i]['task'], log_df.iloc[i]['role']))
-        pairs.append((ac_index[log_df.iloc[i]['task']], rl_index[log_df.iloc[i]['role']]))
+        pairs.append((ac_index[log_df.iloc[i]['event']], rl_index[log_df.iloc[i]['role']]))
 
     model = ac_rl_embedding_model(ac_index, rl_index, dim_number)
     model.summary()

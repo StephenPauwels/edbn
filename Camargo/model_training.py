@@ -53,7 +53,7 @@ def training_model(full_log, log_train, log_test, outfile, args):
     # rl_index["None"] = 0
     # index_rl[0] = "None"
 
-    ac_index = create_index(full_log.data, 'task')
+    ac_index = create_index(full_log.data, 'event')
     ac_index['start'] = 0
     ac_index['end'] = len(ac_index)
     index_ac = {v: k for k, v in ac_index.items()}
@@ -64,8 +64,8 @@ def training_model(full_log, log_train, log_test, outfile, args):
     index_rl = {v: k for k, v in rl_index.items()}
 
     # Load embedded matrix
-    ac_weights = load_embedded(index_ac, 'ac_'+ outfile + '.emb')
-    rl_weights = load_embedded(index_rl, 'rl_'+ outfile + '.emb')
+    ac_weights = load_embedded(index_ac, os.path.join(outfile, 'event.emb'))
+    rl_weights = load_embedded(index_rl, os.path.join(outfile, 'role.emb'))
     # Calculate relative times
     log_df_train = add_calculated_features(log_train.data, ac_index, rl_index)
     log_df_test = add_calculated_features(log_test.data, ac_index, rl_index)
@@ -74,10 +74,9 @@ def training_model(full_log, log_train, log_test, outfile, args):
     # Input vectorization
     vec = vectorization(log_df_train, ac_index, rl_index, args)
     # Parameters export
-    output_folder = os.path.join('..', 'Camargo', 'output_files', outfile, args['model_type'])
+    output_folder = os.path.join(outfile, args['model_type'])
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
-        os.makedirs(os.path.join(output_folder, 'data'))
 
     parameters = {}
     parameters['event_log'] = args['file_name']
@@ -90,14 +89,14 @@ def training_model(full_log, log_train, log_test, outfile, args):
 
     sup.create_json(parameters, os.path.join(output_folder,
                                              'model_parameters.json'))
-    sup.create_csv_file_header(log_df_test.to_dict('records'),
-                               os.path.join(output_folder,
-                                            'data',
-                                            'test_log.csv'))
-    sup.create_csv_file_header(log_df_train.to_dict('record'),
-                               os.path.join(output_folder,
-                                            'data',
-                                            'train_log.csv'))
+    # sup.create_csv_file_header(log_df_test.to_dict('records'),
+    #                            os.path.join(output_folder,
+    #                                         'data',
+    #                                         'test_log.csv'))
+    # sup.create_csv_file_header(log_df_train.to_dict('record'),
+    #                            os.path.join(output_folder,
+    #                                         'data',
+    #                                         'train_log.csv'))
 
     if args['model_type'] == 'joint':
         mj.training_model(vec, ac_weights, rl_weights, output_folder, args)
@@ -112,86 +111,6 @@ def training_model(full_log, log_train, log_test, outfile, args):
 
     return output_folder
 
-def training_model_old(timeformat, args, no_loops=False):
-    """Main method of the training module.
-    Args:
-        timeformat (str): event-log date-time format.
-        args (dict): parameters for training the network.
-        no_loops (boolean): remove loops fom the event-log (optional).
-    """
-    parameters = dict()
-    log = lr.LogReader(os.path.join('input_files', args['file_name']),
-                       timeformat, timeformat, one_timestamp=True)
-    _, resource_table = rl.read_resource_pool(log, sim_percentage=0.50)
-    # Role discovery
-    log_df_resources = pd.DataFrame.from_records(resource_table)
-    log_df_resources = log_df_resources.rename(index=str, columns={"resource": "user"})
-    # Dataframe creation
-    log_df = pd.DataFrame.from_records(log.data)
-    log_df = log_df.merge(log_df_resources, on='user', how='left')
-    log_df = log_df[log_df.task != 'Start']
-    log_df = log_df[log_df.task != 'End']
-    log_df = log_df.reset_index(drop=True)
-
-    if no_loops:
-        log_df = nsup.reduce_loops(log_df)
-    # Index creation
-    ac_index = create_index(log_df, 'task')
-    ac_index['start'] = 0
-    ac_index['end'] = len(ac_index)
-    index_ac = {v: k for k, v in ac_index.items()}
-
-    rl_index = create_index(log_df, 'role')
-    rl_index['start'] = 0
-    rl_index['end'] = len(rl_index)
-    index_rl = {v: k for k, v in rl_index.items()}
-
-    # Load embedded matrix
-    ac_weights = load_embedded(index_ac, 'ac_'+ args['file_name'].split('.')[0]+'.emb')
-    rl_weights = load_embedded(index_rl, 'rl_'+ args['file_name'].split('.')[0]+'.emb')
-    # Calculate relative times
-    log_df = add_calculated_features(log_df, ac_index, rl_index)
-    # Split validation datasets
-    log_df_train, log_df_test = nsup.split_train_test(log_df, 0.3) # 70%/30%
-    # Input vectorization
-    vec = vectorization(log_df_train, ac_index, rl_index, args)
-    # Parameters export
-    output_folder = os.path.join('output_files', sup.folder_id())
-    if not os.path.exists(output_folder):
-        os.makedirs(output_folder)
-        os.makedirs(os.path.join(output_folder, 'data'))
-
-    parameters['event_log'] = args['file_name']
-    parameters['exp_desc'] = args
-    parameters['index_ac'] = index_ac
-    parameters['index_rl'] = index_rl
-    parameters['dim'] = dict(samples=str(vec['prefixes']['x_ac_inp'].shape[0]),
-                             time_dim=str(vec['prefixes']['x_ac_inp'].shape[1]),
-                             features=str(len(ac_index)))
-    parameters['max_tbtw'] = vec['max_tbtw']
-
-    sup.create_json(parameters, os.path.join(output_folder,
-                                             'model_parameters.json'))
-    sup.create_csv_file_header(log_df_test.to_dict('records'),
-                               os.path.join(output_folder,
-                                            'data',
-                                            'test_log.csv'))
-    sup.create_csv_file_header(log_df_train.to_dict('record'),
-                               os.path.join(output_folder,
-                                            'data',
-                                            'train_log.csv'))
-
-    if args['model_type'] == 'joint':
-        mj.training_model(vec, ac_weights, rl_weights, output_folder, args)
-    elif args['model_type'] == 'shared':
-        msh.training_model(vec, ac_weights, rl_weights, output_folder, args)
-    elif args['model_type'] == 'specialized':
-        msp.training_model(vec, ac_weights, rl_weights, output_folder, args)
-    elif args['model_type'] == 'concatenated':
-        mcat.training_model(vec, ac_weights, rl_weights, output_folder, args)
-    elif args['model_type'] == 'shared_cat':
-        mshcat.training_model(vec, ac_weights, rl_weights, output_folder, args)
-
 # =============================================================================
 # Load embedded matrix
 # =============================================================================
@@ -205,8 +124,7 @@ def load_embedded(index, filename):
         numpy array: array of weights.
     """
     weights = list()
-    input_folder = os.path.join('..', 'Camargo', 'input_files', 'embedded_matix')
-    with open(os.path.join(input_folder, filename), 'r') as csvfile:
+    with open(filename, 'r') as csvfile:
         filereader = csv.reader(csvfile, delimiter=',', quotechar='"')
         for row in filereader:
             cat_ix = int(row[0])
@@ -276,7 +194,7 @@ def add_calculated_features(log_df, ac_index, rl_index):
     """
     # ac_idx = lambda x: ac_index[x['task']]
     # log_df['ac_index'] = log_df.apply(ac_idx, axis=1)
-    log_df['ac_index'] = log_df['task']
+    log_df['ac_index'] = log_df['event']
 
     # rl_idx = lambda x: rl_index[x['role']]
     # log_df['rl_index'] = log_df.apply(rl_idx, axis=1)
@@ -310,7 +228,7 @@ def reformat_events(log_df, ac_index, rl_index):
     print(rl_index)
     temp_data = list()
 #    log_df = sorted(log_df, key=lambda x: (x['caseid'], x['end_timestamp']))
-    for key, group in itertools.groupby(log_df, key=lambda x: x['caseid']):
+    for key, group in itertools.groupby(log_df, key=lambda x: x['case']):
         trace = list(group)
         ac_order = [x['ac_index'] for x in trace]
         rl_order = [x['rl_index'] for x in trace]
