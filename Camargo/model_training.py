@@ -6,7 +6,6 @@ Created on Wed Nov 21 21:23:55 2018
 """
 import os
 import csv
-import math
 import itertools
 
 import keras.utils as ku
@@ -22,9 +21,6 @@ from models import model_shared as msh
 from models import model_shared_cat as mshcat
 from models import model_joint as mj
 
-from support_modules.readers import log_reader as lr
-from support_modules import role_discovery as rl
-from support_modules import nn_support as nsup
 from support_modules import support as sup
 
 

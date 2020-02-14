@@ -6,7 +6,6 @@ import re
 import numpy as np
 import multiprocessing as mp
 import functools
-import matplotlib.pyplot as plt
 import random
 
 

@@ -10,29 +10,20 @@ Author: Niek Tax
 '''
 
 from __future__ import print_function, division
-from keras.models import Sequential, Model
+from keras.models import Model
 from keras.layers.core import Dense
-from keras.layers.recurrent import LSTM, GRU, SimpleRNN
+from keras.layers.recurrent import LSTM
 from keras.layers import Input
-from keras.utils.data_utils import get_file
 from keras.optimizers import Nadam
 from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
 from keras.layers.normalization import BatchNormalization
 from collections import Counter
-import unicodecsv
 import numpy as np
-import random
-import sys
+
 import os
 import copy
 import csv
-import time
-from datetime import datetime
-from math import log
 
-
-# train_eventlog = "../../Camargo/output_files/data/bpic15_5/train_log.csv"
-# test_eventlog = "../../Camargo/output_files/data/bpic15_5/test_log.csv"
 
 def train(train_log, test_log, model_folder):
     caseid_col = 0

@@ -195,14 +195,3 @@ def predict(model, prefixes):
 def train(logfile, train_log, model_folder):
     create_model(vectorization(train_log.data, train_log.trace, "event", num_classes=len(logfile.values[logfile.activity]) + 1), len(logfile.values[logfile.activity]) + 1, len(logfile.values["role"]) + 1, model_folder)
 
-
-
-if __name__ == "__main__":
-    import Preprocessing as data
-
-    dataset = data.BPIC15_5
-    logfile, name = data.get_data(dataset, 20000000, 0, False, False, False, False)
-    train_log, test_log = logfile.splitTrainTest(70)
-
-    #create_model(vectorization(train_log.data, train_log.trace, "Activity", num_classes=len(logfile.values[logfile.activity]) + 1), len(logfile.values[logfile.activity]) + 1, len(logfile.values["role"]) + 1, dataset)
-    predict_next("BPIC15_5/model_rd_22-1.52.h5", test_log.data, test_log.trace, test_log.activity)

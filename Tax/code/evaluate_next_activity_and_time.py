@@ -13,12 +13,6 @@ import copy
 import numpy as np
 import distance
 from jellyfish._jellyfish import damerau_levenshtein_distance
-import unicodecsv
-from sklearn import metrics
-from math import sqrt
-import time
-from datetime import datetime, timedelta
-import matplotlib.pyplot as plt
 from collections import Counter
 import os
 

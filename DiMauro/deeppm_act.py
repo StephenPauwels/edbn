@@ -5,21 +5,16 @@ import tensorflow
 tensorflow.random.set_seed(seed)
 
 from tensorflow.keras.models import Model, load_model
-from tensorflow.keras.layers import Input, Concatenate, Conv1D, GlobalAveragePooling1D, GlobalMaxPooling1D, Reshape, MaxPooling1D, Flatten, Dense, Embedding, Dropout
+from tensorflow.keras.layers import Input, Concatenate, Conv1D, GlobalMaxPooling1D, MaxPooling1D, Dense, Embedding
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import to_categorical
-from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
+from tensorflow.keras.callbacks import EarlyStopping
 
 from DiMauro.utils import load_data
-from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
-from sklearn.metrics import mean_absolute_error, mean_squared_error, brier_score_loss
+from sklearn.metrics import accuracy_score
 
 from hyperopt import Trials, STATUS_OK, tpe, fmin, hp
 import hyperopt
-from hyperopt.pyll.base import scope
-from hyperopt.pyll.stochastic import sample
-import sys
-import csv 
 from time import perf_counter
 import time
 import os

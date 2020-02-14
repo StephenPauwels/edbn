@@ -15,7 +15,6 @@ def calc_accuracy(output_file):
     next(r,None) # header
     vals = dict()
     for row in r:
-        print(row)
         l = list()
         if row[0] in vals.keys():
             l = vals.get(row[0])
