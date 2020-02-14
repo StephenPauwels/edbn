@@ -10,7 +10,7 @@ DATA_DESC.append({"folder": "bpic15_2/", "data": "BPIC15_2"})
 DATA_DESC.append({"folder": "bpic15_3/", "data": "BPIC15_3"})
 DATA_DESC.append({"folder": "bpic15_4/", "data": "BPIC15_4"})
 DATA_DESC.append({"folder": "bpic15_5/", "data": "BPIC15_5"})
-DATA_DESC.append({"folder": "bpic12W/", "data": "BPIC12W"})
+DATA_DESC.append({"folder": "bpic12w/", "data": "BPIC12W"})
 DATA_DESC.append({"folder": "bpic12/", "data": "BPIC12"})
 DATA_DESC.append({"folder": "helpdesk/", "data": "HELPDESK"})
 
