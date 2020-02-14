@@ -1,3 +1,6 @@
+from Experiments_Variables import EDBN, CAMARGO, DIMAURO, LIN, TAX
+from Experiments_Variables import DATA_DESC, DATA_FOLDER, OUTPUT_FOLDER
+
 from Preprocessing import get_data
 from Utils.LogFile import LogFile
 from Camargo.support_modules.support import create_csv_file_header
@@ -7,27 +10,6 @@ import sys
 import pickle
 import time
 
-EDBN = "EDBN"
-CAMARGO = "CAMARGO"
-DIMAURO = "DIMAURO"
-LIN = "LIN"
-TAX = "TAX"
-
-trainings = []
-trainings.append({"folder": "bpic15_1/", "data": "BPIC15_1"})
-trainings.append({"folder": "bpic15_2/", "data": "BPIC15_2"})
-trainings.append({"folder": "bpic15_3/", "data": "BPIC15_3"})
-trainings.append({"folder": "bpic15_4/", "data": "BPIC15_4"})
-trainings.append({"folder": "bpic15_5/", "data": "BPIC15_5"})
-trainings.append({"folder": "bpic12W/", "data": "BPIC12W"})
-trainings.append({"folder": "bpic12/", "data": "BPIC12"})
-trainings.append({"folder": "helpdesk/", "data": "HELPDESK"})
-
-# Location to output the splitted log files
-DATA_FOLDER = "../Data/PredictionData/"
-
-# Location to output model and result files
-OUTPUT_FOLDER = "Output/"
 
 def train_edbn(data_folder, model_folder):
     from EDBN.Execute import train
@@ -36,6 +18,7 @@ def train_edbn(data_folder, model_folder):
     print("Run EDBN")
     train_log = LogFile(data_folder + "train_log.csv", ",", 0, None, None, "case",
                         activity_attr="event", convert=True, k=2)
+    train_log.create_k_context()
 
     model = train(train_log)
 
@@ -120,7 +103,7 @@ def main(argv):
         os.mkdir(OUTPUT_FOLDER)
 
     # Check for all input data if already exist. Otherwise, create data
-    for train in trainings:
+    for train in DATA_DESC:
         dataset_folder = os.path.join(DATA_FOLDER, train["folder"])
         if not os.path.exists(dataset_folder):
             os.mkdir(dataset_folder)
@@ -140,7 +123,7 @@ def main(argv):
             os.mkdir(output_folder)
             os.mkdir(os.path.join(output_folder, "models"))
 
-    train = [train for train in trainings if train["data"] == data][0]
+    train = [train for train in DATA_DESC if train["data"] == data][0]
     dataset_folder = os.path.join(DATA_FOLDER, train["folder"])
     model_folder = os.path.join(OUTPUT_FOLDER, str.lower(train["data"]), "models", str.lower(method))
 
@@ -152,7 +135,7 @@ def main(argv):
     ###
     start_time = time.mktime(time.localtime())
     start_time_str = time.strftime("%d-%m-%y %H:%M:%S", time.localtime())
-    time_output = open(os.path.join(model_folder, "timings.log"), 'w')
+    time_output = open(os.path.join(model_folder, "timings_train.log"), 'a')
     time_output.write("Starting time: %s\n" % start_time_str)
 
     ###
@@ -179,7 +162,7 @@ def main(argv):
     current_time = time.mktime(time.localtime())
     current_time_str = time.strftime("%d-%m-%y %H:%M:%S", time.localtime())
     time_output.write("End time: %s\n" % current_time_str)
-    time_output.write("Duration: %fs" % (current_time - start_time))
+    time_output.write("Duration: %fs\n\n" % (current_time - start_time))
 
 if __name__ == "__main__":
     main(sys.argv[1:])

@@ -563,7 +563,7 @@ def run_Tax():
 
 if __name__ == "__main__":
     #test_datasets()
-    run_dataset(data.BPIC15_1, 3)
+    #run_dataset(data.BPIC15_1, 4)
     # for k in [2]: #[1,2,3,4,5]:
     #     for dataset in [data.BPIC12, data.BPIC12W, data.BPIC15_1, data.BPIC15_2, data.BPIC15_3, data.BPIC15_4, data.BPIC15_5, data.HELPDESK]:
     #        run_dataset(dataset, k)
@@ -576,7 +576,8 @@ if __name__ == "__main__":
     import pickle
 
     trainings = []
-    trainings.append({"folder": "../Camargo/output_files/data/bpic15_1/", "model": "BPIC15_1"})
+    trainings.append({"folder": "../Data/PredictionData/bpic15_1/", "model": "BPIC15_1"})
+    # trainings.append({"folder": "../Camargo/output_files/data/bpic15_1/", "model": "BPIC15_1"})
     # trainings.append({"folder": "../Camargo/output_files/data/bpic15_2/", "model": "BPIC15_2"})
     # trainings.append({"folder": "../Camargo/output_files/data/bpic15_3/", "model": "BPIC15_3"})
     # trainings.append({"folder": "../Camargo/output_files/data/bpic15_4/", "model": "BPIC15_4"})
@@ -598,11 +599,11 @@ if __name__ == "__main__":
         camargo_folder = training["folder"]
         model_file = training["model"]
 
-        train_log = LogFile(camargo_folder + "train_log.csv", ",", 0, 20000000, None, "caseid",
-                          activity_attr="task", convert=False, k=2)
+        train_log = LogFile(camargo_folder + "train_log.csv", ",", 0, 20000000, None, "case",
+                          activity_attr="event", convert=False, k=4)
         # train_log.create_trace_attribute()
-        train_log.keep_attributes(["caseid", "task", "role"])
-        train_log.add_end_events()
+        train_log.keep_attributes(["case", "event", "role"])
+        #train_log.add_end_events()
         train_log.convert2int()
 
         train_log.create_k_context()
@@ -624,11 +625,11 @@ if __name__ == "__main__":
                 pickle.dump(model, pickle_file)
 
         test_log = LogFile(camargo_folder + "test_log.csv",
-                        ",", 0, 20000000, None, "caseid",
-                        activity_attr="task", convert=False, k=2, values=train_log.values)
+                        ",", 0, 20000000, None, "case",
+                        activity_attr="event", convert=False, k=4, values=train_log.values)
         # test_log.create_trace_attribute()
-        test_log.keep_attributes(["caseid", "task", "role"])
-        test_log.add_end_events()
+        test_log.keep_attributes(["case", "event", "role"])
+        #test_log.add_end_events()
         test_log.convert2int()
         test_log.create_k_context()
 

@@ -72,7 +72,7 @@ def create_model(vec, vocab_act_size, vocab_role_size, output_folder):
 
 
 def predict_next(model_file, df_test, case_attr="case", activity_attr="event"):
-    model = load_model(os.path.join("models", model_file), custom_objects={'Modulator':Modulator})
+    model = load_model(os.path.join(model_file), custom_objects={'Modulator':Modulator})
 
     prefixes = create_pref_suf(df_test, case_attr, activity_attr)
     prefixes = predict(model, prefixes)
@@ -80,6 +80,7 @@ def predict_next(model_file, df_test, case_attr="case", activity_attr="event"):
     accuracy = (np.sum([x['ac_true'] for x in prefixes]) / len(prefixes))
 
     print("Accuracy:", accuracy)
+    return accuracy
 
 
 def vectorization(log_df, case_attr, activity="event", role="role", num_classes=None):

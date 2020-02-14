@@ -4,7 +4,7 @@ np.random.seed(seed)
 import tensorflow
 tensorflow.random.set_seed(seed)
 
-from tensorflow.keras.models import Model
+from tensorflow.keras.models import Model, load_model
 from tensorflow.keras.layers import Input, Concatenate, Conv1D, GlobalAveragePooling1D, GlobalMaxPooling1D, Reshape, MaxPooling1D, Flatten, Dense, Embedding, Dropout
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import to_categorical
@@ -258,33 +258,22 @@ def train(train_log, test_log, model_folder):
     outfile.write('\nBest Time taken: %f'%best_time)
     best_model.save(os.path.join(model_folder, "model.h5"))
 
-def evalute():
+def evaluate(train_log, test_log, model_folder):
+    model = load_model(model_folder)
+
+    (X_train, y_train,
+     X_test, y_test,
+     vocab_size,
+     max_length,
+     n_classes,
+     prefix_sizes) = load_data(train_log, test_log, case_index=0, act_index=1)
+
     # evaluate
     print('Evaluating final model...')
-    preds_a = best_model.predict([X_a_test])
+    preds_a = model.predict([X_test])
 
-    brier_score = np.mean(list(map(lambda x: brier_score_loss(y_a_test[x],preds_a[x]),[i[0] for i in enumerate(y_a_test)])))
-
-    y_a_test = np.argmax(y_a_test, axis=1)
+    y_a_test = np.argmax(y_test, axis=1)
     preds_a = np.argmax(preds_a, axis=1)
 
-    # outfile.write("\nBrier score: %f" % brier_score)
-    # final_brier_scores.append(brier_score)
-
-    print(y_a_test)
-    print(preds_a)
     accuracy = accuracy_score(y_a_test, preds_a)
-    outfile.write("\nAccuracy: %f" % accuracy)
-    print("Accuracy:", accuracy)
-    final_accuracy_scores.append(accuracy)
-
-    outfile.write(np.array2string(confusion_matrix(y_a_test, preds_a), separator=", "))
-
-
-
-    outfile.flush()
-
-    print("\n\nFinal Brier score: ", final_brier_scores, file=outfile)
-    print("Final Accuracy score: ", final_accuracy_scores, file=outfile)
-
-    outfile.close()
+    return accuracy

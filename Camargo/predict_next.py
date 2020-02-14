@@ -115,7 +115,7 @@ def predict_next_old(timeformat, parameters, is_single_exec=True):
                                                                           'next_event_measures.csv'))
 
 
-def predict_next(output_folder, model_file, is_single_exec=True):
+def predict_next(data_folder, output_folder, model_file, is_single_exec=True):
     """Main function of the suffix prediction module.
     Args:
         timeformat (str): event-log date-time format.
@@ -129,10 +129,10 @@ def predict_next(output_folder, model_file, is_single_exec=True):
     global TBTW
     global EXP
 
-    output_route = os.path.join('..', 'Camargo', 'output_files', output_folder)
+    output_route = output_folder
     model_name, _ = os.path.splitext(model_file)
     # Loading of testing dataframe
-    df_test = pd.read_csv(os.path.join(output_route, 'data', 'test_log.csv'))
+    df_test = pd.read_csv(os.path.join(data_folder, 'test_log.csv'))
 #    df_test['start_timestamp'] = pd.to_datetime(df_test['start_timestamp'])
 #    df_test['end_timestamp'] = pd.to_datetime(df_test['end_timestamp'])
 #    df_test = df_test.drop(columns=['user'])
@@ -259,20 +259,20 @@ def create_pref_suf(df_test, ac_alias, rl_alias):
         list: list of prefixes and expected sufixes.
     """
     prefixes = list()
-    cases = df_test.caseid.unique()
+    cases = df_test.case.unique()
     for case in cases:
-        trace = df_test[df_test.caseid == case]
+        trace = df_test[df_test.case == case]
         ac_pref = list()
         rl_pref = list()
         t_pref = list()
         for i in range(0, len(trace)-1):
-            ac_pref.append(trace.iloc[i]['ac_index'])
-            rl_pref.append(trace.iloc[i]['rl_index'])
-            t_pref.append(trace.iloc[i]['tbtw_norm'])
+            ac_pref.append(trace.iloc[i]['event'])
+            rl_pref.append(trace.iloc[i]['role'])
+            t_pref.append(0)
             prefixes.append(dict(ac_pref=ac_pref.copy(),
-                                 ac_next=trace.iloc[i + 1]['ac_index'],
+                                 ac_next=trace.iloc[i + 1]['event'],
                                  rl_pref=rl_pref.copy(),
-                                 rl_next=trace.iloc[i + 1]['rl_index'],
+                                 rl_next=trace.iloc[i + 1]['role'],
                                  t_pref=t_pref.copy()))
     return prefixes
 
