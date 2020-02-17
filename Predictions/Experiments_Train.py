@@ -63,9 +63,13 @@ def train_lin(data_folder, model_folder):
 
     print("Run Lin")
     logfile = LogFile(data_folder + "full_log.csv", ",", 0, None, None, "case",
-                        activity_attr="event", convert=True, k=0)
+                        activity_attr="event", convert=False, k=0)
+    logfile.add_end_events()
+    logfile.convert2int()
     train_log = LogFile(data_folder + "train_log.csv", ",", 0, None, None, "case",
-                        activity_attr="event", convert=True, k=0, values=logfile.values)
+                        activity_attr="event", convert=False, k=0, values=logfile.values)
+    train_log.add_end_events()
+    train_log.convert2int()
 
     train(logfile, train_log, model_folder)
 

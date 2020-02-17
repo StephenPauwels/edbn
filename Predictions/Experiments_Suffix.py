@@ -48,17 +48,22 @@ def test_camargo(dataset_folder, model_folder, architecture):
 
 
 def test_lin(dataset_folder, model_folder):
-    # TODO: Change
     from Lin.model import predict_suffix
 
     print("Test Lin")
     logfile = LogFile(dataset_folder + "full_log.csv", ",", 0, None, None, "case",
-                        activity_attr="event", convert=True, k=0)
+                        activity_attr="event", convert=False, k=0)
+    logfile.add_end_events()
+    logfile.convert2int()
+
     test_log = LogFile(dataset_folder + "test_log.csv", ",", 0, None, None, "case",
-                        activity_attr="event", convert=True, k=0, values=logfile.values)
+                        activity_attr="event", convert=False, k=0, values=logfile.values)
+    test_log.add_end_events()
+    test_log.convert2int()
+
     model_file = sorted([model_file for model_file in os.listdir(model_folder) if model_file.endswith(".h5")])[-1]
 
-    acc = predict_suffix(os.path.join(model_folder, model_file), test_log.data, test_log.trace, test_log.activity)
+    acc = predict_suffix(os.path.join(model_folder, model_file), test_log.data, test_log.convert_string2int(test_log.activity, "end"), test_log.trace, test_log.activity)
     with open(os.path.join(model_folder, "results_suffix.log"), "a") as fout:
         fout.write("Accuracy: (%s) %s\n" % (time.strftime("%d-%m-%y %H:%M:%S", time.localtime()), acc))
 

@@ -7,6 +7,7 @@ from keras.layers import Input, Embedding, Dropout, Concatenate, LSTM, Dense, Ba
 from keras.models import Model, load_model
 from keras.optimizers import Nadam
 from nltk.util import ngrams
+import jellyfish as jf
 
 from Lin.Modulator import Modulator
 
@@ -75,7 +76,7 @@ def create_model(vec, vocab_act_size, vocab_role_size, output_folder):
 def predict_next(model_file, df_test, case_attr="case", activity_attr="event"):
     model = load_model(os.path.join(model_file), custom_objects={'Modulator':Modulator})
 
-    prefixes = create_pref_suf(df_test, case_attr, activity_attr)
+    prefixes = create_pref_next(df_test, case_attr, activity_attr)
     prefixes = _predict_next(model, prefixes)
 
     accuracy = (np.sum([x['ac_true'] for x in prefixes]) / len(prefixes))
@@ -83,8 +84,17 @@ def predict_next(model_file, df_test, case_attr="case", activity_attr="event"):
     print("Accuracy:", accuracy)
     return accuracy
 
-def predict_suffix(model_file, df_tet, case_attr="case", activity_attr="event"):
-    pass
+def predict_suffix(model_file, df_test, end, case_attr="case", activity_attr="event"):
+    model = load_model(os.path.join(model_file), custom_objects={'Modulator':Modulator})
+
+    prefixes = create_pref_suff(df_test, end)
+    prefixes = _predict_suffix(model, prefixes, 100, end)
+    prefixes = dl_measure(prefixes)
+
+    average_dl = (np.sum([x['suffix_dl'] for x in prefixes]) / len(prefixes))
+
+    print("Average DL:", average_dl)
+    return average_dl
 
 
 def vectorization(log_df, case_attr, activity="event", role="role", num_classes=None):
@@ -133,7 +143,7 @@ def vectorization(log_df, case_attr, activity="event", role="role", num_classes=
     return vec
 
 
-def create_pref_suf(df_test, case_attr="case", activity_attr="event"):
+def create_pref_next(df_test, case_attr="case", activity_attr="event"):
     """Extraction of prefixes and expected suffixes from event log.
     Args:
         df_test (dataframe): testing dataframe in pandas format.
@@ -160,6 +170,34 @@ def create_pref_suf(df_test, case_attr="case", activity_attr="event"):
                                  t_pref=t_pref.copy()))
     return prefixes
 
+def create_pref_suff(df_test, end):
+    """Extraction of prefixes and expected suffixes from event log.
+    Args:
+        df_test (dataframe): testing dataframe in pandas format.
+        ac_index (dict): index of activities.
+        rl_index (dict): index of roles.
+        pref_size (int): size of the prefixes to extract.
+    Returns:
+        list: list of prefixes and expected sufixes.
+    """
+    prefixes = list()
+    cases = df_test.case.unique()
+    for case in cases:
+        trace = df_test[df_test.case == case].to_dict('records')
+        ac_pref = list()
+        rl_pref = list()
+        for i in range(0, len(trace)-1):
+            ac_pref.append(trace[i]['event'])
+            rl_pref.append(trace[i]['role'])
+            prefixes.append(dict(ac_pref=ac_pref.copy(),
+                                 suff=[x['event'] for x in trace[i + 1:]],
+                                 rl_pref=rl_pref.copy(),
+                                 rl_suff=[x['role'] for x in trace[i + 1:]],
+                                 pref_size=i + 1))
+    for x in prefixes:
+        x['suff'].append(end)
+        # x['rl_suff'].append(rl_index['end'])
+    return prefixes
 
 def _predict_next(model, prefixes):
     """Generate business process suffixes using a keras trained model.
@@ -197,7 +235,7 @@ def _predict_next(model, prefixes):
     return prefixes
 
 
-def _predict_suffix(model, prefixes, imp, max_trace_size):
+def _predict_suffix(model, prefixes, max_trace_size, end):
     """Generate business process suffixes using a keras trained model.
     Args:
         model (keras model): keras trained model.
@@ -220,30 +258,46 @@ def _predict_suffix(model, prefixes, imp, max_trace_size):
         ac_suf, rl_suf = list(), list()
         for _ in range(1, max_trace_size):
             predictions = model.predict([x_ac_ngram, x_rl_ngram])
-            if imp == 'Random Choice':
-                # Use this to get a random choice following as PDF the predictions
-                pos = np.random.choice(np.arange(0, len(predictions[0][0])), p=predictions[0][0])
-                pos1 = np.random.choice(np.arange(0, len(predictions[1][0])), p=predictions[1][0])
-            elif imp == 'Arg Max':
-                # Use this to get the max prediction
-                pos = np.argmax(predictions[0][0])
-                pos1 = np.argmax(predictions[1][0])
+            pos = np.argmax(predictions[0])
+            # pos1 = np.argmax(predictions[1])
             # Activities accuracy evaluation
             x_ac_ngram = np.append(x_ac_ngram, [[pos]], axis=1)
             x_ac_ngram = np.delete(x_ac_ngram, 0, 1)
-            x_rl_ngram = np.append(x_rl_ngram, [[pos1]], axis=1)
-            x_rl_ngram = np.delete(x_rl_ngram, 0, 1)
+
+            # x_rl_ngram = np.append(x_rl_ngram, [[pos1]], axis=1)
+            # x_rl_ngram = np.delete(x_rl_ngram, 0, 1)
+
             # Stop if the next prediction is the end of the trace
             # otherwise until the defined max_size
             ac_suf.append(pos)
-            rl_suf.append(pos1)
+            # rl_suf.append(pos1)
 
             # TODO: Fix the end symbol
-            if INDEX_AC[pos] == 'end':
+            if pos == end:
                 break
 
-        prefix['ac_suff_pred'] = ac_suf
-        prefix['rl_suff_pred'] = rl_suf
+        prefix['suff_pred'] = ac_suf
+        # prefix['rl_suff_pred'] = rl_suf
+    return prefixes
+
+
+def dl_measure(prefixes):
+    """Demerau-Levinstain distance measurement.
+    Args:
+        prefixes (list): list with predicted and expected suffixes.
+        feature (str): categorical attribute to measure.
+    Returns:
+        list: list with measures added.
+    """
+    for prefix in prefixes:
+        suff_log = str([x for x in prefix['suff']])
+        suff_pred = str([x for x in prefix['suff_pred']])
+
+        length = np.max([len(suff_log), len(suff_pred)])
+        sim = jf.damerau_levenshtein_distance(suff_log,
+                                              suff_pred)
+        sim = (1 - (sim / length))
+        prefix['suffix_dl'] = sim
     return prefixes
 
 def train(logfile, train_log, model_folder):
