@@ -28,26 +28,27 @@ def create_model(vec, vocab_act_size, vocab_role_size, output_folder):
     role_e_lstm_1 = LSTM(32, return_sequences=True)(role_dropout)
     role_e_lstm_2 = LSTM(100, return_sequences=True)(role_e_lstm_1)
 
-
     concat1 = Concatenate(axis=1)([act_e_lstm_2, role_e_lstm_2])
     normal = BatchNormalization()(concat1)
 
     act_modulator = Modulator(attr_idx=0, num_attrs=1)(normal)
     role_modulator = Modulator(attr_idx=1, num_attrs=1)(normal)
 
-
-
     # Use LSTM to decode events
     act_d_lstm_1 = LSTM(100, return_sequences=True)(act_modulator)
     act_d_lstm_2 = LSTM(32, return_sequences=False)(act_d_lstm_1)
 
-    act_output = Dense(vocab_act_size, name="act_output", activation='softmax')(act_d_lstm_2)
+    role_d_lstm_1 = LSTM(100, return_sequences=True)(role_modulator)
+    role_d_lstm_2 = LSTM(32, return_sequences=False)(role_d_lstm_1)
 
-    model = Model(inputs=[act_input, role_input], outputs=[act_output])
+    act_output = Dense(vocab_act_size, name="act_output", activation='softmax')(act_d_lstm_2)
+    role_output = Dense(vocab_role_size, name="role_output", activation="softmax")(role_d_lstm_2)
+
+    model = Model(inputs=[act_input, role_input], outputs=[act_output, role_output])
 
     opt = Nadam(lr=0.002, beta_1=0.9, beta_2=0.999,
                 epsilon=1e-08, schedule_decay=0.004, clipvalue=3)
-    model.compile(loss={'act_output': 'categorical_crossentropy'}, optimizer=opt)
+    model.compile(loss={'act_output': 'categorical_crossentropy', 'role_output': 'categorical_crossentropy'}, optimizer=opt)
 
     model.summary()
 
@@ -65,7 +66,8 @@ def create_model(vec, vocab_act_size, vocab_role_size, output_folder):
 
     model.fit({'act_input':vec['prefixes']['x_ac_inp'],
                'role_input':vec['prefixes']['x_rl_inp']},
-              {'act_output':vec['next_evt']['y_ac_inp']},
+              {'act_output':vec['next_evt']['y_ac_inp'],
+               'role_output':vec['next_evt']['y_rl_inp']},
               validation_split=0.2,
               verbose=2,
               batch_size=5,
@@ -224,7 +226,7 @@ def _predict_next(model, prefixes):
 
         predictions = model.predict([x_ac_ngram, x_rl_ngram])
 
-        pos = np.argmax(predictions[0])
+        pos = np.argmax(predictions[0][0])
 
         # Activities accuracy evaluation
         if pos == prefix['ac_next']:
@@ -258,26 +260,26 @@ def _predict_suffix(model, prefixes, max_trace_size, end):
         ac_suf, rl_suf = list(), list()
         for _ in range(1, max_trace_size):
             predictions = model.predict([x_ac_ngram, x_rl_ngram])
-            pos = np.argmax(predictions[0])
-            # pos1 = np.argmax(predictions[1])
+            pos = np.argmax(predictions[0][0])
+            pos1 = np.argmax(predictions[1][0])
             # Activities accuracy evaluation
             x_ac_ngram = np.append(x_ac_ngram, [[pos]], axis=1)
             x_ac_ngram = np.delete(x_ac_ngram, 0, 1)
 
-            # x_rl_ngram = np.append(x_rl_ngram, [[pos1]], axis=1)
-            # x_rl_ngram = np.delete(x_rl_ngram, 0, 1)
+            x_rl_ngram = np.append(x_rl_ngram, [[pos1]], axis=1)
+            x_rl_ngram = np.delete(x_rl_ngram, 0, 1)
 
             # Stop if the next prediction is the end of the trace
             # otherwise until the defined max_size
             ac_suf.append(pos)
-            # rl_suf.append(pos1)
+            rl_suf.append(pos1)
 
             # TODO: Fix the end symbol
             if pos == end:
                 break
 
         prefix['suff_pred'] = ac_suf
-        # prefix['rl_suff_pred'] = rl_suf
+        prefix['rl_suff_pred'] = rl_suf
     return prefixes
 
 

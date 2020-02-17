@@ -37,8 +37,6 @@ class Modulator(Layer):
         # Calculate b-vectors
         b = tf.sigmoid(tf.matmul(self.W,tf.transpose(z), name="Modulator_matmulb") + self.b, name="Modulator_sigmoid")
 
-        print(b)
-
         # Use b-vectors to output
         tmp = tf.transpose(tf.multiply(b[0,:], tf.transpose(x[:,(self.attr_idx * TIME_STEP):((self.attr_idx+1) * TIME_STEP),:])), name="Modulator_mult_0")
         for i in range(1, self.num_attrs + 1):
