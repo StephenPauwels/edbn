@@ -1,18 +1,14 @@
 import multiprocessing as mp
 import re
-import pandas as pd
 
 import numpy as np
+import pandas as pd
 from joblib import Parallel, delayed
-from sklearn.neighbors.kde import KernelDensity
-from sklearn.neighbors import LocalOutlierFactor
 from sklearn.model_selection import GridSearchCV
-from sklearn.base import BaseEstimator
-
-import math
-from scipy.spatial import ConvexHull
+from sklearn.neighbors import KernelDensity
 
 import Utils.Result as Result
+
 
 def calculate(trace):
     case = trace[0]

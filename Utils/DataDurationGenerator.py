@@ -1,6 +1,8 @@
-import random
 import datetime
+import random
+
 import pandas as pd
+
 
 def generate_duration(timings, process, event):
     if random.randint(0,3) == 0:

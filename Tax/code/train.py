@@ -10,19 +10,20 @@ Author: Niek Tax
 '''
 
 from __future__ import print_function, division
-from keras.models import Model
-from keras.layers.core import Dense
-from keras.layers.recurrent import LSTM
-from keras.layers import Input
-from keras.optimizers import Nadam
-from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
-from keras.layers.normalization import BatchNormalization
-from collections import Counter
-import numpy as np
 
-import os
 import copy
 import csv
+import os
+from collections import Counter
+
+import numpy as np
+from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
+from keras.layers import Input
+from keras.layers.core import Dense
+from keras.layers.normalization import BatchNormalization
+from keras.layers.recurrent import LSTM
+from keras.models import Model
+from keras.optimizers import Nadam
 
 
 def train(train_log, test_log, model_folder):

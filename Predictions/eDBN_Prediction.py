@@ -1,12 +1,12 @@
-import EDBN.Execute as edbn
-
-import Preprocessing as data
+import functools
+import multiprocessing as mp
+import random
 import re
 
 import numpy as np
-import multiprocessing as mp
-import functools
-import random
+
+import EDBN.Execute as edbn
+import Preprocessing as data
 
 
 def get_probabilities(variable, val_tuple, parents):

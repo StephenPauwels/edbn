@@ -3,9 +3,9 @@
 """
 
 import Bohmer.Execute as bmr
+import EDBN.Execute as edbn
 import Utils.BPIPreProcess as preprocess
 import Utils.PlotResults as plt
-import EDBN.Execute as edbn
 from Utils.LogFile import LogFile
 
 

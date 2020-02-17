@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
-from sklearn.metrics import auc
 import numpy as np
+from sklearn.metrics import auc
 
 tableau20 = [(31, 119, 180), (174, 199, 232), (255, 127, 14), (255, 187, 120),
              (44, 160, 44), (152, 223, 138), (214, 39, 40), (255, 152, 150),

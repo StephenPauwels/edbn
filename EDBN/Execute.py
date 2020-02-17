@@ -1,6 +1,7 @@
-import EDBN.GenerateModel as gm
-import matplotlib.pyplot as plt
 import numpy as np
+
+import EDBN.GenerateModel as gm
+
 
 def train(data):
     cbn = gm.generate_model(data)

@@ -1,14 +1,15 @@
-from keras.models import Model, load_model
-from keras.layers import Input, Embedding, Dropout, Concatenate, LSTM, Dense, BatchNormalization
-from keras.optimizers import Nadam
-import keras.utils as ku
-from keras.callbacks import EarlyStopping, ModelCheckpoint
-
-import numpy as np
-from nltk.util import ngrams
 import os
 
+import keras.utils as ku
+import numpy as np
+from keras.callbacks import EarlyStopping, ModelCheckpoint
+from keras.layers import Input, Embedding, Dropout, Concatenate, LSTM, Dense, BatchNormalization
+from keras.models import Model, load_model
+from keras.optimizers import Nadam
+from nltk.util import ngrams
+
 from Lin.Modulator import Modulator
+
 
 def create_model(vec, vocab_act_size, vocab_role_size, output_folder):
     # Create embeddings + Concat
@@ -75,12 +76,15 @@ def predict_next(model_file, df_test, case_attr="case", activity_attr="event"):
     model = load_model(os.path.join(model_file), custom_objects={'Modulator':Modulator})
 
     prefixes = create_pref_suf(df_test, case_attr, activity_attr)
-    prefixes = predict(model, prefixes)
+    prefixes = _predict_next(model, prefixes)
 
     accuracy = (np.sum([x['ac_true'] for x in prefixes]) / len(prefixes))
 
     print("Accuracy:", accuracy)
     return accuracy
+
+def predict_suffix(model_file, df_tet, case_attr="case", activity_attr="event"):
+    pass
 
 
 def vectorization(log_df, case_attr, activity="event", role="role", num_classes=None):
@@ -157,7 +161,7 @@ def create_pref_suf(df_test, case_attr="case", activity_attr="event"):
     return prefixes
 
 
-def predict(model, prefixes):
+def _predict_next(model, prefixes):
     """Generate business process suffixes using a keras trained model.
     Args:
         model (keras model): keras trained model.
@@ -190,6 +194,56 @@ def predict(model, prefixes):
         else:
             prefix['ac_true'] = 0
 
+    return prefixes
+
+
+def _predict_suffix(model, prefixes, imp, max_trace_size):
+    """Generate business process suffixes using a keras trained model.
+    Args:
+        model (keras model): keras trained model.
+        prefixes (list): list of prefixes.
+        imp (str): method of next event selection.
+    """
+    # Generation of predictions
+    for prefix in prefixes:
+        # Activities and roles input shape(1,5)
+        x_ac_ngram = np.append(
+            np.zeros(5),
+            np.array(prefix['ac_pref']),
+            axis=0)[-5:].reshape((1, 5))
+
+        x_rl_ngram = np.append(
+            np.zeros(5),
+            np.array(prefix['rl_pref']),
+            axis=0)[-5:].reshape((1, 5))
+
+        ac_suf, rl_suf = list(), list()
+        for _ in range(1, max_trace_size):
+            predictions = model.predict([x_ac_ngram, x_rl_ngram])
+            if imp == 'Random Choice':
+                # Use this to get a random choice following as PDF the predictions
+                pos = np.random.choice(np.arange(0, len(predictions[0][0])), p=predictions[0][0])
+                pos1 = np.random.choice(np.arange(0, len(predictions[1][0])), p=predictions[1][0])
+            elif imp == 'Arg Max':
+                # Use this to get the max prediction
+                pos = np.argmax(predictions[0][0])
+                pos1 = np.argmax(predictions[1][0])
+            # Activities accuracy evaluation
+            x_ac_ngram = np.append(x_ac_ngram, [[pos]], axis=1)
+            x_ac_ngram = np.delete(x_ac_ngram, 0, 1)
+            x_rl_ngram = np.append(x_rl_ngram, [[pos1]], axis=1)
+            x_rl_ngram = np.delete(x_rl_ngram, 0, 1)
+            # Stop if the next prediction is the end of the trace
+            # otherwise until the defined max_size
+            ac_suf.append(pos)
+            rl_suf.append(pos1)
+
+            # TODO: Fix the end symbol
+            if INDEX_AC[pos] == 'end':
+                break
+
+        prefix['ac_suff_pred'] = ac_suf
+        prefix['rl_suff_pred'] = rl_suf
     return prefixes
 
 def train(logfile, train_log, model_folder):

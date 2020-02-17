@@ -1,6 +1,3 @@
-import pandas as pd
-
-from LogFile import LogFile
 import Preprocessing as data
 
 dataset = data.BPIC12W

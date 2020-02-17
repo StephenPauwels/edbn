@@ -1,8 +1,7 @@
-import numpy as np
-import pandas as pd
-from pgmpy.models import BayesianModel
-from pgmpy.estimators import HillClimbSearch, BicScore
 import multiprocessing as mp
+
+import pandas as pd
+from pgmpy.estimators import HillClimbSearch
 
 case_attr = "Case ID"
 activity_attr = "Activity"

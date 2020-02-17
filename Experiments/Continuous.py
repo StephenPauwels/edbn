@@ -1,7 +1,9 @@
 import pandas as pd
-from LogFile import LogFile
+
 import EDBN.Execute as edbn
 import Utils.PlotResults as plot
+from LogFile import LogFile
+
 
 def cardio_exec():
     data = "../Data/cardio_data.csv"

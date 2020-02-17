@@ -1,11 +1,11 @@
+import math
 import multiprocessing as mp
 from multiprocessing import Manager, Process, Queue
 
-import math
 import numpy as np
 import sklearn.metrics as skm
 from sklearn.model_selection import GridSearchCV
-from sklearn.neighbors.kde import KernelDensity
+from sklearn.neighbors import KernelDensity
 
 
 class Structure_learner():

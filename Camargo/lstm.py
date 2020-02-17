@@ -2,14 +2,14 @@
 """
 @author: Manuel Camargo
 """
-import sys
 import getopt
-import model_training as tr
-import embedding_training as em
-import predict_log as pr
-import predict_suffix_full as px
-import predict_next as nx
+import sys
 
+import embedding_training as em
+import model_training as tr
+import predict_log as pr
+import predict_next as nx
+import predict_suffix_full as px
 
 
 def catch_parameter(opt):

@@ -1,23 +1,25 @@
-from Experiments_Variables import EDBN, CAMARGO, DIMAURO, LIN, TAX
-from Experiments_Variables import DATA_DESC, DATA_FOLDER, OUTPUT_FOLDER
-
-from Preprocessing import get_data
-from Utils.LogFile import LogFile
-from Camargo.support_modules.support import create_csv_file_header
-
 import os
-import sys
 import pickle
+import sys
 import time
 
+from Camargo.support_modules.support import create_csv_file_header
+from Experiments_Variables import DATA_DESC, DATA_FOLDER, OUTPUT_FOLDER
+from Experiments_Variables import EDBN, CAMARGO, DIMAURO, LIN, TAX
+from Experiments_Variables import K_EDBN
+from Preprocessing import get_data
+from Utils.LogFile import LogFile
 
-def train_edbn(data_folder, model_folder):
+
+def train_edbn(data_folder, model_folder, k):
     from EDBN.Execute import train
     from eDBN_Prediction import learn_duplicated_events
 
     print("Run EDBN")
     train_log = LogFile(data_folder + "train_log.csv", ",", 0, None, None, "case",
-                        activity_attr="event", convert=True, k=2)
+                        activity_attr="event", convert=False, k=k)
+    train_log.add_end_events()
+    train_log.convert2int()
     train_log.create_k_context()
 
     model = train(train_log)
@@ -130,6 +132,22 @@ def main(argv):
     if not os.path.exists(model_folder):
         os.mkdir(model_folder)
 
+    edbn_k = K_EDBN
+
+    if method == CAMARGO:
+        if len(argv) < 3:
+            print("Please indicate the architecture to use: shared_cat or specialized")
+            return
+        else:
+            model_folder = os.path.join(model_folder, argv[2])
+            if not os.path.exists(model_folder):
+                os.mkdir(model_folder)
+    elif method == EDBN:
+        if len(argv) >= 3:
+            edbn_k = int(argv[2])
+        model_folder = os.path.join(model_folder, str(edbn_k))
+        if not os.path.exists(model_folder):
+            os.mkdir(model_folder)
     ###
     # Register Start time
     ###
@@ -142,7 +160,7 @@ def main(argv):
     # Execute chosen method
     ###
     if method == EDBN:
-        train_edbn(dataset_folder, model_folder)
+        train_edbn(dataset_folder, model_folder, edbn_k)
     elif method == CAMARGO:
         if len(argv) < 3:
             print("Please indicate the architecture to use: shared_cat or specialized")

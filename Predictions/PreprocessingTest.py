@@ -1,7 +1,6 @@
 import pandas as pd
 
 import Camargo.support_modules.role_discovery as rl
-import Camargo.support_modules.readers.log_reader as lr
 
 time_format = "%Y/%m/%d %H:%M:%S.%f"
 

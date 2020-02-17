@@ -4,23 +4,20 @@ Created on Wed Nov 21 21:23:55 2018
 
 @author: Manuel Camargo
 """
-import os
 import csv
 import itertools
+import os
 
 import keras.utils as ku
-
-import pandas as pd
 import numpy as np
-
+import pandas as pd
 from nltk.util import ngrams
 
-from models import model_specialized as msp
 from models import model_concatenated as mcat
+from models import model_joint as mj
 from models import model_shared as msh
 from models import model_shared_cat as mshcat
-from models import model_joint as mj
-
+from models import model_specialized as msp
 from support_modules import support as sup
 
 
@@ -70,9 +67,7 @@ def training_model(full_log, log_train, log_test, outfile, args):
     # Input vectorization
     vec = vectorization(log_df_train, ac_index, rl_index, args)
     # Parameters export
-    output_folder = os.path.join(outfile, args['model_type'])
-    if not os.path.exists(output_folder):
-        os.makedirs(output_folder)
+    output_folder = outfile
 
     parameters = {}
     parameters['event_log'] = args['file_name']

@@ -1,5 +1,5 @@
-from keras.layers import Layer
 import tensorflow as tf
+from keras.layers import Layer
 
 REPR_DIM = 100
 TIME_STEP = 5

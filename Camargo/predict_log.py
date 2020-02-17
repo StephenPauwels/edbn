@@ -4,19 +4,18 @@ Created on Wed Nov 21 21:36:01 2018
 
 @author: Manuel Camargo
 """
-import json
-import os
-import math
 import datetime
+import json
+import math
+import os
 from datetime import timedelta
 
+import numpy as np
+import pandas as pd
 from keras.models import load_model
 
-import pandas as pd
-import numpy as np
-
-from support_modules.analyzers import generalization as gen
 from support_modules import support as sup
+from support_modules.analyzers import generalization as gen
 
 START_TIMEFORMAT = ''
 INDEX_AC = None
@@ -130,7 +129,7 @@ def generate_traces(model, imp, num_cases, max_trace_size):
         x_t_ngram = np.zeros((1, DIM['time_dim'], 1), dtype=np.float32)
 
         for _ in range(1, max_trace_size):
-            predictions = model.predict([x_ac_ngram, x_rl_ngram, x_t_ngram])
+            predictions = model._predict_next([x_ac_ngram, x_rl_ngram, x_t_ngram])
             if imp == 'Random Choice':
                 # Use this to get a random choice following as PDF the predictions
                 pos = np.random.choice(np.arange(0, len(predictions[0][0])), p=predictions[0][0])

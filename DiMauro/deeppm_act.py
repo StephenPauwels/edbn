@@ -265,7 +265,7 @@ def evaluate(train_log, test_log, model_folder):
 
     # evaluate
     print('Evaluating final model...')
-    preds_a = model.predict([X_test])
+    preds_a = model._predict_next([X_test])
 
     y_a_test = np.argmax(y_test, axis=1)
     preds_a = np.argmax(preds_a, axis=1)

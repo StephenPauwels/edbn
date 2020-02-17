@@ -1,11 +1,13 @@
 ﻿# -*- coding: utf-8 -*-
+import random
+from operator import itemgetter
+
+import matplotlib.pyplot as plt
+import networkx as nx
 import scipy
 from scipy.stats import pearsonr
-import networkx as nx
-import matplotlib.pyplot as plt
+
 from support_modules import support as sup
-from operator import itemgetter
-import random
 
 
 # == support

@@ -1,6 +1,6 @@
+from EDBN.ExtendedDynamicBayesianNetwork import ExtendedDynamicBayesianNetwork
 from EDBN.LearnBayesianStructure import Structure_learner
 from Utils import Uncertainty_Coefficient as uc
-from EDBN.ExtendedDynamicBayesianNetwork import ExtendedDynamicBayesianNetwork
 
 
 def generate_model(data, remove_attrs = None):

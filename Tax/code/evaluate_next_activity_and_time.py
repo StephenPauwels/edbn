@@ -7,14 +7,17 @@ Author: Niek Tax
 '''
 
 from __future__ import division
-from keras.models import load_model
-import csv
+
 import copy
-import numpy as np
-import distance
-from jellyfish._jellyfish import damerau_levenshtein_distance
-from collections import Counter
+import csv
 import os
+from collections import Counter
+
+import distance
+import numpy as np
+from jellyfish._jellyfish import damerau_levenshtein_distance
+from keras.models import load_model
+
 
 def evaluate(train_log, test_log, model_folder, model_file):
     caseid_col = 0
@@ -169,7 +172,7 @@ def evaluate(train_log, test_log, model_folder, model_file):
                     if len(ground_truth)<=i:
                         continue
                     enc = encode(cropped_line)
-                    y = model.predict(enc, verbose=0)
+                    y = model._predict_next(enc, verbose=0)
                     y_char = y[0]
                     prediction = getSymbol(y_char)
                     cropped_line += prediction

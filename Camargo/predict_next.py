@@ -5,18 +5,16 @@ Created on Fri Mar  8 08:16:15 2019
 @author: Manuel Camargo
 """
 import json
-import os
 import math
+import os
 import random
 
+import jellyfish as jf
+import numpy as np
+import pandas as pd
 from keras.models import load_model
 
-import pandas as pd
-import numpy as np
-
-import jellyfish as jf
 from support_modules import support as sup
-
 
 START_TIMEFORMAT = ''
 INDEX_AC = None
@@ -221,7 +219,7 @@ def predict(model, prefixes, ac_alias, rl_alias, imp):
 #                axis=0)[-DIM['time_dim']:].reshape((DIM['time_dim'], 1))])
                 
 #        predictions = model.predict([x_ac_ngram, x_rl_ngram, x_t_ngram])
-        predictions = model.predict([x_ac_ngram, x_rl_ngram])
+        predictions = model._predict_next([x_ac_ngram, x_rl_ngram])
 
         if imp == 'Random Choice':
             # Use this to get a random choice following as PDF the predictions

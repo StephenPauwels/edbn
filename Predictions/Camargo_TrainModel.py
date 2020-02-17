@@ -1,7 +1,3 @@
-import sys
-
-import Preprocessing as data
-
 import Camargo.embedding_training as em
 import Camargo.model_training as mo
 

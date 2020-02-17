@@ -1,7 +1,5 @@
-from pgmpy.models import BayesianModel
-from pgmpy.estimators.StructureScore import StructureScore
 from pgmpy.estimators import K2Score
-from pgmpy.estimators import BicScore
+from pgmpy.models import BayesianModel
 
 from Utils.LogFile import LogFile
 

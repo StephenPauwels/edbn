@@ -6,13 +6,14 @@ Created on Thu Feb 28 10:15:12 2019
 """
 import os
 
-from keras.models import Model
+from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
 from keras.layers import Input, Embedding, Dot, Concatenate
 from keras.layers.core import Dense
-from keras.layers.recurrent import LSTM
-from keras.optimizers import Nadam, Adam, SGD, Adagrad
-from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
 from keras.layers.normalization import BatchNormalization
+from keras.layers.recurrent import LSTM
+from keras.models import Model
+from keras.optimizers import Nadam, Adam, SGD, Adagrad
+
 
 def training_model(vec, ac_weights, rl_weights, output_folder, args):
     """Example function with types documented in the docstring.

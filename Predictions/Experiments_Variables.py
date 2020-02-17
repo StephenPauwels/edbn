@@ -19,3 +19,6 @@ DATA_FOLDER = "../Data/PredictionData/"
 
 # Location to output model and result files
 OUTPUT_FOLDER = "Output/"
+
+# K-value for EDBN
+K_EDBN = 3

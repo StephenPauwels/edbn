@@ -5,18 +5,16 @@ Created on Fri Mar  8 08:16:15 2019
 @author: Manuel Camargo
 """
 import json
-import os
 import math
+import os
 import random
 
+import jellyfish as jf
+import numpy as np
+import pandas as pd
 from keras.models import load_model
 
-import pandas as pd
-import numpy as np
-
-import jellyfish as jf
 from support_modules import support as sup
-
 
 START_TIMEFORMAT = ''
 INDEX_AC = None
@@ -244,7 +242,7 @@ def predict(model, prefixes, ac_alias, rl_alias, imp, max_trace_size):
         acum_tbtw = 0
         ac_suf, rl_suf = '', ''
         for _  in range(1, max_trace_size):
-            predictions = model.predict([x_ac_ngram, x_rl_ngram, x_t_ngram])
+            predictions = model._predict_next([x_ac_ngram, x_rl_ngram, x_t_ngram])
             if imp == 'Random Choice':
                 # Use this to get a random choice following as PDF the predictions
                 pos = np.random.choice(np.arange(0, len(predictions[0][0])), p=predictions[0][0])

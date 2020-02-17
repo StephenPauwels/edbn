@@ -4,8 +4,8 @@
 import pandas as pd
 
 import Bohmer.Execute as bohmer
-import Utils.PlotResults as plot
 import EDBN.Execute as edbn
+import Utils.PlotResults as plot
 from LogFile import LogFile
 from april.dataset import Dataset
 from april.fs import get_event_log_files

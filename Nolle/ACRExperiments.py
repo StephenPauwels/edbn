@@ -1,35 +1,35 @@
 import itertools
-from tqdm import tqdm
-import arrow
-from sqlalchemy.orm import Session
 import socket
 from multiprocessing.pool import Pool
-from sklearn import metrics
-import pandas as pd
 
-from april.fs import EVENTLOG_DIR
-from april.fs import DATE_FORMAT
-from april.fs import PLOT_DIR
-from april.fs import EventLogFile
-from april.fs import get_event_log_files
-from april.fs import get_process_model_files
-from april.fs import get_model_files
-from april.dataset import Dataset
+import arrow
+import pandas as pd
+from sklearn import metrics
+from sqlalchemy.orm import Session
+from tqdm import tqdm
+
+import april.processmining.log
+from april.anomalydetection import *
+from april.anomalydetection.utils import label_collapse
+from april.database import Evaluation
 from april.database import EventLog
 from april.database import Model
 from april.database import get_engine
 from april.database.utils import import_eventlogs, import_process_maps
+from april.dataset import Dataset
+from april.evaluator import Evaluator
+from april.fs import DATE_FORMAT
+from april.fs import EVENTLOG_DIR
+from april.fs import EventLogFile
+from april.fs import PLOT_DIR
+from april.fs import get_event_log_files
+from april.fs import get_model_files
+from april.fs import get_process_model_files
 from april.generation import CategoricalAttributeGenerator
 from april.generation.anomaly import *
 from april.generation.utils import generate_for_process_model
-from april.anomalydetection import *
-from april.evaluator import Evaluator
-from april.anomalydetection.utils import label_collapse
-from april.database import Evaluation
 from april.processmining import ProcessMap
 from april.utils import prettify_dataframe
-
-import april.processmining.log
 
 #####
 # Generate Data Files

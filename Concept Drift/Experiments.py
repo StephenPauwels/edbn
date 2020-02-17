@@ -1,11 +1,13 @@
+import math
+import pickle
+
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy import stats
+
 import ConceptDrift as cd
 from LogFile import LogFile
 
-import pickle
-import matplotlib.pyplot as plt
-from scipy import stats
-import numpy as np
-import math
 
 def learn_and_dump_model():
     train = LogFile("../Data/bpic2018.csv", ",", 0, 30000, "startTime", "case", activity_attr=None, integer_input=False, convert=False)

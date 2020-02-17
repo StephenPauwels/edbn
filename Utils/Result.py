@@ -1,6 +1,3 @@
-import math
-import numpy as np
-
 class Result:
 
     def __init__(self):

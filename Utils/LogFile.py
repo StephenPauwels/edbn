@@ -288,7 +288,6 @@ class LogFile:
         self.data = pd.DataFrame.from_records(new_data)
 
     def splitTrainTest(self, train_percentage):
-        import random
 
         grouped = self.data.groupby([self.trace])
         train_cases = []

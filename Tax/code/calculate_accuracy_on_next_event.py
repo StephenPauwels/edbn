@@ -6,8 +6,10 @@ Author: Niek Tax
 '''
 
 from __future__ import division
+
 import csv
 import os
+
 
 def calc_accuracy(output_file):
     csvfile = open(os.path.join(output_file, "predictions.csv"), 'r')

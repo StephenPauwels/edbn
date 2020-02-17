@@ -1,13 +1,14 @@
 import math
+
 import matplotlib.pyplot as plt
 import numpy as np
-from statsmodels import robust
 from scipy import stats
-
-# Import LogFile for representing the data
-
+from statsmodels import robust
 
 import EDBN.GenerateModel as gm
+
+
+# Import LogFile for representing the data
 
 def create_model(training_structure_data, training_params_data):
     """

@@ -1,7 +1,5 @@
-import random
-
-from Utils.LogFile import LogFile
 import EDBN.Execute as edbn
+from Utils.LogFile import LogFile
 
 train = "../Data/BPIC15_1_sorted_new.csv"
 test = "../Data/BPIC15_1_sorted_new.csv"

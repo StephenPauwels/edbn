@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
-import numpy as np
 import random
-import jellyfish as jf
 from operator import itemgetter
+
+import jellyfish as jf
+import numpy as np
+
 
 def gen_mesurement(log_data, simulation_data, features, ramp_io_perc = 0.2):
     

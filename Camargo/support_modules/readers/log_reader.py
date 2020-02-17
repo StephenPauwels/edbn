@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 import csv
 import datetime
-import xml.etree.ElementTree as ET
 import gzip
-import zipfile as zf
 import os
+import xml.etree.ElementTree as ET
+import zipfile as zf
 from operator import itemgetter
-
 
 from support_modules import support as sup
 

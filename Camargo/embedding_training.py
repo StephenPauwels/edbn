@@ -4,20 +4,17 @@ Created on Wed Nov 21 21:23:55 2018
 
 @author: Manuel Camargo
 """
-import os
-import random
 import itertools
 import math
-import pandas as pd
+import os
+import random
+
 import numpy as np
-
-from keras.models import Model
 from keras.layers import Input, Embedding, Dot, Reshape
+from keras.models import Model
 
-from support_modules.readers import log_reader as lr
-from support_modules import role_discovery as rl
 from support_modules import support as sup
-from support_modules import nn_support as nsup
+
 
 def training_model(log, outfile):
     """Main method of the embedding training module.

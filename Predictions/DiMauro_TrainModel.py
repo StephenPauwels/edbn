@@ -1,9 +1,8 @@
-from DiMauro.utils import load_data
+import numpy as np
+from hyperopt import hp
 from tensorflow.keras.utils import to_categorical
 
-from hyperopt import Trials, STATUS_OK, tpe, fmin, hp
-
-import numpy as np
+from DiMauro.utils import load_data
 
 train_input = "../Camargo/output_files/data/helpdesk/train_log.csv"
 (X_train, y_train,

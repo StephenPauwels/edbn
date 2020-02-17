@@ -6,17 +6,14 @@ Created on Fri Mar  8 08:16:15 2019
 """
 import json
 import os
-import math
 import random
 
+import jellyfish as jf
+import numpy as np
+import pandas as pd
 from keras.models import load_model
 
-import pandas as pd
-import numpy as np
-
-import jellyfish as jf
 from support_modules import support as sup
-
 
 START_TIMEFORMAT = ''
 INDEX_AC = None
@@ -25,7 +22,7 @@ DIM = dict()
 TBTW = dict()
 EXP = dict()
 
-def predict_suffix_full(output_folder, model_file, is_single_exec=True):
+def predict_suffix_full(data_folder, output_folder, model_file, is_single_exec=True):
     """Main function of the suffix prediction module.
     Args:
         timeformat (str): event-log date-time format.
@@ -40,10 +37,10 @@ def predict_suffix_full(output_folder, model_file, is_single_exec=True):
     global TBTW
     global EXP
 
-    output_route = os.path.join('..', 'Camargo', 'output_files', output_folder)
+    output_route = output_folder
 
     # Loading of testing dataframe
-    df_test = pd.read_csv(os.path.join(output_route, 'data', 'test_log.csv'))
+    df_test = pd.read_csv(os.path.join(data_folder, 'test_log.csv'))
 #    df_test['start_timestamp'] = pd.to_datetime(df_test['start_timestamp'])
 #    df_test['end_timestamp'] = pd.to_datetime(df_test['end_timestamp'])
 #    df_test = df_test.drop(columns=['user'])
@@ -141,7 +138,7 @@ def predict(model, prefixes, imp, max_trace_size):
 
         ac_suf, rl_suf = list(), list()
         for _  in range(1, max_trace_size):
-            predictions = model.predict([x_ac_ngram, x_rl_ngram])
+            predictions = model._predict_next([x_ac_ngram, x_rl_ngram])
             if imp == 'Random Choice':
                 # Use this to get a random choice following as PDF the predictions
                 pos = np.random.choice(np.arange(0, len(predictions[0][0])), p=predictions[0][0])
@@ -183,18 +180,18 @@ def create_pref_suf(df_test, ac_index, rl_index):
         list: list of prefixes and expected sufixes.
     """
     prefixes = list()
-    cases = df_test.caseid.unique()
+    cases = df_test.case.unique()
     for case in cases:
-        trace = df_test[df_test.caseid == case].to_dict('records')
+        trace = df_test[df_test.case == case].to_dict('records')
         ac_pref = list()
         rl_pref = list()
         for i in range(0, len(trace)-1):
-            ac_pref.append(trace[i]['ac_index'])
-            rl_pref.append(trace[i]['rl_index'])
+            ac_pref.append(trace[i]['event'])
+            rl_pref.append(trace[i]['role'])
             prefixes.append(dict(ac_pref=ac_pref.copy(),
-                                 ac_suff=[x['ac_index'] for x in trace[i + 1:]],
+                                 ac_suff=[x['event'] for x in trace[i + 1:]],
                                  rl_pref=rl_pref.copy(),
-                                 rl_suff=[x['rl_index'] for x in trace[i + 1:]],
+                                 rl_suff=[x['role'] for x in trace[i + 1:]],
                                  pref_size=i + 1))
     for x in prefixes:
         x['ac_suff'].append(ac_index['end'])
