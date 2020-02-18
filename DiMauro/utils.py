@@ -1,3 +1,6 @@
+"""
+@authors: Di Mauro, Appice and Basile
+"""
 
 def load_data(train, test, case_index = 0, act_index = 1):
 

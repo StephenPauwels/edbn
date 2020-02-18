@@ -1,3 +1,7 @@
+"""
+Implementation of MM-Pred: A Deep Predictive Model for Multi-attribute Event Sequence [Lin, Wen and Wang]
+"""
+
 import os
 
 import keras.utils as ku

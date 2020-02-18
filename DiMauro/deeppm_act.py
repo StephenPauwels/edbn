@@ -1,3 +1,7 @@
+"""
+@authors: Di Mauro, Appice and Basile
+"""
+
 import numpy as np
 seed = 123
 np.random.seed(seed)

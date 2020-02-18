@@ -1,10 +1,13 @@
+"""
+Implementation of MM-Pred: A Deep Predictive Model for Multi-attribute Event Sequence [Lin, Wen and Wang]
+"""
+
 import tensorflow as tf
 from keras.layers import Layer
 
 REPR_DIM = 100
 TIME_STEP = 5
 
-# https://keras.io/layers/writing-your-own-keras-layers/
 class Modulator(Layer):
 
     def __init__(self, attr_idx, num_attrs, **kwargs):
