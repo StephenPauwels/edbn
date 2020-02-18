@@ -172,7 +172,7 @@ def evaluate(train_log, test_log, model_folder, model_file):
                     if len(ground_truth)<=i:
                         continue
                     enc = encode(cropped_line)
-                    y = model._predict_next(enc, verbose=0)
+                    y = model.predict(enc, verbose=0)
                     y_char = y[0]
                     prediction = getSymbol(y_char)
                     cropped_line += prediction

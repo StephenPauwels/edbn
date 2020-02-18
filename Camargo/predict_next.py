@@ -219,7 +219,7 @@ def predict(model, prefixes, ac_alias, rl_alias, imp):
 #                axis=0)[-DIM['time_dim']:].reshape((DIM['time_dim'], 1))])
                 
 #        predictions = model.predict([x_ac_ngram, x_rl_ngram, x_t_ngram])
-        predictions = model._predict_next([x_ac_ngram, x_rl_ngram])
+        predictions = model.predict([x_ac_ngram, x_rl_ngram])
 
         if imp == 'Random Choice':
             # Use this to get a random choice following as PDF the predictions
