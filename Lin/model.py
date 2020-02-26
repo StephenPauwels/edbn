@@ -56,7 +56,7 @@ def create_model(vec, vocab_act_size, vocab_role_size, output_folder):
 
     model.summary()
 
-    output_file_path = os.path.join(output_folder, 'model_rd_{epoch:02d}-{val_loss:.2f}.h5')
+    output_file_path = os.path.join(output_folder, 'model_rd_{epoch:03d}-{val_loss:.2f}.h5')
 
     # Saving
     model_checkpoint = ModelCheckpoint(output_file_path,
@@ -90,7 +90,7 @@ def predict_next(model_file, df_test, case_attr="case", activity_attr="event"):
     print("Accuracy:", accuracy)
     return accuracy
 
-def predict_suffix(model_file, df_test, end, case_attr="case", activity_attr="event"):
+def predict_suffix(model_file, df_test, end):
     model = load_model(os.path.join(model_file), custom_objects={'Modulator':Modulator})
 
     prefixes = create_pref_suff(df_test, end)
@@ -104,12 +104,13 @@ def predict_suffix(model_file, df_test, end, case_attr="case", activity_attr="ev
 
 
 def vectorization(log_df, case_attr, activity="event", role="role", num_classes=None):
-    """Example function with types documented in the docstring.
+    """
     Args:
         log_df (dataframe): event log data.
-        ac_index (dict): index of activities.
-        rl_index (dict): index of roles.
-        args (dict): parameters for training the network
+        case_attr: name of attribute containing case ID
+        activity: name of attribute containing the activity
+        role: name of attribute containing the resource/role
+        num_classes: number of distinct activities
     Returns:
         dict: Dictionary that contains all the LSTM inputs.
     """
@@ -153,9 +154,8 @@ def create_pref_next(df_test, case_attr="case", activity_attr="event"):
     """Extraction of prefixes and expected suffixes from event log.
     Args:
         df_test (dataframe): testing dataframe in pandas format.
-        ac_index (dict): index of activities.
-        rl_index (dict): index of roles.
-        pref_size (int): size of the prefixes to extract.
+        case_attr: name of attribute containing case ID
+        activity_attr: name of attribute containing the activity
     Returns:
         list: list of prefixes and expected sufixes.
     """
@@ -180,9 +180,7 @@ def create_pref_suff(df_test, end):
     """Extraction of prefixes and expected suffixes from event log.
     Args:
         df_test (dataframe): testing dataframe in pandas format.
-        ac_index (dict): index of activities.
-        rl_index (dict): index of roles.
-        pref_size (int): size of the prefixes to extract.
+        end: value representing the END token
     Returns:
         list: list of prefixes and expected sufixes.
     """
@@ -210,9 +208,6 @@ def _predict_next(model, prefixes):
     Args:
         model (keras model): keras trained model.
         prefixes (list): list of prefixes.
-        ac_index (dict): index of activities.
-        rl_index (dict): index of roles.
-        imp (str): method of next event selection.
     """
     # Generation of predictions
     for prefix in prefixes:
@@ -246,7 +241,8 @@ def _predict_suffix(model, prefixes, max_trace_size, end):
     Args:
         model (keras model): keras trained model.
         prefixes (list): list of prefixes.
-        imp (str): method of next event selection.
+        max_trace_size: maximum length of a trace in the log
+        end: value representing the END token
     """
     # Generation of predictions
     for prefix in prefixes:
@@ -278,7 +274,6 @@ def _predict_suffix(model, prefixes, max_trace_size, end):
             ac_suf.append(pos)
             rl_suf.append(pos1)
 
-            # TODO: Fix the end symbol
             if pos == end:
                 break
 
@@ -291,7 +286,6 @@ def dl_measure(prefixes):
     """Demerau-Levinstain distance measurement.
     Args:
         prefixes (list): list with predicted and expected suffixes.
-        feature (str): categorical attribute to measure.
     Returns:
         list: list with measures added.
     """

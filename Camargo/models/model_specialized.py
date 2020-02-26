@@ -162,7 +162,7 @@ def training_model(vec, ac_weights, rl_weights, output_folder, args):
     output_file_path = os.path.join(output_folder,
                                     'model_rd_' + str(args['l_size']) +
                                     ' ' + args['optim'] +
-                                    '_{epoch:02d}-{val_loss:.2f}.h5')
+                                    '_{epoch:03d}-{val_loss:.2f}.h5')
 
     # Saving
     model_checkpoint = ModelCheckpoint(output_file_path,

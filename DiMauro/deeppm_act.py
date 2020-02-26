@@ -3,10 +3,10 @@
 """
 
 import numpy as np
+from keras.callbacks import ModelCheckpoint
+
 seed = 123
 np.random.seed(seed)
-import tensorflow
-tensorflow.random.set_seed(seed)
 
 from tensorflow.keras.models import Model, load_model
 from tensorflow.keras.layers import Input, Concatenate, Conv1D, GlobalMaxPooling1D, MaxPooling1D, Dense, Embedding
@@ -24,6 +24,11 @@ import time
 import os
 
 from tensorflow.keras.utils import Sequence
+
+best_score = np.inf
+best_model = None
+best_time = 0
+best_numparameters = 0
 
 class DataGenerator(Sequence):
     def __init__(self, features, labels, batch_size=32, shuffle=True):
@@ -128,38 +133,11 @@ def fit_and_score(params):
     model = get_model(input_length=params['input_length'], vocab_size=params['vocab_size'], n_classes=params['n_classes'], model_type=params['model_type'],
                       learning_rate=params['learning_rate'], embedding_size=params['embedding_size'], n_modules=params['n_modules'])
     early_stopping = EarlyStopping(monitor='val_loss', patience=20)
-    """
-    num_train = int(X_a_train.shape[0]*0.8)
-
-    X_a_train1 = X_a_train[:num_train]
-    X_a_val1 = X_a_train[num_train:]
-    X_t_train1 = X_t_train[:num_train]
-    X_t_val1 = X_t_train[num_train:]
-
-    y_a_train1 = y_a_train[:num_train]
-    y_a_val1 = y_a_train[num_train:]
-    y_t_train1 = y_t_train[:num_train]
-    y_t_val1 = y_t_train[num_train:]
-
-    # Generators
-    train_generator = DataGenerator([X_a_train1,X_t_train1], [y_a_train1,y_t_train1], batch_size=2**params['batch_size'])
-    val_generator = DataGenerator([X_a_val1,X_t_val1], [y_a_val1,y_t_val1], batch_size=2**params['batch_size'])
-    """
    
     if (params['model_type'] == 'ACT'):
         h = model.fit(params["X_train"],
                       params["Y_train"], epochs=200, verbose=0,
                       validation_split=0.2, callbacks=[early_stopping], batch_size=2**params['batch_size'])
-    elif (params['model_type'] == 'TIME'):
-        h = model.fit([X_a_train, X_t],
-                      y_t_train, epochs=200, 
-                      validation_split=0.2, callbacks=[early_stopping], batch_size=2**params['batch_size'])
-    else:
-         h = model.fit([X_a_train, X_t_train],
-                      {'output_a':y_a_train, 'output_t':y_t_train}, epochs=200, verbose=0,
-                      validation_split=0.2, callbacks=[early_stopping], batch_size=2**params['batch_size'])
-#        h = model.fit_generator(generator=train_generator, validation_data=val_generator, use_multiprocessing=True, workers=8, epochs=200, callbacks=[early_stopping], max_queue_size=10000, verbose=0)
-
 
     scores = [h.history['val_loss'][epoch] for epoch in range(len(h.history['loss']))]
     score = min(scores)
@@ -176,16 +154,10 @@ def fit_and_score(params):
 
     return {'loss': score, 'status': STATUS_OK,  'n_epochs':  len(h.history['loss']), 'n_params':model.count_params(), 'time':end_time - start_time}
 
-#for dataset in ["bpic12", "bpic12W", "bpic15_1", "bpic15_2", "bpic15_3", "bpic15_4", "bpic15_5", "helpdesk"]:
 
-def train(train_log, test_log, model_folder):
+def train(train_log, test_log, model_folder, params):
     model_type = "ACT"
     output_file = os.path.join(model_folder, "output.log")
-
-    current_time = time.strftime("%d.%m.%y-%H.%M", time.localtime())
-    outfile = open(output_file, 'w')
-
-    outfile.write("Starting time: %s\n" % current_time)
 
     (X_train, y_train,
      X_test, y_test,
@@ -198,7 +170,6 @@ def train(train_log, test_log, model_folder):
 
     # categorical output
     y_train = to_categorical(y_train)
-    y_test = to_categorical(y_test)
 
     n_iter = 20
 
@@ -208,56 +179,62 @@ def train(train_log, test_log, model_folder):
              'learning_rate': hp.loguniform("learning_rate", np.log(0.00001), np.log(0.01)),
              'X_train': X_train, 'Y_train': y_train}
 
-
-
-    final_brier_scores = []
-    final_accuracy_scores = []
-    final_mae_scores = []
-    final_mse_scores = []
-
-    X_a_train = X_train
-    y_a_train = y_train
-
-    X_a_test = X_test
-    y_a_test = y_test
-
     # model selection
     print('Starting model selection...')
-    best_score = np.inf
-    best_model = None
-    best_time = 0
-    best_numparameters = 0
+    global best_score, best_model, best_time, best_numparameters
 
-    trials = Trials()
-    best = fmin(fit_and_score, space, algo=tpe.suggest, max_evals=n_iter, trials=trials, rstate= np.random.RandomState(seed))
-    best_params = hyperopt.space_eval(space, best)
+    if params is None:
+        current_time = time.strftime("%d.%m.%y-%H.%M", time.localtime())
+        outfile = open(output_file, 'w')
 
-    fit_and_score(best_params)
+        outfile.write("Starting time: %s\n" % current_time)
 
-    # best_model = get_model(input_length=best_params['input_length'], vocab_size=best_params['vocab_size'], n_classes=best_params['n_classes'],
-    #                   model_type=best_params['model_type'], learning_rate=best_params['learning_rate'], embedding_size=best_params['embedding_size'],
-    #                   n_modules=best_params['n_modules'])
+        print("No params given, starting parameter search")
+        trials = Trials()
+        best = fmin(fit_and_score, space, algo=tpe.suggest, max_evals=n_iter, trials=trials, rstate= np.random.RandomState(seed))
+        best_params = hyperopt.space_eval(space, best)
 
-    outfile.write("\nHyperopt trials")
-    outfile.write("\ntid,loss,learning_rate,n_modules,batch_size,time,n_epochs,n_params,perf_time")
-    for trial in trials.trials:
-        outfile.write("\n%d,%f,%f,%d,%d,%s,%d,%d,%f"%(trial['tid'],
-                                                trial['result']['loss'],
-                                                trial['misc']['vals']['learning_rate'][0],
-                                                int(trial['misc']['vals']['n_modules'][0]+1),
-                                                trial['misc']['vals']['batch_size'][0]+7,
-                                                (trial['refresh_time']-trial['book_time']).total_seconds(),
-                                                trial['result']['n_epochs'],
-                                                trial['result']['n_params'],
-                                                trial['result']['time']))
+        fit_and_score(best_params)
 
-    outfile.write("\n\nBest parameters:")
-    print(best_params, file=outfile)
-    outfile.write("\nModel parameters: %d" % best_numparameters)
-    outfile.write('\nBest Time taken: %f'%best_time)
-    best_model.save(os.path.join(model_folder, "model.h5"))
+        outfile.write("\nHyperopt trials")
+        outfile.write("\ntid,loss,learning_rate,n_modules,batch_size,time,n_epochs,n_params,perf_time")
+        for trial in trials.trials:
+            outfile.write("\n%d,%f,%f,%d,%d,%s,%d,%d,%f"%(trial['tid'],
+                                                    trial['result']['loss'],
+                                                    trial['misc']['vals']['learning_rate'][0],
+                                                    int(trial['misc']['vals']['n_modules'][0]+1),
+                                                    trial['misc']['vals']['batch_size'][0]+7,
+                                                    (trial['refresh_time']-trial['book_time']).total_seconds(),
+                                                    trial['result']['n_epochs'],
+                                                    trial['result']['n_params'],
+                                                    trial['result']['time']))
+
+        outfile.write("\n\nBest parameters:")
+        print(best_params, file=outfile)
+        outfile.write("\nModel parameters: %d" % best_numparameters)
+        outfile.write('\nBest Time taken: %f'%best_time)
+        best_model.save(os.path.join(model_folder, "model.h5"))
+    else:
+        model = get_model(max_length, 3, vocab_size,
+                          n_classes, emb_size, params["n_modules"], params["model_type"]
+                          , params["learning_rate"])
+        early_stopping = EarlyStopping(monitor='val_loss', patience=42)
+
+        output_file_path = os.path.join(model_folder, 'model_rd_{epoch:03d}-{val_loss:.2f}.h5')
+
+        # Saving
+        model_checkpoint = ModelCheckpoint(output_file_path,
+                                           monitor='val_loss',
+                                           verbose=1,
+                                           save_best_only=True,
+                                           save_weights_only=False,
+                                           mode='auto')
+
+        model.fit(X_train, y_train, epochs=200, verbose=2,
+                      validation_split=0.2, callbacks=[early_stopping, model_checkpoint], batch_size=2**params['batch_size'])
 
 def evaluate(train_log, test_log, model_folder):
+    print("MODEL", model_folder)
     model = load_model(model_folder)
 
     (X_train, y_train,
@@ -269,10 +246,13 @@ def evaluate(train_log, test_log, model_folder):
 
     # evaluate
     print('Evaluating final model...')
-    preds_a = model._predict_next([X_test])
+    preds_a = model.predict([X_test])
 
-    y_a_test = np.argmax(y_test, axis=1)
+   # y_a_test = np.argmax(y_test, axis=1)
     preds_a = np.argmax(preds_a, axis=1)
 
-    accuracy = accuracy_score(y_a_test, preds_a)
+    print(preds_a)
+    print(y_test)
+
+    accuracy = accuracy_score(y_test, preds_a)
     return accuracy

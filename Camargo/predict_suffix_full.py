@@ -95,8 +95,8 @@ def predict_suffix_full(data_folder, output_folder, model_file, is_single_exec=T
             measurements_rl.append({**dict(model=os.path.join(output_route, model_file),
                                         implementation=var['imp']), **measure_rl,
                                 **EXP})
-        save_results(measurements_ac, 'ac', is_single_exec, model_file, output_route)
-        save_results(measurements_rl, 'rl', is_single_exec, model_file, output_route)
+        save_results(measurements_ac, 'ac', False, model_file, output_route)
+        save_results(measurements_rl, 'rl', False, model_file, output_route)
 
 def save_results(measurements, feature, is_single_exec, model_file, output_folder):
     model_name, _ = os.path.splitext(model_file)
@@ -138,7 +138,7 @@ def predict(model, prefixes, imp, max_trace_size):
 
         ac_suf, rl_suf = list(), list()
         for _  in range(1, max_trace_size):
-            predictions = model._predict_next([x_ac_ngram, x_rl_ngram])
+            predictions = model.predict([x_ac_ngram, x_rl_ngram])
             if imp == 'Random Choice':
                 # Use this to get a random choice following as PDF the predictions
                 pos = np.random.choice(np.arange(0, len(predictions[0][0])), p=predictions[0][0])

@@ -184,7 +184,7 @@ def train(train_log, test_log, model_folder):
 
     model.compile(loss={'act_output':'categorical_crossentropy'}, optimizer=opt)
     early_stopping = EarlyStopping(monitor='val_loss', patience=42)
-    model_checkpoint = ModelCheckpoint(os.path.join(model_folder, 'model_{epoch:02d}-{val_loss:.2f}.h5'), monitor='val_loss', verbose=0, save_best_only=True, save_weights_only=False, mode='auto')
+    model_checkpoint = ModelCheckpoint(os.path.join(model_folder, 'model_{epoch:03d}-{val_loss:.2f}.h5'), monitor='val_loss', verbose=0, save_best_only=True, save_weights_only=False, mode='auto')
     lr_reducer = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=10, verbose=0, mode='auto', min_delta=0.0001, cooldown=0, min_lr=0)
 
     model.fit(X, {'act_output':y_a}, validation_split=0.2, verbose=2, callbacks=[early_stopping, model_checkpoint, lr_reducer], batch_size=maxlen, epochs=500)

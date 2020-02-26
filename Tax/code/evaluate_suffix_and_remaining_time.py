@@ -163,7 +163,7 @@ def evaluate(train_log, test_log, model_folder, model_file):
                 predicted = ''
                 for i in range(predict_size):
                     enc = encode(cropped_line)
-                    y = model._predict_next(enc, verbose=0) # make predictions
+                    y = model.predict(enc, verbose=0) # make predictions
                     # split predictions into seperate activity and time predictions
                     y_char = y[0]
                     prediction = getSymbol(y_char) # undo one-hot encoding

@@ -9,7 +9,7 @@ from Experiments_Variables import K_EDBN
 from Utils.LogFile import LogFile
 
 
-def test_edbn(dataset_folder, model_folder):
+def test_edbn(dataset_folder, model_folder, k):
     from eDBN_Prediction import predict_suffix
 
     print("Test EDBN")
@@ -23,12 +23,12 @@ def test_edbn(dataset_folder, model_folder):
     model.print_parents()
 
     train_log = LogFile(dataset_folder + "train_log.csv", ",", 0, None, None, "case",
-                        activity_attr="event", convert=False, k=K_EDBN)
+                        activity_attr="event", convert=False, k=k)
     train_log.add_end_events()
     train_log.convert2int()
 
     test_log = LogFile(dataset_folder + "test_log.csv",",", 0, None, None, "case",
-                       activity_attr="event", convert=False, k=K_EDBN, values=train_log.values)
+                       activity_attr="event", convert=False, k=k, values=train_log.values)
     test_log.add_end_events()
     test_log.convert2int()
     test_log.create_k_context()
@@ -63,7 +63,7 @@ def test_lin(dataset_folder, model_folder):
 
     model_file = sorted([model_file for model_file in os.listdir(model_folder) if model_file.endswith(".h5")])[-1]
 
-    acc = predict_suffix(os.path.join(model_folder, model_file), test_log.data, test_log.convert_string2int(test_log.activity, "end"), test_log.trace, test_log.activity)
+    acc = predict_suffix(os.path.join(model_folder, model_file), test_log.data, test_log.convert_string2int(test_log.activity, "end"))
     with open(os.path.join(model_folder, "results_suffix.log"), "a") as fout:
         fout.write("Accuracy: (%s) %s\n" % (time.strftime("%d-%m-%y %H:%M:%S", time.localtime()), acc))
 
@@ -123,7 +123,7 @@ def main(argv):
     # Execute chosen method
     ###
     if method == EDBN:
-        test_edbn(dataset_folder, model_folder)
+        test_edbn(dataset_folder, model_folder, edbn_k)
     elif method == CAMARGO:
         if len(argv) < 3:
             print("Please indicate the architecture to use: shared_cat or specialized")

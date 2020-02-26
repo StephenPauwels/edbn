@@ -64,6 +64,7 @@ def load_data(train, test, case_index = 0, act_index = 1):
     test_lines.append(line)
 
     vocabulary = {key: idx for idx, key in enumerate(vocabulary)}
+    vocabulary = {key: int(key) - 1 for key in vocabulary}
 
     numcases += 1
     print("Num cases: ", numcases)
@@ -152,3 +153,17 @@ def load_data(train, test, case_index = 0, act_index = 1):
     padded_X_test = pad_sequences(X_test, maxlen=max_length, padding='pre', dtype='float64')
 
     return ( padded_X_train, y_train, padded_X_test, y_test, vocab_size, max_length, n_classes, prefix_sizes_train)
+
+if __name__ == "__main__":
+    print("Testing load data")
+    train = "../Data/PredictionData/helpdesk/train_log.csv"
+    test = "../Data/PredictionData/helpdesk/test_log.csv"
+
+    (X_train, y_train,
+     X_test, y_test,
+     vocab_size,
+     max_length,
+     n_classes,
+     prefix_sizes) = load_data(train, test)
+
+    print(X_train)

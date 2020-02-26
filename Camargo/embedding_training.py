@@ -81,7 +81,7 @@ def train_embedded(log_df, ac_index, rl_index, dim_number):
     n_positive = 1024
     gen = generate_batch(pairs, ac_index, rl_index, n_positive, negative_ratio=2)
     # Train
-    model.fit_generator(gen, epochs=10,
+    model.fit_generator(gen, epochs=100,
                         steps_per_epoch=len(pairs) // n_positive,
                         verbose=2)
 

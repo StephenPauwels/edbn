@@ -40,7 +40,7 @@ def test_camargo(dataset_folder, model_folder, architecture):
     print("Test Camargo")
     model_file = sorted([model_file for model_file in os.listdir(model_folder) if model_file.endswith(".h5")])[-1]
 
-    predict_next(dataset_folder, model_folder, model_file, True)
+    predict_next(dataset_folder, model_folder, model_file, False)
 
 
 def test_lin(dataset_folder, model_folder):
@@ -61,14 +61,15 @@ def test_lin(dataset_folder, model_folder):
 def test_dimauro(dataset_folder, model_folder):
     from DiMauro.deeppm_act import evaluate
 
-    print("Test DiMauro")
+    print("Test DiMauro", dataset_folder)
     model_file = sorted([model_file for model_file in os.listdir(model_folder) if model_file.endswith(".h5")])[-1]
 
     train_log = os.path.join(dataset_folder, "train_log.csv")
     test_log = os.path.join(dataset_folder, "test_log.csv")
 
-    evaluate(train_log, test_log, model_file)
-
+    acc = evaluate(train_log, test_log, os.path.join(model_folder, model_file))
+    with open(os.path.join(model_folder, "results_next_event.log"), "a") as fout:
+        fout.write("Accuracy: (%s) %s\n" % (time.strftime("%d-%m-%y %H:%M:%S", time.localtime()), acc))
 
 def test_tax(dataset_folder, model_folder):
     from Tax.code.evaluate_next_activity_and_time import evaluate

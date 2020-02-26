@@ -6,7 +6,7 @@ import time
 from Camargo.support_modules.support import create_csv_file_header
 from Experiments_Variables import DATA_DESC, DATA_FOLDER, OUTPUT_FOLDER
 from Experiments_Variables import EDBN, CAMARGO, DIMAURO, LIN, TAX
-from Experiments_Variables import K_EDBN
+from Experiments_Variables import K_EDBN, DIMAURO_PARAMS
 from Preprocessing import get_data
 from Utils.LogFile import LogFile
 
@@ -74,14 +74,14 @@ def train_lin(data_folder, model_folder):
     train(logfile, train_log, model_folder)
 
 
-def train_dimauro(data_folder, model_folder):
+def train_dimauro(data_folder, model_folder, params = None):
     from DiMauro.deeppm_act import train
 
     print("Run DiMauro")
     train_log = os.path.join(data_folder, "train_log.csv")
     test_log = os.path.join(data_folder, "test_log.csv")
 
-    train(train_log, test_log, model_folder)
+    train(train_log, test_log, model_folder, params)
 
 
 def train_tax(data_folder, model_folder):
@@ -174,7 +174,7 @@ def main(argv):
     elif method == LIN:
         train_lin(dataset_folder, model_folder)
     elif method == DIMAURO:
-        train_dimauro(dataset_folder, model_folder)
+        train_dimauro(dataset_folder, model_folder, DIMAURO_PARAMS[data])
     elif method == TAX:
         train_tax(dataset_folder, model_folder)
 
