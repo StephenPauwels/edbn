@@ -174,7 +174,8 @@ def main(argv):
     elif method == LIN:
         train_lin(dataset_folder, model_folder)
     elif method == DIMAURO:
-        train_dimauro(dataset_folder, model_folder, DIMAURO_PARAMS[data])
+        train_dimauro(dataset_folder, model_folder, DIMAURO_PARAMS.get(data, None))
+        #train_dimauro(dataset_folder, model_folder)
     elif method == TAX:
         train_tax(dataset_folder, model_folder)
 

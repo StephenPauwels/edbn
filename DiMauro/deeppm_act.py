@@ -14,7 +14,7 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.callbacks import EarlyStopping
 
-from DiMauro.utils import load_data
+from DiMauro.utils import load_data, load_cases
 from sklearn.metrics import accuracy_score
 
 from hyperopt import Trials, STATUS_OK, tpe, fmin, hp
@@ -29,6 +29,9 @@ best_score = np.inf
 best_model = None
 best_time = 0
 best_numparameters = 0
+
+X_train = None
+y_train = None
 
 class DataGenerator(Sequence):
     def __init__(self, features, labels, batch_size=32, shuffle=True):
@@ -135,8 +138,11 @@ def fit_and_score(params):
     early_stopping = EarlyStopping(monitor='val_loss', patience=20)
    
     if (params['model_type'] == 'ACT'):
-        h = model.fit(params["X_train"],
-                      params["Y_train"], epochs=200, verbose=0,
+        # h = model.fit(params["X_train"],
+        #               params["Y_train"], epochs=200, verbose=2,
+        #               validation_split=0.2, callbacks=[early_stopping], batch_size=2**params['batch_size'])
+        h = model.fit(X_train,
+                      y_train, epochs=200, verbose=2,
                       validation_split=0.2, callbacks=[early_stopping], batch_size=2**params['batch_size'])
 
     scores = [h.history['val_loss'][epoch] for epoch in range(len(h.history['loss']))]
@@ -159,6 +165,8 @@ def train(train_log, test_log, model_folder, params):
     model_type = "ACT"
     output_file = os.path.join(model_folder, "output.log")
 
+    global X_train, y_train
+
     (X_train, y_train,
      X_test, y_test,
      vocab_size,
@@ -169,15 +177,14 @@ def train(train_log, test_log, model_folder, params):
     emb_size = (vocab_size + 1 ) // 2 # --> ceil(vocab_size/2)
 
     # categorical output
-    y_train = to_categorical(y_train)
+    y_train = to_categorical(y_train, num_classes=vocab_size)
 
     n_iter = 20
 
     space = {'input_length':max_length, 'vocab_size':vocab_size, 'n_classes':n_classes, 'model_type':model_type, 'embedding_size':emb_size,
              'n_modules':hp.choice('n_modules', [1,2,3]),
              'batch_size': hp.choice('batch_size', [9,10]),
-             'learning_rate': hp.loguniform("learning_rate", np.log(0.00001), np.log(0.01)),
-             'X_train': X_train, 'Y_train': y_train}
+             'learning_rate': hp.loguniform("learning_rate", np.log(0.00001), np.log(0.01))}
 
     # model selection
     print('Starting model selection...')
@@ -256,3 +263,20 @@ def evaluate(train_log, test_log, model_folder):
 
     accuracy = accuracy_score(y_test, preds_a)
     return accuracy
+
+def predict_suffix(train_log, test_log, model_folder):
+    model = load_model(model_folder)
+
+    (train_cases,
+     test_cases,
+     vocab_size,
+     max_length,
+     n_classes,
+     prefix_sizes) = load_cases(train_log, test_log, case_index=0, act_index=1)
+
+    # TODO Extract all prefixes from test_cases + Link with correct trace
+
+    # TODO iterate over all prefix-cases and predict complete case -> ENDSTATE
+
+    # TODO calculate DM-L distance
+
