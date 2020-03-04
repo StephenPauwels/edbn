@@ -271,21 +271,34 @@ class LogFile:
         return False
 
     def add_end_events(self):
+        # TODO make in parallel
         cases = self.get_cases()
-        new_data = []
-        for case_name, case in cases:
-            for i in range(0, len(case)):
-                new_data.append(case.iloc[i].to_dict())
+        print("Run end event map")
+        with mp.Pool(mp.cpu_count()) as p:
+            result = p.map(self.add_end_event_case, cases)
 
-            record = {}
-            for col in self.data:
-                if col == self.trace:
-                    record[col] = case_name
-                else:
-                    record[col] = "end"
-            new_data.append(record)
+        print("Combine results")
+        new_data = []
+        for r in result:
+            new_data.extend(r)
 
         self.data = pd.DataFrame.from_records(new_data)
+
+    def add_end_event_case(self, case_obj):
+        case_name, case = case_obj
+        new_data = []
+        for i in range(0, len(case)):
+            new_data.append(case.iloc[i].to_dict())
+
+        record = {}
+        for col in self.data:
+            if col == self.trace:
+                record[col] = case_name
+            else:
+                record[col] = "end"
+        new_data.append(record)
+        return new_data
+
 
     def splitTrainTest(self, train_percentage):
 

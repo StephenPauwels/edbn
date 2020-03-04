@@ -69,7 +69,11 @@ def test_lin(dataset_folder, model_folder):
 
 
 def test_dimauro(dataset_folder, model_folder):
-    print("No suffix prediction implemented")
+    from DiMauro.deeppm_act import predict_suffix
+
+    print("Run Di Mauro")
+    model_file = sorted([model_file for model_file in os.listdir(model_folder) if model_file.endswith(".h5")])[-1]
+    predict_suffix(dataset_folder + "train_log.csv", dataset_folder + "test_log.csv", os.path.join(model_folder, model_file))
 
 
 def test_tax(dataset_folder, model_folder):

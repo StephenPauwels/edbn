@@ -183,7 +183,7 @@ def train(train_log, test_log, model_folder, params):
 
     space = {'input_length':max_length, 'vocab_size':vocab_size, 'n_classes':n_classes, 'model_type':model_type, 'embedding_size':emb_size,
              'n_modules':hp.choice('n_modules', [1,2,3]),
-             'batch_size': hp.choice('batch_size', [9,10]),
+             'batch_size': hp.choice('batch_size', [4,5]),
              'learning_rate': hp.loguniform("learning_rate", np.log(0.00001), np.log(0.01))}
 
     # model selection
@@ -268,11 +268,18 @@ def predict_suffix(train_log, test_log, model_folder):
     model = load_model(model_folder)
 
     (train_cases,
-     test_cases,
+     test_cases_X, test_cases_y,
      vocab_size,
      max_length,
-     n_classes,
      prefix_sizes) = load_cases(train_log, test_log, case_index=0, act_index=1)
+
+    print(test_cases_X)
+    print(test_cases_X.shape)
+    print(len(test_cases_X), len(test_cases_y))
+    for i in range(1):
+        print(test_cases_X[i])
+        print(test_cases_y[i])
+        print(model.predict(test_cases_X[i]))
 
     # TODO Extract all prefixes from test_cases + Link with correct trace
 

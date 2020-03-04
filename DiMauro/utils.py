@@ -63,6 +63,7 @@ def load_data(train, test, case_index = 0, act_index = 1):
         firstLine = False
     test_lines.append(line)
 
+    vocabulary.add(-1)
     vocabulary = {key: idx for idx, key in enumerate(vocabulary)}
     vocabulary = {key: int(key) - 1 for key in vocabulary}
 
@@ -99,6 +100,11 @@ def load_data(train, test, case_index = 0, act_index = 1):
 
             vocab.add(seq[i])
 
+        if len(code) > max_length:
+            max_length = len(code)
+        X_train.append(code[:])
+        y_train.append(vocabulary[-1]) # Add End event
+
     for seq in test_lines:
         code = []
         code.append(vocabulary[seq[0]])
@@ -117,12 +123,15 @@ def load_data(train, test, case_index = 0, act_index = 1):
             seqs += 1
 
             vocab.add(seq[i])
+        if len(code) > max_length:
+            max_length = len(code)
 
     prefix_sizes_train = np.array(prefix_sizes_train)
     prefix_sizes_test = np.array(prefix_sizes_test)
 
     print("Num sequences:", seqs)
 
+    vocab.add(-1)
     print("Activities: ",vocab )
     vocab_size = len(vocab)
 
@@ -213,6 +222,8 @@ def load_cases(train, test, case_index = 0, act_index = 1):
         firstLine = False
     test_lines.append(line)
 
+    vocabulary.add(-1)
+
     vocabulary = {key: idx for idx, key in enumerate(vocabulary)}
     vocabulary = {key: int(key) - 1 for key in vocabulary}
 
@@ -239,6 +250,7 @@ def load_cases(train, test, case_index = 0, act_index = 1):
             code.append(vocabulary[seq[i]])
             seqs += 1
             vocab.add(seq[i])
+        code.append(vocabulary[-1])
         cases_train.append(code)
 
     for seq in test_lines:
@@ -253,7 +265,8 @@ def load_cases(train, test, case_index = 0, act_index = 1):
             code.append(vocabulary[seq[i]])
             seqs += 1
             vocab.add(seq[i])
-        cases_train.append(code)
+        code.append(vocabulary[-1])
+        cases_test.append(code)
 
     print("Num sequences:", seqs)
 
@@ -261,14 +274,22 @@ def load_cases(train, test, case_index = 0, act_index = 1):
     vocab_size = len(vocab)
 
     cases_train = np.array(cases_train)
-    cases_test = np.array(cases_test)
 
     print(max_length)
 
-    padded_cases_train = pad_sequences(cases_train, maxlen=max_length, padding='pre', dtype='float64')
-    padded_cases_test = pad_sequences(cases_test, maxlen=max_length, padding='pre', dtype='float64')
+    test_cases_X = []
+    test_cases_y = []
+    for test_case in cases_test:
+        for i in range(1, len(test_case)):
+            test_cases_X.append(test_case[:i])
+            test_cases_y.append(test_case[i:])
 
-    return ( padded_cases_train, padded_cases_test, vocab_size, max_length, n_classes, prefix_sizes_train)
+    test_cases_X = np.array(test_cases_X)
+
+    padded_cases_train = pad_sequences(cases_train, maxlen=max_length, padding='pre', dtype='float64')
+    padded_cases_test_X = pad_sequences(test_cases_X, maxlen=max_length, padding='pre', dtype='float64')
+
+    return ( padded_cases_train, padded_cases_test_X, test_cases_y, vocab_size, max_length, prefix_sizes_train)
 
 if __name__ == "__main__":
     print("Testing load data")

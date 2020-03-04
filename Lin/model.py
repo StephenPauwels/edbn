@@ -3,6 +3,8 @@ Implementation of MM-Pred: A Deep Predictive Model for Multi-attribute Event Seq
 """
 
 import os
+import multiprocessing as mp
+from functools import partial
 
 import keras.utils as ku
 import numpy as np
@@ -114,14 +116,26 @@ def vectorization(log_df, case_attr, activity="event", role="role", num_classes=
     Returns:
         dict: Dictionary that contains all the LSTM inputs.
     """
+    print("Start Vectorization")
     cases = log_df[case_attr].unique()
-    train_df = []
-    for case in cases:
-        train_df.append(log_df[log_df[case_attr] == case])
+
+    with mp.Pool(mp.cpu_count()) as p:
+        train_df = p.map(partial(map_case, log_df=log_df, case_attr=case_attr), cases)
+    #for case in cases:
+    #    train_df.append(log_df[log_df[case_attr] == case])
 
 
     vec = {'prefixes':dict(), 'next_evt':dict()}
     # n-gram definition
+    with mp.Pool(mp.cpu_count()) as p:
+        result = np.array(p.map(vect_map, train_df))
+
+    vec['prefixes']['x_ac_inp'] = np.concatenate(result[:,0], axis=0)
+    vec['prefixes']['x_rl_inp'] = np.concatenate(result[:,1], axis=0)
+    vec['next_evt']['y_ac_inp'] = np.concatenate(result[:,2])
+    vec['next_evt']['y_rl_inp'] = np.concatenate(result[:,3])
+
+    """
     for i, _ in enumerate(train_df):
         ac_n_grams = list(ngrams(train_df[i][activity], 5,
                                  pad_left=True, left_pad_symbol=0))
@@ -144,11 +158,30 @@ def vectorization(log_df, case_attr, activity="event", role="role", num_classes=
                                                     np.array(ac_n_grams[j+1][-1]))
             vec['next_evt']['y_rl_inp'] = np.append(vec['next_evt']['y_rl_inp'],
                                                     np.array(rl_n_grams[j+1][-1]))
-
+    """
+    print("To_Categorical")
     vec['next_evt']['y_ac_inp'] = ku.to_categorical(vec['next_evt']['y_ac_inp'], num_classes=num_classes)
     vec['next_evt']['y_rl_inp'] = ku.to_categorical(vec['next_evt']['y_rl_inp'])
+    print("DONE")
     return vec
 
+def map_case(x, log_df, case_attr):
+    return log_df[log_df[case_attr] == x]
+
+def vect_map(case_df):
+    ac_n_grams = list(ngrams(case_df["event"], 5, pad_left=True, left_pad_symbol=0))
+    rl_n_grams = list(ngrams(case_df["role"], 5, pad_left=True, left_pad_symbol=0))
+
+    x_ac_inp = np.array([ac_n_grams[0]])
+    x_rl_inp = np.array([rl_n_grams[0]])
+    y_ac_inp = np.array(ac_n_grams[1][-1])
+    y_rl_inp = np.array(rl_n_grams[1][-1])
+    for j in range(1, len(ac_n_grams) - 1):
+        x_ac_inp = np.concatenate((x_ac_inp, np.array([ac_n_grams[j]])), axis=0)
+        x_rl_inp = np.concatenate((x_rl_inp, np.array([rl_n_grams[j]])), axis=0)
+        y_ac_inp = np.append(y_ac_inp, np.array(ac_n_grams[j+1][-1]))
+        y_rl_inp = np.append(y_rl_inp, np.array(rl_n_grams[j+1][-1]))
+    return [x_ac_inp, x_rl_inp, y_ac_inp, y_rl_inp]
 
 def create_pref_next(df_test, case_attr="case", activity_attr="event"):
     """Extraction of prefixes and expected suffixes from event log.

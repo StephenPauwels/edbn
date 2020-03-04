@@ -50,3 +50,6 @@ DIMAURO_PARAMS["BPIC15_5"] = {'batch_size': 10, 'embedding_size': 195, 'input_le
 DIMAURO_PARAMS["HELPDESK"] = {'batch_size': 9, 'embedding_size': 7, 'input_length': 14,
                               'learning_rate': 0.0008106393532786784, 'model_type': 'ACT', 'n_classes': 13,
                               'n_modules': 2, 'vocab_size': 14}
+DIMAURO_PARAMS["BPIC18"] = {'batch_size': 9, 'embedding_size': 21, 'input_length': 2973,
+                              'learning_rate': 0.0008106393532786784, 'model_type': 'ACT', 'n_classes': 42,
+                              'n_modules': 2, 'vocab_size': 42}
