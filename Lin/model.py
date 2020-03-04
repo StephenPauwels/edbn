@@ -9,7 +9,7 @@ from functools import partial
 import keras.utils as ku
 import numpy as np
 from keras.callbacks import EarlyStopping, ModelCheckpoint
-from keras.layers import Input, Embedding, Dropout, Concatenate, LSTM, Dense, BatchNormalization
+from keras.layers import Input, Embedding, Dropout, Concatenate, LSTM, Dense, BatchNormalization, CuDNNLSTM
 from keras.models import Model, load_model
 from keras.optimizers import Nadam
 from nltk.util import ngrams
@@ -17,6 +17,67 @@ import jellyfish as jf
 
 from Lin.Modulator import Modulator
 
+def create_model_cudnn(vec, vocab_act_size, vocab_role_size, output_folder):
+    # Create embeddings + Concat
+    act_input = Input(shape = (vec['prefixes']['x_ac_inp'].shape[1],), name="act_input")
+    role_input = Input(shape = (vec['prefixes']['x_rl_inp'].shape[1],), name="role_input")
+
+    act_embedding = Embedding(vocab_act_size, 100, input_length=vec['prefixes']['x_ac_inp'].shape[1],)(act_input)
+    act_dropout = Dropout(0.2)(act_embedding)
+    act_e_lstm_1 = CuDNNLSTM(32, return_sequences=True)(act_dropout)
+    act_e_lstm_2 = CuDNNLSTM(100, return_sequences=True)(act_e_lstm_1)
+
+
+    role_embedding = Embedding(vocab_role_size, 100, input_length=vec['prefixes']['x_rl_inp'].shape[1],)(role_input)
+    role_dropout = Dropout(0.2)(role_embedding)
+    role_e_lstm_1 = CuDNNLSTM(32, return_sequences=True)(role_dropout)
+    role_e_lstm_2 = CuDNNLSTM(100, return_sequences=True)(role_e_lstm_1)
+
+    concat1 = Concatenate(axis=1)([act_e_lstm_2, role_e_lstm_2])
+    normal = BatchNormalization()(concat1)
+
+    act_modulator = Modulator(attr_idx=0, num_attrs=1)(normal)
+    role_modulator = Modulator(attr_idx=1, num_attrs=1)(normal)
+
+    # Use LSTM to decode events
+    act_d_lstm_1 = LSTM(100, return_sequences=True)(act_modulator)
+    act_d_lstm_2 = LSTM(32, return_sequences=False)(act_d_lstm_1)
+
+    role_d_lstm_1 = CuDNNLSTM(100, return_sequences=True)(role_modulator)
+    role_d_lstm_2 = CuDNNLSTM(32, return_sequences=False)(role_d_lstm_1)
+
+    act_output = Dense(vocab_act_size, name="act_output", activation='softmax')(act_d_lstm_2)
+    role_output = Dense(vocab_role_size, name="role_output", activation="softmax")(role_d_lstm_2)
+
+    model = Model(inputs=[act_input, role_input], outputs=[act_output, role_output])
+
+    opt = Nadam(lr=0.002, beta_1=0.9, beta_2=0.999,
+                epsilon=1e-08, schedule_decay=0.004, clipvalue=3)
+    model.compile(loss={'act_output': 'categorical_crossentropy', 'role_output': 'categorical_crossentropy'}, optimizer=opt)
+
+    model.summary()
+
+    output_file_path = os.path.join(output_folder, 'model_rd_{epoch:03d}-{val_loss:.2f}.h5')
+
+    # Saving
+    model_checkpoint = ModelCheckpoint(output_file_path,
+                                       monitor='val_loss',
+                                       verbose=1,
+                                       save_best_only=True,
+                                       save_weights_only=False,
+                                       mode='auto')
+
+    early_stopping = EarlyStopping(monitor='val_loss', patience=10)
+
+    model.fit({'act_input':vec['prefixes']['x_ac_inp'],
+               'role_input':vec['prefixes']['x_rl_inp']},
+              {'act_output':vec['next_evt']['y_ac_inp'],
+               'role_output':vec['next_evt']['y_rl_inp']},
+              validation_split=0.2,
+              verbose=2,
+              batch_size=5,
+              callbacks=[early_stopping, model_checkpoint],
+              epochs=200)
 
 def create_model(vec, vocab_act_size, vocab_role_size, output_folder):
     # Create embeddings + Concat
@@ -334,5 +395,5 @@ def dl_measure(prefixes):
     return prefixes
 
 def train(logfile, train_log, model_folder):
-    create_model(vectorization(train_log.data, train_log.trace, "event", num_classes=len(logfile.values[logfile.activity]) + 1), len(logfile.values[logfile.activity]) + 1, len(logfile.values["role"]) + 1, model_folder)
+    create_model_cudnn(vectorization(train_log.data, train_log.trace, "event", num_classes=len(logfile.values[logfile.activity]) + 1), len(logfile.values[logfile.activity]) + 1, len(logfile.values["role"]) + 1, model_folder)
 
