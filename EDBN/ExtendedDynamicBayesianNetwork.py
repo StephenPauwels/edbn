@@ -234,6 +234,7 @@ class Discrete_Variable(Variable):
 
         self.conditional_parents = []
         self.cpt = dict()
+        self.cpt_probs = dict()
         self.functional_parents = []
         self.fdt = []
         self.fdt_violation = []
@@ -309,6 +310,7 @@ class Discrete_Variable(Variable):
         grouped = log.groupby(parents,observed=True)[self.attr_name]
         val_counts = grouped.value_counts()
         div = grouped.count().to_dict()
+        total_rows = len(log.index)
         for t in val_counts.items():
             parent = t[0][:-1]
 #            if len(parent) == 1:
@@ -317,8 +319,10 @@ class Discrete_Variable(Variable):
                 self.cpt[parent] = dict()
             if len(parent) == 1:
                 self.cpt[parent][t[0][-1]] = t[1] / div[parent[0]]
+                self.cpt_probs[parent] = div[parent[0]] / total_rows
             else:
                 self.cpt[parent][t[0][-1]] = t[1] / div[parent]
+                self.cpt_probs[parent] = div[parent] / total_rows
 
     ###
     # Testing

@@ -60,7 +60,7 @@ def get_probabilities(variable, val_tuple, parents):
                         for pred_val, prob in variable.cpt[new_tuple_val].items():
                             if pred_val not in prediction_options:
                                 prediction_options[pred_val] = 0
-                            prediction_options[pred_val] += curr_variable.values[val] * prob
+                            prediction_options[pred_val] += variable.cpt_probs[new_tuple_val] * prob
             if len(prediction_options) > 0:
                 return prediction_options, True
             else:

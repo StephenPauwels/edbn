@@ -9,7 +9,7 @@ from functools import partial
 import keras.utils as ku
 import numpy as np
 from keras.callbacks import EarlyStopping, ModelCheckpoint
-from keras.layers import Input, Embedding, Dropout, Concatenate, LSTM, Dense, BatchNormalization, CuDNNLSTM
+from keras.layers import Input, Embedding, Dropout, Concatenate, LSTM, Dense, BatchNormalization
 from keras.models import Model, load_model
 from keras.optimizers import Nadam
 from nltk.util import ngrams

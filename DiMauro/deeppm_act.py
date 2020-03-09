@@ -273,17 +273,61 @@ def predict_suffix(train_log, test_log, model_folder):
      max_length,
      prefix_sizes) = load_cases(train_log, test_log, case_index=0, act_index=1)
 
-    print(test_cases_X)
-    print(test_cases_X.shape)
-    print(len(test_cases_X), len(test_cases_y))
-    for i in range(1):
-        print(test_cases_X[i])
-        print(test_cases_y[i])
-        print(model.predict(test_cases_X[i]))
+    suffix_
+    for test_x, test_y in zip(test_cases_X, test_cases_y):
+        case = test_x
+        suffix = []
+        for _ in range(max_length):
+            prediction = model.predict([[case]])
+            pred_a = np.argmax(prediction, axis=1)
+            suffix.append(pred_a[0])
+            case = np.roll(case, -1)
+            case[-1] = pred_a
+            if pred_a[0] == -2:
+                break
+        similarities.append(1 - (damerau_levenshtein_distance(suffix, test_y)) / max(len(suffix), len(test_y)))
+    return np.average(similarities)
 
-    # TODO Extract all prefixes from test_cases + Link with correct trace
+def calc_suffix(input, max_length, model):
+    test_x, test_y = input
+    case = test_x
+    suffix = []
+    for _ in range(max_length):
+        prediction = model.predict([[case]])
+        pred_a = np.argmax(prediction, axis=1)
+        suffix.append(pred_a[0])
+        case = np.roll(case, -1)
+        case[-1] = pred_a
+        if pred_a[0] == -2:
+            break
+    return 1 - (damerau_levenshtein_distance(suffix, test_y)) / max(len(suffix), len(test_y))
 
-    # TODO iterate over all prefix-cases and predict complete case -> ENDSTATE
+"""
+Compute the Damerau-Levenshtein distance between two given
+lists (s1 and s2)
+From: https://www.guyrutenberg.com/2008/12/15/damerau-levenshtein-distance-in-python/
+"""
+def damerau_levenshtein_distance(s1, s2):
+    d = {}
+    lenstr1 = len(s1)
+    lenstr2 = len(s2)
+    for i in range(-1,lenstr1+1):
+        d[(i,-1)] = i+1
+    for j in range(-1,lenstr2+1):
+        d[(-1,j)] = j+1
 
-    # TODO calculate DM-L distance
+    for i in range(lenstr1):
+        for j in range(lenstr2):
+            if s1[i] == s2[j]:
+                cost = 0
+            else:
+                cost = 1
+            d[(i,j)] = min(
+                           d[(i-1,j)] + 1, # deletion
+                           d[(i,j-1)] + 1, # insertion
+                           d[(i-1,j-1)] + cost, # substitution
+                          )
+            if i and j and s1[i]==s2[j-1] and s1[i-1] == s2[j]:
+                d[(i,j)] = min (d[(i,j)], d[i-2,j-2] + cost) # transposition
 
+    return d[lenstr1-1,lenstr2-1]
