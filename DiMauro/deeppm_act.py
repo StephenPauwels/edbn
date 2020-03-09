@@ -22,6 +22,9 @@ import hyperopt
 from time import perf_counter
 import time
 import os
+import functools
+import multiprocessing as mp
+import tqdm
 
 from tensorflow.keras.utils import Sequence
 
@@ -265,35 +268,24 @@ def evaluate(train_log, test_log, model_folder):
     return accuracy
 
 def predict_suffix(train_log, test_log, model_folder):
-    model = load_model(model_folder)
-
     (train_cases,
      test_cases_X, test_cases_y,
      vocab_size,
      max_length,
      prefix_sizes) = load_cases(train_log, test_log, case_index=0, act_index=1)
 
-    suffix_
-    for test_x, test_y in zip(test_cases_X, test_cases_y):
-        case = test_x
-        suffix = []
-        for _ in range(max_length):
-            prediction = model.predict([[case]])
-            pred_a = np.argmax(prediction, axis=1)
-            suffix.append(pred_a[0])
-            case = np.roll(case, -1)
-            case[-1] = pred_a
-            if pred_a[0] == -2:
-                break
-        similarities.append(1 - (damerau_levenshtein_distance(suffix, test_y)) / max(len(suffix), len(test_y)))
+    suffix_calc = functools.partial(calc_suffix, max_length=max_length, model_f=model_folder)
+    with mp.Pool(mp.cpu_count()) as p:
+        similarities = p.map(suffix_calc, zip(test_cases_X, test_cases_y))
     return np.average(similarities)
 
-def calc_suffix(input, max_length, model):
-    test_x, test_y = input
+def calc_suffix(input_case, max_length, model_f):
+    model = load_model(model_f)
+    test_x, test_y = input_case
     case = test_x
     suffix = []
     for _ in range(max_length):
-        prediction = model.predict([[case]])
+        prediction = model.predict([[case]], verbose=0)
         pred_a = np.argmax(prediction, axis=1)
         suffix.append(pred_a[0])
         case = np.roll(case, -1)
