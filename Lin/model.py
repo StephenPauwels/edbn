@@ -24,14 +24,14 @@ def create_model_cudnn(vec, vocab_act_size, vocab_role_size, output_folder):
 
     act_embedding = Embedding(vocab_act_size, 100, input_length=vec['prefixes']['x_ac_inp'].shape[1],)(act_input)
     act_dropout = Dropout(0.2)(act_embedding)
-    act_e_lstm_1 = CuDNNLSTM(32, return_sequences=True)(act_dropout)
-    act_e_lstm_2 = CuDNNLSTM(100, return_sequences=True)(act_e_lstm_1)
+    act_e_lstm_1 = LSTM(32, return_sequences=True)(act_dropout)
+    act_e_lstm_2 = LSTM(100, return_sequences=True)(act_e_lstm_1)
 
 
     role_embedding = Embedding(vocab_role_size, 100, input_length=vec['prefixes']['x_rl_inp'].shape[1],)(role_input)
     role_dropout = Dropout(0.2)(role_embedding)
-    role_e_lstm_1 = CuDNNLSTM(32, return_sequences=True)(role_dropout)
-    role_e_lstm_2 = CuDNNLSTM(100, return_sequences=True)(role_e_lstm_1)
+    role_e_lstm_1 = LSTM(32, return_sequences=True)(role_dropout)
+    role_e_lstm_2 = LSTM(100, return_sequences=True)(role_e_lstm_1)
 
     concat1 = Concatenate(axis=1)([act_e_lstm_2, role_e_lstm_2])
     normal = BatchNormalization()(concat1)
@@ -43,8 +43,8 @@ def create_model_cudnn(vec, vocab_act_size, vocab_role_size, output_folder):
     act_d_lstm_1 = LSTM(100, return_sequences=True)(act_modulator)
     act_d_lstm_2 = LSTM(32, return_sequences=False)(act_d_lstm_1)
 
-    role_d_lstm_1 = CuDNNLSTM(100, return_sequences=True)(role_modulator)
-    role_d_lstm_2 = CuDNNLSTM(32, return_sequences=False)(role_d_lstm_1)
+    role_d_lstm_1 = LSTM(100, return_sequences=True)(role_modulator)
+    role_d_lstm_2 = LSTM(32, return_sequences=False)(role_d_lstm_1)
 
     act_output = Dense(vocab_act_size, name="act_output", activation='softmax')(act_d_lstm_2)
     role_output = Dense(vocab_role_size, name="role_output", activation="softmax")(role_d_lstm_2)
@@ -395,5 +395,5 @@ def dl_measure(prefixes):
     return prefixes
 
 def train(logfile, train_log, model_folder):
-    create_model_cudnn(vectorization(train_log.data, train_log.trace, "event", num_classes=len(logfile.values[logfile.activity]) + 1), len(logfile.values[logfile.activity]) + 1, len(logfile.values["role"]) + 1, model_folder)
+    create_model(vectorization(train_log.data, train_log.trace, "event", num_classes=len(logfile.values[logfile.activity]) + 1), len(logfile.values[logfile.activity]) + 1, len(logfile.values["role"]) + 1, model_folder)
 
