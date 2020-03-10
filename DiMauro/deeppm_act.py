@@ -181,13 +181,6 @@ def train(train_log, test_log, model_folder, params):
     print("n_classes", n_classes)
     # TODO: check vocab_size != n_classes
 
-    for i in range(10):
-        print("Train")
-        print(X_train[i])
-        print("Test")
-        print(y_train[i])
-        print()
-
     emb_size = (vocab_size + 1 ) // 2 # --> ceil(vocab_size/2)
 
     # categorical output

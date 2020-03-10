@@ -138,6 +138,8 @@ def main(argv):
     elif method == LIN:
         test_lin(dataset_folder, model_folder)
     elif method == DIMAURO:
+        if len(argv) == 3:
+            os.environ["CUDA_VISIBLE_DEVICES"] = argv[2]
         test_dimauro(dataset_folder, model_folder)
     elif method == TAX:
         test_tax(dataset_folder, model_folder)
