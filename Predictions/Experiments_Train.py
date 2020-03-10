@@ -174,6 +174,8 @@ def main(argv):
     elif method == LIN:
         train_lin(dataset_folder, model_folder)
     elif method == DIMAURO:
+        if len(argv) == 3:
+            os.environ["CUDA_VISIBLE_DEVICES"] = argv[2]
         train_dimauro(dataset_folder, model_folder, DIMAURO_PARAMS.get(data, None))
         #train_dimauro(dataset_folder, model_folder)
     elif method == TAX:
