@@ -181,6 +181,13 @@ def train(train_log, test_log, model_folder, params):
     print("n_classes", n_classes)
     # TODO: check vocab_size != n_classes
 
+    for i in range(10):
+        print("Train")
+        print(X_train[i])
+        print("Test")
+        print(y_train[i])
+        print()
+
     emb_size = (vocab_size + 1 ) // 2 # --> ceil(vocab_size/2)
 
     # categorical output
@@ -278,41 +285,29 @@ def predict_suffix(train_log, test_log, model_folder):
      max_length,
      prefix_sizes) = load_cases(train_log, test_log, case_index=0, act_index=1)
 
-    suffix_calc = functools.partial(calc_suffix, max_length=max_length, model_f=model_folder)
-    zipped_cases = list(zip(test_cases_X, test_cases_y))
-    input_list = []
-    cpus = 5 # mp.cpu_count()
+    model = load_model(model_folder)
 
-    interval_length = int(len(zipped_cases) / cpus + 1)
-    for i in range(cpus-1):
-        input_list.append(zipped_cases[i * interval_length: (i+1) * interval_length])
-    input_list.append(zipped_cases[(cpus-1) * interval_length:])
+    suffix = [np.array([]) for _ in range(len(test_cases_X))]
+    cases_X_to_test = test_cases_X[:]
 
-    with mp.Pool(cpus) as p:
-        similarities = p.map(suffix_calc, input_list)
-    sims = []
-    for sim in similarities:
-        sims.extend(sim)
-    print(sims)
-    return np.average(sims)
+    length = 0
+    finished_cases = []
+    while length < max_length:
+        print(length)
+        predictions = model.predict(cases_X_to_test)
+        pred_a = np.argmax(predictions, axis=1)
+        cases_X_to_test = np.roll(cases_X_to_test, -1, axis=1)
+        cases_X_to_test[:,-1] = pred_a
+        suffix = np.concatenate((suffix, [[i] for i in pred_a]), axis=1)
+        length += 1
 
-def calc_suffix(input_cases, max_length, model_f):
-    model = load_model(model_f)
     results = []
-    for input_case in input_cases:
-        test_x, test_y = input_case
-        case = test_x
-        suffix = []
-        for _ in range(max_length):
-            prediction = model.predict([[case]], verbose=0)
-            pred_a = np.argmax(prediction, axis=1)
-            suffix.append(pred_a[0])
-            case = np.roll(case, -1)
-            case[-1] = pred_a
-            print(pred_a)
-            if pred_a[0] == -2:
-                break
-        results.append(1 - (damerau_levenshtein_distance(suffix, test_y)) / max(len(suffix), len(test_y)))
+    for i, suf in enumerate(suffix):
+        if 0 in suf:
+            suf = suf[:np.where(suf == 0)[0][0]]
+        results.append(1 - (damerau_levenshtein_distance(suf, test_cases_y[i])) / max(len(suf), len(test_cases_y[i])))
+    return np.average(results)
+
 
 """
 Compute the Damerau-Levenshtein distance between two given

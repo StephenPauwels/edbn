@@ -35,6 +35,7 @@ def load_data(train, test, case_index = 0, act_index = 1):
         if row[CASE_INDEX]!=lastcase:  #'lastcase' is to save the last executed case for the loop
             lastcase = row[CASE_INDEX]
             if not firstLine:
+                line.append(-1)
                 train_lines.append(line)
                 if len(line) > max_length:
                     max_length = len(line)
@@ -44,6 +45,7 @@ def load_data(train, test, case_index = 0, act_index = 1):
         vocabulary.add(row[ACT_INDEX])
         line.append(row[ACT_INDEX])
         firstLine = False
+    line.append(-1)
     train_lines.append(line)
 
     lastcase = ''
@@ -52,6 +54,7 @@ def load_data(train, test, case_index = 0, act_index = 1):
         if row[CASE_INDEX]!=lastcase:  #'lastcase' is to save the last executed case for the loop
             lastcase = row[CASE_INDEX]
             if not firstLine:
+                line.append(-1)
                 test_lines.append(line)
                 if len(line) > max_length:
                     max_length = len(line)
@@ -61,6 +64,7 @@ def load_data(train, test, case_index = 0, act_index = 1):
         vocabulary.add(row[ACT_INDEX])
         line.append(row[ACT_INDEX])
         firstLine = False
+    line.append(-1)
     test_lines.append(line)
 
     vocabulary.add(-1)
@@ -92,6 +96,7 @@ def load_data(train, test, case_index = 0, act_index = 1):
 
             if len(code)>max_length:
                 max_length = len(code)
+
             X_train.append(code[:])
             y_train.append(vocabulary[seq[i]])
 
@@ -102,8 +107,6 @@ def load_data(train, test, case_index = 0, act_index = 1):
 
         if len(code) > max_length:
             max_length = len(code)
-        X_train.append(code[:])
-        y_train.append(vocabulary[-1]) # Add End event
 
     for seq in test_lines:
         code = []
@@ -131,7 +134,6 @@ def load_data(train, test, case_index = 0, act_index = 1):
 
     print("Num sequences:", seqs)
 
-    vocab.add(-1)
     print("Activities: ",vocab )
     vocab_size = len(vocab)
 
@@ -194,6 +196,7 @@ def load_cases(train, test, case_index = 0, act_index = 1):
         if row[CASE_INDEX]!=lastcase:  #'lastcase' is to save the last executed case for the loop
             lastcase = row[CASE_INDEX]
             if not firstLine:
+                line.append(-1)
                 train_lines.append(line)
                 if len(line) > max_length:
                     max_length = len(line)
@@ -203,6 +206,7 @@ def load_cases(train, test, case_index = 0, act_index = 1):
         vocabulary.add(row[ACT_INDEX])
         line.append(row[ACT_INDEX])
         firstLine = False
+    line.append(-1)
     train_lines.append(line)
 
     lastcase = ''
@@ -211,6 +215,7 @@ def load_cases(train, test, case_index = 0, act_index = 1):
         if row[CASE_INDEX]!=lastcase:  #'lastcase' is to save the last executed case for the loop
             lastcase = row[CASE_INDEX]
             if not firstLine:
+                line.append(-1)
                 test_lines.append(line)
                 if len(line) > max_length:
                     max_length = len(line)
@@ -220,10 +225,10 @@ def load_cases(train, test, case_index = 0, act_index = 1):
         vocabulary.add(row[ACT_INDEX])
         line.append(row[ACT_INDEX])
         firstLine = False
+    line.append(-1)
     test_lines.append(line)
 
     vocabulary.add(-1)
-
     vocabulary = {key: idx for idx, key in enumerate(vocabulary)}
     vocabulary = {key: int(key) - 1 for key in vocabulary}
 
@@ -250,7 +255,6 @@ def load_cases(train, test, case_index = 0, act_index = 1):
             code.append(vocabulary[seq[i]])
             seqs += 1
             vocab.add(seq[i])
-        code.append(vocabulary[-1])
         cases_train.append(code)
 
     for seq in test_lines:
@@ -265,7 +269,6 @@ def load_cases(train, test, case_index = 0, act_index = 1):
             code.append(vocabulary[seq[i]])
             seqs += 1
             vocab.add(seq[i])
-        code.append(vocabulary[-1])
         cases_test.append(code)
 
     print("Num sequences:", seqs)
