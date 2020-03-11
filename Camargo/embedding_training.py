@@ -8,6 +8,8 @@ import itertools
 import math
 import os
 import random
+import multiprocessing as mp
+import functools
 
 import numpy as np
 from keras.layers import Input, Embedding, Dot, Reshape
@@ -76,6 +78,11 @@ def train_embedded(log_df, ac_index, rl_index, dim_number):
         # pairs.append((log_df.iloc[i]['task'], log_df.iloc[i]['role']))
         # pairs.append((ac_index[log_df.iloc[i]['event']], rl_index[log_df.iloc[i]['role']]))
     pairs = list(zip(log_df.event, log_df.role))
+
+    convert_pair_func = functools.partial(convert_pair, ac_index=ac_index, rl_index=rl_index)
+
+    with mp.Pool(mp.cpu_count()) as p:
+        pairs = p.map(convert_pair_func, pairs)
     print("Pairs generated")
 
     model = ac_rl_embedding_model(ac_index, rl_index, dim_number)
@@ -98,6 +105,8 @@ def train_embedded(log_df, ac_index, rl_index, dim_number):
 
     return ac_weights, rl_weights
 
+def convert_pair(pair, ac_index, rl_index):
+    return (ac_index[pair[0]], rl_index[pair[1]])
 
 def generate_batch(pairs, ac_index, rl_index, n_positive=50,
                    negative_ratio=1.0):
