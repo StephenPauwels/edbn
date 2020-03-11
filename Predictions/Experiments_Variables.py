@@ -14,6 +14,7 @@ DATA_DESC.append({"folder": "bpic12w/", "data": "BPIC12W"})
 DATA_DESC.append({"folder": "bpic12/", "data": "BPIC12"})
 DATA_DESC.append({"folder": "helpdesk/", "data": "HELPDESK"})
 DATA_DESC.append({"folder": "bpic18/", "data": "BPIC18"})
+DATA_DESC.append({"folder": "bpic18s/", "data": "BPIC18S"})
 
 # Location to output the splitted log files
 DATA_FOLDER = "../Data/PredictionData/"
