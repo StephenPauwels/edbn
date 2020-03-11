@@ -43,6 +43,8 @@ def train_camargo(data_folder, model_folder, architecture):
     test_log = LogFile(data_folder + "test_log.csv", ",", 0, None, None, "case",
                         activity_attr="event", convert=False, k=0)
 
+
+
     args = {}
     args["file_name"] = "data"
     args["model_type"] = architecture # Choose from 'joint', 'shared', 'concatenated', 'specialized', 'shared_cat'

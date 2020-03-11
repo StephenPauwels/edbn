@@ -7,6 +7,8 @@ Created on Wed Nov 21 21:23:55 2018
 import csv
 import itertools
 import os
+import multiprocessing as mp
+from functools import partial
 
 import keras.utils as ku
 import numpy as np
@@ -137,42 +139,45 @@ def vectorization(log_df, ac_index, rl_index, args):
     Returns:
         dict: Dictionary that contains all the LSTM inputs.
     """
-    if args['norm_method'] == 'max':
-        log_df = reformat_events(log_df, ac_index, rl_index)
-    elif args['norm_method'] == 'lognorm':
-        log_df = reformat_events(log_df, ac_index, rl_index)
+    print("Start Vectorization")
+    cases = log_df["case"].unique()
+
+    with mp.Pool(mp.cpu_count()) as p:
+        train_df = p.map(partial(map_case, log_df=log_df, case_attr=case_attr), cases)
 
     vec = {'prefixes':dict(), 'next_evt':dict()}
-    # n-gram definition
-    for i, _ in enumerate(log_df):
-        ac_n_grams = list(ngrams(log_df[i]['ac_order'], args['n_size'],
-                                 pad_left=True, left_pad_symbol=0))
-        rl_n_grams = list(ngrams(log_df[i]['rl_order'], args['n_size'],
-                                 pad_left=True, left_pad_symbol=0))
 
-        st_idx = 0
-        if i == 0:
-            vec['prefixes']['x_ac_inp'] = np.array([ac_n_grams[0]])
-            vec['prefixes']['x_rl_inp'] = np.array([rl_n_grams[0]])
-            vec['next_evt']['y_ac_inp'] = np.array(ac_n_grams[1][-1])
-            vec['next_evt']['y_rl_inp'] = np.array(rl_n_grams[1][-1])
-            st_idx = 1
-        for j in range(st_idx, len(ac_n_grams)-1):
-            vec['prefixes']['x_ac_inp'] = np.concatenate((vec['prefixes']['x_ac_inp'],
-                                                          np.array([ac_n_grams[j]])), axis=0)
-            vec['prefixes']['x_rl_inp'] = np.concatenate((vec['prefixes']['x_rl_inp'],
-                                                          np.array([rl_n_grams[j]])), axis=0)
-            vec['next_evt']['y_ac_inp'] = np.append(vec['next_evt']['y_ac_inp'],
-                                                    np.array(ac_n_grams[j+1][-1]))
-            vec['next_evt']['y_rl_inp'] = np.append(vec['next_evt']['y_rl_inp'],
-                                                    np.array(rl_n_grams[j+1][-1]))
+    with mp.Pool(mp.cpu_count()) as p:
+        result = np.array(p.map(vect_map, train_df))
 
+    vec['prefixes']['x_ac_inp'] = np.concatenate(result[:,0], axis=0)
+    vec['prefixes']['x_rl_inp'] = np.concatenate(result[:,1], axis=0)
+    vec['next_evt']['y_ac_inp'] = np.concatenate(result[:,2])
+    vec['next_evt']['y_rl_inp'] = np.concatenate(result[:,3])
 
-    vec['next_evt']['y_ac_inp'] = ku.to_categorical(vec['next_evt']['y_ac_inp'],
-                                                    num_classes=len(ac_index))
-    vec['next_evt']['y_rl_inp'] = ku.to_categorical(vec['next_evt']['y_rl_inp'],
-                                                    num_classes=len(rl_index))
+    print("To_Categorical")
+    vec['next_evt']['y_ac_inp'] = ku.to_categorical(vec['next_evt']['y_ac_inp'], num_classes=num_classes)
+    vec['next_evt']['y_rl_inp'] = ku.to_categorical(vec['next_evt']['y_rl_inp'])
+    print("DONE")
     return vec
+
+def map_case(x, log_df, case_attr):
+    return log_df[log_df[case_attr] == x]
+
+def vect_map(case_df):
+    ac_n_grams = list(ngrams(case_df["event"], 5, pad_left=True, left_pad_symbol=0))
+    rl_n_grams = list(ngrams(case_df["role"], 5, pad_left=True, left_pad_symbol=0))
+
+    x_ac_inp = np.array([ac_n_grams[0]])
+    x_rl_inp = np.array([rl_n_grams[0]])
+    y_ac_inp = np.array(ac_n_grams[1][-1])
+    y_rl_inp = np.array(rl_n_grams[1][-1])
+    for j in range(1, len(ac_n_grams) - 1):
+        x_ac_inp = np.concatenate((x_ac_inp, np.array([ac_n_grams[j]])), axis=0)
+        x_rl_inp = np.concatenate((x_rl_inp, np.array([rl_n_grams[j]])), axis=0)
+        y_ac_inp = np.append(y_ac_inp, np.array(ac_n_grams[j+1][-1]))
+        y_rl_inp = np.append(y_rl_inp, np.array(rl_n_grams[j+1][-1]))
+    return [x_ac_inp, x_rl_inp, y_ac_inp, y_rl_inp]
 
 def add_calculated_features(log_df, ac_index, rl_index):
     """Appends the indexes and relative time to the dataframe.

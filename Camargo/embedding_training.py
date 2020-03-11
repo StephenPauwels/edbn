@@ -68,12 +68,15 @@ def training_model(log, outfile):
 
 def train_embedded(log_df, ac_index, rl_index, dim_number):
     """Carry out the training of the embeddings"""
+    print("TRAIN")
     # Iterate through each book
-    pairs = list()
-    for i in range(0, len(log_df)):
+    #pairs = list()
+    #for i in range(0, len(log_df)):
         # Iterate through the links in the book
-        #pairs.append((log_df.iloc[i]['task'], log_df.iloc[i]['role']))
-        pairs.append((ac_index[log_df.iloc[i]['event']], rl_index[log_df.iloc[i]['role']]))
+        # pairs.append((log_df.iloc[i]['task'], log_df.iloc[i]['role']))
+        # pairs.append((ac_index[log_df.iloc[i]['event']], rl_index[log_df.iloc[i]['role']]))
+    pairs = list(zip(log_df.event, log_df.role))
+    print("Pairs generated")
 
     model = ac_rl_embedding_model(ac_index, rl_index, dim_number)
     model.summary()
