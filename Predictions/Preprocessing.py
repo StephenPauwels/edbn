@@ -19,6 +19,8 @@ CLICKS = "CLICKS"
 BPIC14 = "BPIC14"
 BPIC18 = "BPIC18"
 BPIC18S = "BPIC18S"
+BPIC18M = "BPIC18M"
+BPIC18L = "BPIC18L"
 HELPDESK_EXTRA = "HELPDESK_EXTRA"
 HELPDESK_2 = "HELPDESK_2"
 
@@ -182,6 +184,14 @@ def get_data(dataset, dataset_size, k, add_end, reduce_tasks, resource_pools, re
             logfile.keep_attributes(colTitles)
         elif dataset == BPIC18S:
             logfile = LogFile("../Data/bpic2018.csv", ",", 0, 100000, "startTime", "case", activity_attr="event", convert=False, k=k)
+            colTitles = ["case", "event", "subprocess"]
+            logfile.keep_attributes(colTitles)
+        elif dataset == BPIC18M:
+            logfile = LogFile("../Data/bpic2018.csv", ",", 0, 500000, "startTime", "case", activity_attr="event", convert=False, k=k)
+            colTitles = ["case", "event", "subprocess"]
+            logfile.keep_attributes(colTitles)
+        elif dataset == BPIC18L:
+            logfile = LogFile("../Data/bpic2018.csv", ",", 0, 1000000, "startTime", "case", activity_attr="event", convert=False, k=k)
             colTitles = ["case", "event", "subprocess"]
             logfile.keep_attributes(colTitles)
         else:
