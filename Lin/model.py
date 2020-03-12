@@ -67,7 +67,7 @@ def create_model_cudnn(vec, vocab_act_size, vocab_role_size, output_folder):
                                        save_weights_only=False,
                                        mode='auto')
 
-    early_stopping = EarlyStopping(monitor='val_loss', patience=10)
+    early_stopping = EarlyStopping(monitor='val_loss', patience=42)
 
     model.fit({'act_input':vec['prefixes']['x_ac_inp'],
                'role_input':vec['prefixes']['x_rl_inp']},

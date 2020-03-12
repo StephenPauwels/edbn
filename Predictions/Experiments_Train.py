@@ -56,7 +56,7 @@ def train_camargo(data_folder, model_folder, architecture):
     args['dense_act'] = None # optimization function see keras doc
     args['optim'] = 'Nadam' # optimization function see keras doc
 
-    em.training_model(logfile, model_folder)
+    #em.training_model(logfile, model_folder)
     mo.training_model(logfile, train_log, test_log, model_folder, args)
 
 

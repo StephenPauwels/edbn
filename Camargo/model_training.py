@@ -143,7 +143,7 @@ def vectorization(log_df, ac_index, rl_index, args):
     cases = log_df["case"].unique()
 
     with mp.Pool(mp.cpu_count()) as p:
-        train_df = p.map(partial(map_case, log_df=log_df, case_attr=case_attr), cases)
+        train_df = p.map(partial(map_case, log_df=log_df, case_attr="case"), cases)
 
     vec = {'prefixes':dict(), 'next_evt':dict()}
 
@@ -156,7 +156,7 @@ def vectorization(log_df, ac_index, rl_index, args):
     vec['next_evt']['y_rl_inp'] = np.concatenate(result[:,3])
 
     print("To_Categorical")
-    vec['next_evt']['y_ac_inp'] = ku.to_categorical(vec['next_evt']['y_ac_inp'], num_classes=num_classes)
+    vec['next_evt']['y_ac_inp'] = ku.to_categorical(vec['next_evt']['y_ac_inp'])
     vec['next_evt']['y_rl_inp'] = ku.to_categorical(vec['next_evt']['y_rl_inp'])
     print("DONE")
     return vec

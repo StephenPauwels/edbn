@@ -211,7 +211,8 @@ def get_data(dataset, dataset_size, k, add_end, reduce_tasks, resource_pools, re
 def calc_charact():
     import numpy as np
     print("Calculating characteristics")
-    datasets = [BPIC12, BPIC12W, BPIC15_1, BPIC15_2, BPIC15_3, BPIC15_4, BPIC15_5, HELPDESK]
+    #datasets = [BPIC12, BPIC12W, BPIC15_1, BPIC15_2, BPIC15_3, BPIC15_4, BPIC15_5, HELPDESK]
+    datasets = [BPIC18, BPIC18S, BPIC18M, BPIC18L]
     for dataset in datasets:
         logfile, name = get_data(dataset, 20000000, 0, False, False, False, True)
         cases = logfile.get_cases()
@@ -226,8 +227,9 @@ def calc_charact():
 
 
 if __name__ == "__main__":
-    logfile = LogFile("../Data/Camargo_BPIC2012.csv", ",", 0, 20000000000, "Complete Timestamp", "case",
-                      activity_attr="event", convert=False, k=2)
-    train, test = logfile.splitTrainTest(70)
-    print(logfile.data.nunique())
-    print(len(test.data))
+    calc_charact()
+    # logfile = LogFile("../Data/Camargo_BPIC2012.csv", ",", 0, 20000000000, "Complete Timestamp", "case",
+    #                   activity_attr="event", convert=False, k=2)
+    # train, test = logfile.splitTrainTest(70)
+    # print(logfile.data.nunique())
+    # print(len(test.data))
