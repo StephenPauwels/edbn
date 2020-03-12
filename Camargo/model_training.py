@@ -156,8 +156,8 @@ def vectorization(log_df, ac_index, rl_index, args):
     vec['next_evt']['y_rl_inp'] = np.concatenate(result[:,3])
 
     print("To_Categorical")
-    vec['next_evt']['y_ac_inp'] = ku.to_categorical(vec['next_evt']['y_ac_inp'])
-    vec['next_evt']['y_rl_inp'] = ku.to_categorical(vec['next_evt']['y_rl_inp'])
+    vec['next_evt']['y_ac_inp'] = ku.to_categorical(vec['next_evt']['y_ac_inp'], num_classes=len(ac_index))
+    vec['next_evt']['y_rl_inp'] = ku.to_categorical(vec['next_evt']['y_rl_inp'], num_classes=len(rl_index))
     print("DONE")
     return vec
 
