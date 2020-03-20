@@ -32,7 +32,7 @@ def get_probabilities(variable, val_tuple, parents):
                 if known_attributes_indexes is None:
                     known_attributes_indexes = parents[i].value_counts[val_tuple[i]]
                 else:
-                    known_attributes_indexes &= parents[i].value_counts[val_tuple[i]]
+                    known_attributes_indexes = set.intersection(known_attributes_indexes, parents[i].value_counts[val_tuple[i]])
 
         if unseen_value:
             for combination in itertools.product(*value_combinations):
@@ -42,7 +42,7 @@ def get_probabilities(variable, val_tuple, parents):
                 unseen_attributes = [parents[i].value_counts[combination[i]] for i in unseen_attribute_i]
                 unseen_indexes = set.intersection(*unseen_attributes)
 
-                if known_attributes_indexes is not None:
+                if known_attributes_indexes is not None and len(known_attributes_indexes) > 0:
                     parent_prob = cond_prob(unseen_indexes, known_attributes_indexes)
                 else:
                     parent_prob = len(unseen_indexes) / variable.total_rows
@@ -148,17 +148,15 @@ def get_probabilities_old(variable, val_tuple, parents):
                 return {0:0}, True
 
 
-def predict_next_event_row(row, model, test_log):
-    parents = model.variables[test_log.activity].conditional_parents
+def predict_next_event_row(row, model, activity):
+    parents = model.variables[activity].conditional_parents
 
     value = []
     for parent in parents:
         value.append(getattr(row[1], parent.attr_name))
     tuple_val = tuple(value)
 
-    # TODO: Check if first event
-
-    activity_var = model.variables[test_log.activity]
+    activity_var = model.variables[activity]
     probs, unknown = get_probabilities(activity_var, tuple_val, parents)
 
     # Select value with highest probability
@@ -167,7 +165,7 @@ def predict_next_event_row(row, model, test_log):
     else:
         predicted_val = max(probs, key=lambda l: probs[l])
 
-    if getattr(row[1], test_log.activity) == predicted_val:
+    if getattr(row[1], activity) == predicted_val:
         return 1
     else:
         return 0
@@ -178,7 +176,7 @@ def predict_next_event(edbn_model, log):
     result = []
 
     with mp.Pool(mp.cpu_count()) as p:
-        result = p.map(functools.partial(predict_next_event_row, model=edbn_model, test_log=log), log.contextdata.iterrows())
+        result = p.map(functools.partial(predict_next_event_row, model=edbn_model, activity=log.activity), log.contextdata.iterrows())
 
     # with open("results_next_event.csv", "w") as fout:
     #     for r in result:
