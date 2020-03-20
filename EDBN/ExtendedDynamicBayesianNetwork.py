@@ -229,6 +229,7 @@ class Discrete_Variable(Variable):
         self.new_relations = 0
         #self.num_attrs = num_attrs
         self.empty_val = empty_val
+        self.total_rows = 0
 
         self.values = set()
         self.value_counts = {}
@@ -274,7 +275,7 @@ class Discrete_Variable(Variable):
         self.value_counts = {val: set(log.index[log[self.attr_name] == val].tolist()) for val in log[self.attr_name].unique()}
         # TODO: rework so self.values becomes obsolete
         self.values = {val: len(self.value_counts[val]) / log.shape[0] for val in self.value_counts}
-
+        self.total_rows = log.shape[0]
 
 
     def train_fdt(self, log):
