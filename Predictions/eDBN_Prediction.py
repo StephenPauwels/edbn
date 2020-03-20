@@ -1,4 +1,5 @@
 import functools
+import itertools
 import multiprocessing as mp
 import random
 import re
@@ -8,11 +9,69 @@ import numpy as np
 import EDBN.Execute as edbn
 import Preprocessing as data
 
+def cond_prob(a,b):
+    return len(set.intersection(a,b)) / len(b)
 
 def get_probabilities(variable, val_tuple, parents):
     if val_tuple in variable.cpt:
         return variable.cpt[val_tuple], False
     else:
+        predictions = {}
+        values_count = []
+        unseen_value = False
+        value_combinations = []
+        known_attributes_indexes = None
+        unseen_attribute_i = []
+        for i in range(len(val_tuple)):
+            if val_tuple[i] not in parents[i].value_counts:
+                unseen_value = True
+                value_combinations.append(parents[i].value_counts.keys())
+                unseen_attribute_i.append(i)
+            else:
+                value_combinations.append([val_tuple[i]])
+                if known_attributes_indexes is None:
+                    known_attributes_indexes = parents[i].value_counts[val_tuple[i]]
+                else:
+                    known_attributes_indexes = set.intersection(known_attributes_indexes, parents[i].value_counts[val_tuple[i]])
+
+        if unseen_value:
+            all_combos = set(itertools.product(*value_combinations)).intersection(variable.cpt)
+            for combination in all_combos:
+            #for combination in itertools.product(*value_combinations):
+            #    if combination not in variable.cpt:
+            #        continue
+
+                unseen_indexes = None
+                for i in unseen_attribute_i:
+                    if unseen_indexes is None:
+                        unseen_indexes = parents[i].value_counts[combination[i]]
+                    else:
+                        unseen_indexes = set.intersection(unseen_indexes, parents[i].value_counts[combination[i]])
+
+                parent_prob = cond_prob(unseen_indexes, known_attributes_indexes)
+                parent_indexes = set.intersection(unseen_indexes, known_attributes_indexes)
+
+                for value in variable.cpt[combination]:
+                    prob = cond_prob(variable.value_counts[value], parent_indexes) * parent_prob
+                    if value not in predictions:
+                        predictions[value] = 0
+                    predictions[value] += prob
+
+            if len(predictions) > 0:
+                return predictions, True
+            else:
+                return {0: 0}, True
+        else:
+            pass
+
+        return {0: 0}, True
+
+
+def get_probabilities_old(variable, val_tuple, parents):
+    if val_tuple in variable.cpt:
+        return variable.cpt[val_tuple], False
+    else:
+        #return {0:0}, True
         # Check if single values occur in dataset
         value_probs = []
         for i in range(len(val_tuple)):
@@ -48,6 +107,7 @@ def get_probabilities(variable, val_tuple, parents):
             else:
                 return {0: 0}, True
         else:
+            return {0:0}, True
             list_val_orig = list(val_tuple)
             prediction_options = {}
             for idx in range(0, len(parents)):
@@ -74,6 +134,8 @@ def predict_next_event_row(row, model, test_log):
     for parent in parents:
         value.append(getattr(row[1], parent.attr_name))
     tuple_val = tuple(value)
+
+    # TODO: Check if first event
 
     activity_var = model.variables[test_log.activity]
     probs, unknown = get_probabilities(activity_var, tuple_val, parents)

@@ -9,7 +9,7 @@ from Experiments_Variables import K_EDBN
 from Utils.LogFile import LogFile
 
 
-def test_edbn(dataset_folder, model_folder, k):
+def test_edbn(dataset_folder, model_folder, k=None):
     from eDBN_Prediction import predict_suffix
 
     print("Test EDBN")
@@ -21,6 +21,11 @@ def test_edbn(dataset_folder, model_folder, k):
     with open(model_file, "rb") as pickle_file:
         model = pickle.load(pickle_file)
     model.print_parents()
+
+    if k is None:
+        with open(os.path.join(model_folder, "k")) as finn:
+            k = int(finn.readline())
+            print("K=", k)
 
     train_log = LogFile(dataset_folder + "train_log.csv", ",", 0, None, None, "case",
                         activity_attr="event", convert=False, k=k)
@@ -114,6 +119,8 @@ def main(argv):
     elif method == EDBN:
         if len(argv) >= 3:
             edbn_k = int(argv[2])
+        else:
+            edbn_k = None
         model_folder = os.path.join(model_folder, str(edbn_k))
 
     ###

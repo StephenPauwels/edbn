@@ -231,6 +231,7 @@ class Discrete_Variable(Variable):
         self.empty_val = empty_val
 
         self.values = set()
+        self.value_counts = {}
 
         self.conditional_parents = []
         self.cpt = dict()
@@ -270,9 +271,10 @@ class Discrete_Variable(Variable):
 
     def train_variable(self, log):
         print("Train Variable", self.attr_name)
-        self.values = {}
-        for val, count in log[self.attr_name].value_counts().iteritems():
-            self.values[val] = count / log.shape[0]
+        self.value_counts = {val: set(log.index[log[self.attr_name] == val].tolist()) for val in log[self.attr_name].unique()}
+        # TODO: rework so self.values becomes obsolete
+        self.values = {val: len(self.value_counts[val]) / log.shape[0] for val in self.value_counts}
+
 
 
     def train_fdt(self, log):

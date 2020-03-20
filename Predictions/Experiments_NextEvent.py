@@ -22,6 +22,11 @@ def test_edbn(dataset_folder, model_folder, k):
         model = pickle.load(pickle_file)
     model.print_parents()
 
+    if k is None:
+        with open(os.path.join(model_folder, "k")) as finn:
+            k = int(finn.readline())
+            print("K=", k)
+
     train_log = LogFile(dataset_folder + "train_log.csv", ",", 0, None, None, "case",
                         activity_attr="event", convert=True, k=k)
 
@@ -108,6 +113,8 @@ def main(argv):
     elif method == EDBN:
         if len(argv) >= 3:
             edbn_k = int(argv[2])
+        else:
+            edbn_k = None
         model_folder = os.path.join(model_folder, str(edbn_k))
 
     ###

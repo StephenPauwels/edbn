@@ -301,20 +301,21 @@ class LogFile:
 
 
     def splitTrainTest(self, train_percentage):
+        import random
 
         grouped = self.data.groupby([self.trace])
         train_cases = []
         test_cases = []
         test_length = len(grouped) * 0.3
         for group in grouped:
-            if len(test_cases) < test_length:
-                test_cases.append(group[1])
-            else:
-                train_cases.append(group[1])
-            # if random.randint(0,100) < train_percentage:
-            #     train_cases.append(group[1])
+            # if len(test_cases) < test_length:
+            #    test_cases.append(group[1])
             # else:
-            #     test_cases.append(group[1])
+            #    train_cases.append(group[1])
+            if random.randint(0,100) < train_percentage:
+                train_cases.append(group[1])
+            else:
+                test_cases.append(group[1])
 
         train = pd.concat(train_cases)
         test = pd.concat(test_cases)

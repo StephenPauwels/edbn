@@ -11,13 +11,46 @@ from Preprocessing import get_data
 from Utils.LogFile import LogFile
 
 
-def train_edbn(data_folder, model_folder, k):
+def train_edbn(data_folder, model_folder, k = None):
     from EDBN.Execute import train
-    from eDBN_Prediction import learn_duplicated_events
-
+    from eDBN_Prediction import learn_duplicated_events, predict_next_event, predict_suffix
     print("Run EDBN")
+
+    if k is None:
+        best_model = {}
+        for k in range(1,6):
+            train_log = LogFile(data_folder + "train_log.csv", ",", 0, None, None, "case",
+                                activity_attr="event", convert=False, k=k)
+
+            train_train_log, train_test_log = train_log.splitTrainTest(80)
+
+            train_train_log.add_end_events()
+            train_train_log.convert2int()
+            train_train_log.create_k_context()
+
+            train_test_log.values = train_train_log.values
+            train_test_log.add_end_events()
+            train_test_log.convert2int()
+            train_test_log.create_k_context()
+
+            model = train(train_train_log)
+
+            # Train average number of duplicated events
+            model.duplicate_events = learn_duplicated_events(train_train_log)
+
+            #acc = predict_next_event(model, train_test_log)
+            acc = predict_suffix(model, train_test_log)
+            print("Testing k=", k, " | Validation acc:", acc)
+            if "Acc" not in best_model or best_model["Acc"] < acc:
+                best_model["Acc"] = acc
+                best_model["Model"] = model
+                best_model["k"] = k
+        print("Best k value:", best_model["k"], " | Validation acc of", best_model["Acc"])
+        k = best_model["k"]
+
     train_log = LogFile(data_folder + "train_log.csv", ",", 0, None, None, "case",
                         activity_attr="event", convert=False, k=k)
+
     train_log.add_end_events()
     train_log.convert2int()
     train_log.create_k_context()
@@ -29,6 +62,9 @@ def train_edbn(data_folder, model_folder, k):
 
     with open(os.path.join(model_folder, "model"), "wb") as pickle_file:
         pickle.dump(model, pickle_file)
+
+    with open(os.path.join(model_folder, "k"), "w") as outfile:
+        outfile.write(str(k))
 
 
 def train_camargo(data_folder, model_folder, architecture):
@@ -151,6 +187,8 @@ def main(argv):
     elif method == EDBN:
         if len(argv) >= 3:
             edbn_k = int(argv[2])
+        else:
+            edbn_k = None
         model_folder = os.path.join(model_folder, str(edbn_k))
         if not os.path.exists(model_folder):
             os.mkdir(model_folder)
