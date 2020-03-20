@@ -35,10 +35,7 @@ def get_probabilities(variable, val_tuple, parents):
                     known_attributes_indexes = set.intersection(known_attributes_indexes, parents[i].value_counts[val_tuple[i]])
 
         if unseen_value:
-            for combination in itertools.product(*value_combinations):
-                if combination not in variable.cpt:
-                    continue
-
+            for combination in [c for c in itertools.product(*value_combinations) if c in variable.cpt]:
                 unseen_attributes = [parents[i].value_counts[combination[i]] for i in unseen_attribute_i]
                 unseen_indexes = set.intersection(*unseen_attributes)
 
@@ -49,11 +46,11 @@ def get_probabilities(variable, val_tuple, parents):
                 else:
                     parent_prob = cond_prob(unseen_indexes, known_attributes_indexes)
 
-
-                for value in variable.cpt[combination]:
-                    if value not in predictions:
-                        predictions[value] = 0
-                    predictions[value] += variable.cpt[combination][value] * parent_prob
+                if parent_prob > 0:
+                    for value in variable.cpt[combination]:
+                        if value not in predictions:
+                            predictions[value] = 0
+                        predictions[value] += variable.cpt[combination][value] * parent_prob
 
             if len(predictions) > 0:
                 return predictions, True
@@ -65,10 +62,7 @@ def get_probabilities(variable, val_tuple, parents):
                 values = [[v] for v in val_tuple]
                 attr = parents[i]
                 values[i] = attr.value_counts.keys()
-                for combination in itertools.product(*values):
-                    if combination not in variable.cpt:
-                        continue
-
+                for combination in [c for c in itertools.product(*values) if c in variable.cpt]:
                     fixed_attrs = [parents[j].value_counts[combination[j]] for j in range(len(combination)) if j != i]
                     fixed_indexes = set.intersection(*fixed_attrs)
 
@@ -180,6 +174,7 @@ def predict_next_event(edbn_model, log):
 
     with mp.Pool(mp.cpu_count()) as p:
         result = p.map(functools.partial(predict_next_event_row, model=edbn_model, activity=log.activity), log.contextdata.iterrows())
+
 
     # with open("results_next_event.csv", "w") as fout:
     #     for r in result:
