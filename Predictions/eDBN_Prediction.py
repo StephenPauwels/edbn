@@ -3,6 +3,7 @@ import itertools
 import multiprocessing as mp
 import random
 import re
+from copy import deepcopy
 
 import numpy as np
 
@@ -17,7 +18,6 @@ def get_probabilities(variable, val_tuple, parents):
         return variable.cpt[val_tuple], False
     else:
         predictions = {}
-        values_count = []
         unseen_value = False
         value_combinations = []
         known_attributes_indexes = None
@@ -35,34 +35,56 @@ def get_probabilities(variable, val_tuple, parents):
                     known_attributes_indexes = set.intersection(known_attributes_indexes, parents[i].value_counts[val_tuple[i]])
 
         if unseen_value:
-            all_combos = set(itertools.product(*value_combinations)).intersection(variable.cpt)
-            for combination in all_combos:
-            #for combination in itertools.product(*value_combinations):
-            #    if combination not in variable.cpt:
-            #        continue
+            for combination in itertools.product(*value_combinations):
+                if combination not in variable.cpt:
+                    continue
 
-                unseen_indexes = None
-                for i in unseen_attribute_i:
-                    if unseen_indexes is None:
-                        unseen_indexes = parents[i].value_counts[combination[i]]
-                    else:
-                        unseen_indexes = set.intersection(unseen_indexes, parents[i].value_counts[combination[i]])
+                unseen_attributes = [parents[i].value_counts[combination[i]] for i in unseen_attribute_i]
+                unseen_indexes = set.intersection(*unseen_attributes)
 
                 parent_prob = cond_prob(unseen_indexes, known_attributes_indexes)
                 parent_indexes = set.intersection(unseen_indexes, known_attributes_indexes)
 
                 for value in variable.cpt[combination]:
-                    prob = cond_prob(variable.value_counts[value], parent_indexes) * parent_prob
                     if value not in predictions:
                         predictions[value] = 0
-                    predictions[value] += prob
+                    predictions[value] += variable.cpt[combination][value] * parent_prob
 
             if len(predictions) > 0:
                 return predictions, True
             else:
                 return {0: 0}, True
         else:
-            pass
+            #Unseen value combination
+            for i in range(len(val_tuple)):
+                values = [[v] for v in val_tuple]
+                attr = parents[i]
+                values[i] = attr.value_counts.keys()
+                for combination in itertools.product(*values):
+                    if combination not in variable.cpt:
+                        continue
+
+                    fixed_attrs = [parents[j].value_counts[combination[j]] for j in range(len(combination)) if j != i]
+                    fixed_indexes = set.intersection(*fixed_attrs)
+
+                    variable_indexes = attr.value_counts[combination[i]]
+
+                    parent_prob = cond_prob(variable_indexes, fixed_indexes)
+
+                    parents_indexes = set.intersection(fixed_indexes, variable_indexes)
+
+                    for value in variable.cpt[combination]:
+                        if value not in predictions:
+                            predictions[value] = 0
+                        predictions[value] += variable.cpt[combination][value] * parent_prob
+
+            for pred_val in predictions:
+                predictions[pred_val] = predictions[pred_val] / len(parents)
+
+            if len(predictions) > 0:
+                return predictions, True
+            else:
+                return {0: 0}, True
 
         return {0: 0}, True
 
@@ -107,7 +129,6 @@ def get_probabilities_old(variable, val_tuple, parents):
             else:
                 return {0: 0}, True
         else:
-            return {0:0}, True
             list_val_orig = list(val_tuple)
             prediction_options = {}
             for idx in range(0, len(parents)):
