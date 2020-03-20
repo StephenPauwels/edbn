@@ -42,10 +42,13 @@ def get_probabilities(variable, val_tuple, parents):
                 unseen_attributes = [parents[i].value_counts[combination[i]] for i in unseen_attribute_i]
                 unseen_indexes = set.intersection(*unseen_attributes)
 
-                if known_attributes_indexes is not None and len(known_attributes_indexes) > 0:
-                    parent_prob = cond_prob(unseen_indexes, known_attributes_indexes)
-                else:
+                if known_attributes_indexes is None:
                     parent_prob = len(unseen_indexes) / variable.total_rows
+                elif  len(known_attributes_indexes) == 0:
+                    parent_prob = 0
+                else:
+                    parent_prob = cond_prob(unseen_indexes, known_attributes_indexes)
+
 
                 for value in variable.cpt[combination]:
                     if value not in predictions:
