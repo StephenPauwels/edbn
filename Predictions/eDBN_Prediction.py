@@ -35,54 +35,68 @@ def get_probabilities(variable, val_tuple, parents):
                     known_attributes_indexes = set.intersection(known_attributes_indexes, parents[i].value_counts[val_tuple[i]])
 
         if unseen_value:
-            for combination in [c for c in itertools.product(*value_combinations) if c in variable.cpt]:
-                unseen_attributes = [parents[i].value_counts[combination[i]] for i in unseen_attribute_i]
-                unseen_indexes = set.intersection(*unseen_attributes)
-
-                if known_attributes_indexes is None:
-                    parent_prob = len(unseen_indexes) / variable.total_rows
-                elif  len(known_attributes_indexes) == 0:
-                    parent_prob = 0
-                else:
-                    parent_prob = cond_prob(unseen_indexes, known_attributes_indexes)
-
-                if parent_prob > 0:
-                    for value in variable.cpt[combination]:
-                        if value not in predictions:
-                            predictions[value] = 0
-                        predictions[value] += variable.cpt[combination][value] * parent_prob
-
-            if len(predictions) > 0:
-                return predictions, True
-            else:
-                return {0: 0}, True
+            return prob_unseen_value(known_attributes_indexes, parents, predictions, unseen_attribute_i,
+                                     value_combinations, variable)
         else:
-            #Unseen value combination
-            for i in range(len(val_tuple)):
-                values = [[v] for v in val_tuple]
-                attr = parents[i]
-                values[i] = attr.value_counts.keys()
-                for combination in [c for c in itertools.product(*values) if c in variable.cpt]:
-                    fixed_attrs = [parents[j].value_counts[combination[j]] for j in range(len(combination)) if j != i]
-                    fixed_indexes = set.intersection(*fixed_attrs)
+            return prob_unseen_combination(parents, predictions, val_tuple, variable)
 
-                    variable_indexes = attr.value_counts[combination[i]]
+        return {0: 0}, True
 
-                    parent_prob = cond_prob(variable_indexes, fixed_indexes)
 
-                    for value in variable.cpt[combination]:
-                        if value not in predictions:
-                            predictions[value] = 0
-                        predictions[value] += variable.cpt[combination][value] * parent_prob
+def prob_unseen_combination(parents, predictions, val_tuple, variable):
+    # Unseen value combination
+    for i in range(len(val_tuple)):
+        values = [[v] for v in val_tuple]
+        attr = parents[i]
+        values[i] = attr.value_counts.keys()
 
-            for pred_val in predictions:
-                predictions[pred_val] = predictions[pred_val] / len(parents)
+        for combination in [c for c in itertools.product(*values) if c in variable.cpt]:
+            fixed_attrs = [parents[j].value_counts[combination[j]] for j in range(len(combination)) if j != i]
+            fixed_indexes = set.intersection(*fixed_attrs)
 
-            if len(predictions) > 0:
-                return predictions, True
-            else:
-                return {0: 0}, True
+            variable_indexes = attr.value_counts[combination[i]]
 
+            parent_prob = cond_prob(variable_indexes, fixed_indexes)
+
+            for value in variable.cpt[combination]:
+                if value not in predictions:
+                    predictions[value] = 0
+                predictions[value] += variable.cpt[combination][value] * parent_prob
+    for pred_val in predictions:
+        predictions[pred_val] = predictions[pred_val] / len(parents)
+    if len(predictions) > 0:
+        return predictions, True
+    else:
+        return {0: 0}, True
+
+
+def prob_unseen_value(known_attributes_indexes, parents, predictions, unseen_attribute_i, value_combinations, variable):
+    for combination in variable.cpt:
+        valid_combination = True
+        for i in range(len(combination)):
+            if combination[i] not in value_combinations[i]:
+                valid_combination = False
+        if not valid_combination:
+            continue
+
+        unseen_attributes = [parents[i].value_counts[combination[i]] for i in unseen_attribute_i]
+        unseen_indexes = set.intersection(*unseen_attributes)
+
+        if known_attributes_indexes is None:
+            parent_prob = len(unseen_indexes) / variable.total_rows
+        elif len(known_attributes_indexes) == 0:
+            parent_prob = 0
+        else:
+            parent_prob = cond_prob(unseen_indexes, known_attributes_indexes)
+
+        if parent_prob > 0:
+            for value in variable.cpt[combination]:
+                if value not in predictions:
+                    predictions[value] = 0
+                predictions[value] += variable.cpt[combination][value] * parent_prob
+    if len(predictions) > 0:
+        return predictions, True
+    else:
         return {0: 0}, True
 
 
@@ -175,6 +189,8 @@ def predict_next_event(edbn_model, log):
     with mp.Pool(mp.cpu_count()) as p:
         result = p.map(functools.partial(predict_next_event_row, model=edbn_model, activity=log.activity), log.contextdata.iterrows())
 
+    # result = map(functools.partial(predict_next_event_row, model=edbn_model, activity=log.activity),
+    #                log.contextdata.iterrows())
 
     # with open("results_next_event.csv", "w") as fout:
     #     for r in result:
