@@ -50,10 +50,20 @@ def prob_unseen_combination(parents, predictions, val_tuple, variable):
         attr = parents[i]
         values[i] = attr.value_counts.keys()
 
-        for combination in [c for c in itertools.product(*values) if c in variable.cpt]:
-            fixed_attrs = [parents[j].value_counts[combination[j]] for j in range(len(combination)) if j != i]
-            fixed_indexes = set.intersection(*fixed_attrs)
+        fixed_attrs = [parents[j].value_counts[val_tuple[j]] for j in range(len(val_tuple)) if j != i]
+        fixed_indexes = set.intersection(*fixed_attrs)
+        if len(fixed_indexes) == 0:
+            continue
 
+        product = list(itertools.product(*values))
+        if len(product) < len(variable.cpt):
+            iterate_list = product
+            check_list = variable.cpt
+        else:
+            iterate_list = variable.cpt
+            check_list = product
+
+        for combination in [c for c in iterate_list if c in check_list]:
             variable_indexes = attr.value_counts[combination[i]]
 
             parent_prob = cond_prob(variable_indexes, fixed_indexes)
@@ -76,6 +86,7 @@ def prob_unseen_value(known_attributes_indexes, parents, predictions, unseen_att
         for i in range(len(combination)):
             if combination[i] not in value_combinations[i]:
                 valid_combination = False
+                break
         if not valid_combination:
             continue
 
@@ -86,6 +97,7 @@ def prob_unseen_value(known_attributes_indexes, parents, predictions, unseen_att
             parent_prob = len(unseen_indexes) / variable.total_rows
         elif len(known_attributes_indexes) == 0:
             parent_prob = 0
+            continue
         else:
             parent_prob = cond_prob(unseen_indexes, known_attributes_indexes)
 
@@ -98,65 +110,6 @@ def prob_unseen_value(known_attributes_indexes, parents, predictions, unseen_att
         return predictions, True
     else:
         return {0: 0}, True
-
-
-def get_probabilities_old(variable, val_tuple, parents):
-    if val_tuple in variable.cpt:
-        return variable.cpt[val_tuple], False
-    else:
-        #return {0:0}, True
-        # Check if single values occur in dataset
-        value_probs = []
-        for i in range(len(val_tuple)):
-            if val_tuple[i] not in parents[i].values:
-                value_probs.append(None)
-            else:
-                value_probs.append(parents[i].values[val_tuple[i]])
-
-        if None in value_probs:
-            possible_values = []
-            # Iterate over all known parent configurations
-            for par_config in variable.cpt:
-                match_config = True
-                config_prob = 1
-                for i in range(len(par_config)):
-                    if value_probs[i] is None:
-                        config_prob *= parents[i].values[par_config[i]]
-                    elif value_probs[i] != par_config[i]:
-                        match_config = False
-                        break
-                if match_config:
-                    possible_values.append((par_config, config_prob))
-
-            prediction_options = {}
-            for parent_value, parent_prob in possible_values:
-                for pred_val, prob in variable.cpt[parent_value].items():
-                    if pred_val not in prediction_options:
-                        prediction_options[pred_val] = 0
-                    prediction_options[pred_val] += parent_prob * prob
-
-            if len(prediction_options) > 0:
-                return prediction_options, True
-            else:
-                return {0: 0}, True
-        else:
-            list_val_orig = list(val_tuple)
-            prediction_options = {}
-            for idx in range(0, len(parents)):
-                list_val = list_val_orig[:]
-                curr_variable = parents[idx]
-                for val in curr_variable.values:
-                    list_val[idx] = val
-                    new_tuple_val = tuple(list_val)
-                    if new_tuple_val in variable.cpt:
-                        for pred_val, prob in variable.cpt[new_tuple_val].items():
-                            if pred_val not in prediction_options:
-                                prediction_options[pred_val] = 0
-                            prediction_options[pred_val] += variable.cpt_probs[new_tuple_val] * prob
-            if len(prediction_options) > 0:
-                return prediction_options, True
-            else:
-                return {0:0}, True
 
 
 def predict_next_event_row(row, model, activity):
@@ -219,6 +172,8 @@ def predict_suffix(model, test_log):
                                           activity_attr=test_log.activity, k=test_log.k)
     with mp.Pool(mp.cpu_count()) as p:
         results = p.map(predict_case_func, test_log.get_cases())
+
+    # results = map(predict_case_func, test_log.get_cases())
 
     #results = []
     #for case in test_log.get_cases():
