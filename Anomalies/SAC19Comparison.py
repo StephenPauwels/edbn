@@ -1,8 +1,10 @@
 """
     File used for the Comparison Experiments in the SAC'19 paper
+
+    Author: Stephen Pauwels
 """
 
-import Bohmer.Execute as bmr
+import Execute as bmr
 import EDBN.Execute as edbn
 import Utils.BPIPreProcess as preprocess
 import Utils.PlotResults as plt

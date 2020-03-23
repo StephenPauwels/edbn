@@ -1,5 +1,7 @@
 """
     File containing evaluation of the model on synthetic data
+
+    Author: Stephen Pauwels
 """
 
 import numpy as np

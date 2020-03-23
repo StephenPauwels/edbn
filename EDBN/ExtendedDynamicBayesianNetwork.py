@@ -1,3 +1,7 @@
+"""
+    Author: Stephen Pauwels
+"""
+
 import multiprocessing as mp
 import re
 

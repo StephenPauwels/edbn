@@ -1,3 +1,17 @@
+"""
+    Basic file to run the next event prediction experiments
+    Use: python Experiments_Train METHOD DATA [args]
+
+    Valid values for METHOD and DATA can be found in Experiments_Variables.py
+
+    Extra arguments:
+        - EDBN: * first extra argument: k-value
+                * second extra argument: use "next" when training optimized for next event, use "suffix" for suffix
+        - CAMARGO: specify architecture to use: chared_cat or specialized
+
+    Author: Stephen Pauwels
+"""
+
 import os
 import pickle
 import sys
@@ -11,10 +25,6 @@ from Utils.LogFile import LogFile
 
 def test_edbn(dataset_folder, model_folder, k):
     from eDBN_Prediction import predict_next_event
-
-    print("Test EDBN")
-    print(dataset_folder)
-    print(model_folder)
 
     model_file = os.path.join(model_folder, "model")
 
@@ -40,18 +50,15 @@ def test_edbn(dataset_folder, model_folder, k):
 
 
 def test_camargo(dataset_folder, model_folder, architecture):
-    from Camargo.predict_next import predict_next
+    from predict_next import predict_next
 
-    print("Test Camargo")
     model_file = sorted([model_file for model_file in os.listdir(model_folder) if model_file.endswith(".h5")])[-1]
-
     predict_next(dataset_folder, model_folder, model_file, False)
 
 
 def test_lin(dataset_folder, model_folder):
-    from Lin.model import predict_next
+    from RelatedMethods.Lin.model import predict_next
 
-    print("Test Lin")
     logfile = LogFile(dataset_folder + "full_log.csv", ",", 0, None, None, "case",
                         activity_attr="event", convert=True, k=0)
     test_log = LogFile(dataset_folder + "test_log.csv", ",", 0, None, None, "case",
@@ -64,9 +71,8 @@ def test_lin(dataset_folder, model_folder):
 
 
 def test_dimauro(dataset_folder, model_folder):
-    from DiMauro.deeppm_act import evaluate
+    from RelatedMethods.DiMauro.deeppm_act import evaluate
 
-    print("Test DiMauro", dataset_folder)
     model_file = sorted([model_file for model_file in os.listdir(model_folder) if model_file.endswith(".h5")])[-1]
 
     train_log = os.path.join(dataset_folder, "train_log.csv")
@@ -77,10 +83,9 @@ def test_dimauro(dataset_folder, model_folder):
         fout.write("Accuracy: (%s) %s\n" % (time.strftime("%d-%m-%y %H:%M:%S", time.localtime()), acc))
 
 def test_tax(dataset_folder, model_folder):
-    from Tax.code.evaluate_next_activity_and_time import evaluate
-    from Tax.code.calculate_accuracy_on_next_event import calc_accuracy
+    from RelatedMethods.Tax.code.evaluate_next_activity_and_time import evaluate
+    from RelatedMethods.Tax.code.calculate_accuracy_on_next_event import calc_accuracy
 
-    print("Test Tax")
     train_log = os.path.join(dataset_folder, "train_log.csv")
     test_log = os.path.join(dataset_folder, "test_log.csv")
     model_file = sorted([model_file for model_file in os.listdir(model_folder) if model_file.endswith(".h5")])[-1]
@@ -128,6 +133,7 @@ def main(argv):
     ###
     # Execute chosen method
     ###
+    print("EXPERIMENT NEXT ACTIVITY PREDICTION:", argv)
     if method == EDBN:
         test_edbn(dataset_folder, model_folder, edbn_k)
     elif method == CAMARGO:

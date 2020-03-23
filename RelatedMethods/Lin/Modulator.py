@@ -1,5 +1,7 @@
 """
-Implementation of MM-Pred: A Deep Predictive Model for Multi-attribute Event Sequence [Lin, Wen and Wang]
+    Implementation of MM-Pred: A Deep Predictive Model for Multi-attribute Event Sequence [Lin, Wen and Wang]
+
+    Author: Stephen Pauwels
 """
 
 import tensorflow as tf

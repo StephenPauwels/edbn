@@ -1,3 +1,6 @@
+"""
+    Author: Stephen Pauwels
+"""
 import pandas as pd
 
 import EDBN.Execute as edbn

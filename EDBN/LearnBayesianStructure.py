@@ -1,3 +1,7 @@
+"""
+    Author: Stephen Pauwels
+"""
+
 import math
 import multiprocessing as mp
 from multiprocessing import Manager, Process, Queue

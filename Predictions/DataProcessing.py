@@ -1,9 +1,13 @@
+"""
+    Author: Stephen Pauwels
+"""
+
 import os
 import pickle
 
 import pandas as pd
 
-from Camargo.support_modules.role_discovery import role_discovery
+from support_modules.role_discovery import role_discovery
 from Utils.LogFile import LogFile
 
 BPIC15 = "BPIC15"
@@ -15,14 +19,7 @@ BPIC15_5 = "BPIC15_5"
 BPIC12 = "BPIC12"
 BPIC12W = "BPIC12W"
 HELPDESK = "HELPDESK"
-CLICKS = "CLICKS"
-BPIC14 = "BPIC14"
 BPIC18 = "BPIC18"
-BPIC18S = "BPIC18S"
-BPIC18M = "BPIC18M"
-BPIC18L = "BPIC18L"
-HELPDESK_EXTRA = "HELPDESK_EXTRA"
-HELPDESK_2 = "HELPDESK_2"
 
 LOGFILE_PATH = "../Data/Logfiles"
 
@@ -158,40 +155,8 @@ def get_data(dataset, dataset_size, k, add_end, reduce_tasks, resource_pools, re
             colTitles = ["case", "event", "Resource"]
             logfile.keep_attributes(colTitles)
             logfile.filter_case_length(3)
-        elif dataset == HELPDESK_EXTRA:
-            logfile = LogFile("../Data/Camargo_Helpdesk.csv", ",", 0, dataset_size, "completeTime", "case", activity_attr="event", convert=False, k=k)
-            resource_attr = "Resource"
-            colTitles = ["case", "event", "Resource", "variant"]
-            logfile.keep_attributes(colTitles)
-            logfile.filter_case_length(3)
-        elif dataset == HELPDESK_2:
-            logfile = LogFile("../Data/helpdesk2.csv", ",", 0, dataset_size, "Complete Timestamp", "case", activity_attr="event", convert=False, k=k)
-            resource_attr = "Resource"
-            colTitles = ["case", "event", "Resource", "Variant", "seriousness", "customer", "product", "responsible_section", "seriousness_2", "service_level", "service_type", "support_section", "workgroup"]
-            logfile.keep_attributes(colTitles)
-            logfile.filter_case_length(3)
-        elif dataset == CLICKS:
-            logfile = LogFile("../Data/BPI2016_Clicks_Logged_In.csv", ";", 0, dataset_size, "TIMESTAMP", "SessionID", activity_attr="URL_FILE", convert=False, k=k)
-            #logfile.keep_attributes(["SessionID", "URL_FILE", "REF_URL_category"])
-            logfile.keep_attributes(["SessionID", "URL_FILE"])
-            logfile.filter_case_length(5)
-        elif dataset == BPIC14:
-            logfile = LogFile("../Data/BPIC2014.csv", ";", 0, dataset_size, "Actual Start", "Change ID", activity_attr="Change Type", convert=False, k=k)
-            logfile.keep_attributes(["Change ID", "Change Type"])
         elif dataset == BPIC18:
             logfile = LogFile("../Data/bpic2018.csv", ",", 0, dataset_size, "startTime", "case", activity_attr="event", convert=False, k=k)
-            colTitles = ["case", "event", "subprocess"]
-            logfile.keep_attributes(colTitles)
-        elif dataset == BPIC18S:
-            logfile = LogFile("../Data/bpic2018.csv", ",", 0, 100000, "startTime", "case", activity_attr="event", convert=False, k=k)
-            colTitles = ["case", "event", "subprocess"]
-            logfile.keep_attributes(colTitles)
-        elif dataset == BPIC18M:
-            logfile = LogFile("../Data/bpic2018.csv", ",", 0, 500000, "startTime", "case", activity_attr="event", convert=False, k=k)
-            colTitles = ["case", "event", "subprocess"]
-            logfile.keep_attributes(colTitles)
-        elif dataset == BPIC18L:
-            logfile = LogFile("../Data/bpic2018.csv", ",", 0, 1000000, "startTime", "case", activity_attr="event", convert=False, k=k)
             colTitles = ["case", "event", "subprocess"]
             logfile.keep_attributes(colTitles)
         else:
@@ -199,9 +164,6 @@ def get_data(dataset, dataset_size, k, add_end, reduce_tasks, resource_pools, re
             return None
 
         preprocessed_log = preprocess(logfile, add_end, reduce_tasks, resource_pools, resource_attr, remove_resource)
-
-#        colTitles[2] = "role"
-#        logfile.data = logfile.data.reindex(columns=colTitles)
 
         preprocessed_log.create_k_context()
         with open(cache_file, "wb") as pickle_file:
@@ -211,8 +173,7 @@ def get_data(dataset, dataset_size, k, add_end, reduce_tasks, resource_pools, re
 def calc_charact():
     import numpy as np
     print("Calculating characteristics")
-    #datasets = [BPIC12, BPIC12W, BPIC15_1, BPIC15_2, BPIC15_3, BPIC15_4, BPIC15_5, HELPDESK]
-    datasets = [BPIC18, BPIC18S, BPIC18M, BPIC18L]
+    datasets = [BPIC12, BPIC12W, BPIC15_1, BPIC15_2, BPIC15_3, BPIC15_4, BPIC15_5, HELPDESK]
     for dataset in datasets:
         logfile, name = get_data(dataset, 20000000, 0, False, False, False, True)
         cases = logfile.get_cases()
@@ -228,8 +189,4 @@ def calc_charact():
 
 if __name__ == "__main__":
     calc_charact()
-    # logfile = LogFile("../Data/Camargo_BPIC2012.csv", ",", 0, 20000000000, "Complete Timestamp", "case",
-    #                   activity_attr="event", convert=False, k=2)
-    # train, test = logfile.splitTrainTest(70)
-    # print(logfile.data.nunique())
-    # print(len(test.data))
+

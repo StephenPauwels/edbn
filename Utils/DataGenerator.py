@@ -1,3 +1,7 @@
+"""
+    Author: Stephen Pauwels
+"""
+
 import copy
 import random
 

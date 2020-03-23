@@ -1,4 +1,8 @@
-import Bohmer.LikelihoodGraph as lg
+"""
+    Author: Stephen Pauwels
+"""
+
+from RelatedMethods import Bohmer as lg
 
 
 def train(data, act_idx=1, res_idx=2, wk_idx=3):

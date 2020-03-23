@@ -1,3 +1,7 @@
+"""
+    Author: Stephen Pauwels
+"""
+
 import matplotlib.pyplot as plt
 import scipy.stats as sc
 import sklearn.metrics as skm

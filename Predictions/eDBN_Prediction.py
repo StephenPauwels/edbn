@@ -1,23 +1,27 @@
+"""
+    Author: Stephen Pauwels
+"""
+
 import functools
 import itertools
 import multiprocessing as mp
-import random
 import re
-from copy import deepcopy
-
 import numpy as np
 
-import EDBN.Execute as edbn
-import Preprocessing as data
 
 def cond_prob(a,b):
+    """
+    Return the conditional probability of a given b. With a and b sets containing row ids.
+    """
     return len(set.intersection(a,b)) / len(b)
 
 def get_probabilities(variable, val_tuple, parents):
+    """
+    Calculate probabilities for all possible next values for the given variable.
+    """
     if val_tuple in variable.cpt:
         return variable.cpt[val_tuple], False
     else:
-        predictions = {}
         unseen_value = False
         value_combinations = []
         known_attributes_indexes = None
@@ -35,16 +39,16 @@ def get_probabilities(variable, val_tuple, parents):
                     known_attributes_indexes = set.intersection(known_attributes_indexes, parents[i].value_counts[val_tuple[i]])
 
         if unseen_value:
-            return prob_unseen_value(known_attributes_indexes, parents, predictions, unseen_attribute_i,
-                                     value_combinations, variable)
+            return prob_unseen_value(variable, parents, known_attributes_indexes, unseen_attribute_i,value_combinations)
         else:
-            return prob_unseen_combination(parents, predictions, val_tuple, variable)
-
-        return {0: 0}, True
+            return prob_unseen_combination(variable, val_tuple, parents)
 
 
-def prob_unseen_combination(parents, predictions, val_tuple, variable):
-    # Unseen value combination
+def prob_unseen_combination(variable, val_tuple, parents):
+    """
+    Estimate the probabilities for the next value when current combination of values did not occur in the training data
+    """
+    predictions = {}
     for i in range(len(val_tuple)):
         values = [[v] for v in val_tuple]
         attr = parents[i]
@@ -80,7 +84,11 @@ def prob_unseen_combination(parents, predictions, val_tuple, variable):
         return {0: 0}, True
 
 
-def prob_unseen_value(known_attributes_indexes, parents, predictions, unseen_attribute_i, value_combinations, variable):
+def prob_unseen_value(variable, parents, known_attributes_indexes, unseen_attribute_i, value_combinations):
+    """
+    Estimate the probabilities for the next value when values that did not occur in the training data occur in the test data
+    """
+    predictions = {}
     for combination in variable.cpt:
         valid_combination = True
         for i in range(len(combination)):
@@ -112,7 +120,22 @@ def prob_unseen_value(known_attributes_indexes, parents, predictions, unseen_att
         return {0: 0}, True
 
 
+def predict_next_event(edbn_model, log):
+    """"
+    Predict next activity for all rows in the logfile
+    """
+    with mp.Pool(mp.cpu_count()) as p:
+        result = p.map(functools.partial(predict_next_event_row, model=edbn_model, activity=log.activity), log.contextdata.iterrows())
+
+    result = [r for r in result if r != -1]
+
+    return np.average(result)
+
+
 def predict_next_event_row(row, model, activity):
+    """"
+    Predict next activity for a single row
+    """
     parents = model.variables[activity].conditional_parents
 
     value = []
@@ -135,87 +158,38 @@ def predict_next_event_row(row, model, activity):
         return 0
 
 
+def predict_suffix(model, log):
+    """
+    Predict all suffixes for the entire logfile
+    """
+    all_parents, attributes = get_prediction_attributes(model, log.activity)
 
-def predict_next_event(edbn_model, log):
-    result = []
-
+    predict_case_func = functools.partial(predict_suffix_case, all_parents=all_parents, attributes=attributes, model=model,
+                                          end_event=log.convert_string2int(log.activity, "END"),
+                                          activity_attr=log.activity, k=log.k)
     with mp.Pool(mp.cpu_count()) as p:
-        result = p.map(functools.partial(predict_next_event_row, model=edbn_model, activity=log.activity), log.contextdata.iterrows())
-
-    # result = map(functools.partial(predict_next_event_row, model=edbn_model, activity=log.activity),
-    #                log.contextdata.iterrows())
-
-    # with open("results_next_event.csv", "w") as fout:
-    #     for r in result:
-    #         if r[1] is not None:
-    #             fout.write(",".join(['"' +log.convert_int2string("trace", r[1]).replace("'", "") + '"', str(r[0])]))
-    #             fout.write("\n")
-
-    # result = [r[0] for r in result if r[0] != -1]
-    result = [r for r in result if r != -1]
-    correct = np.sum(result)
-    false = len(result) - correct
-
-    print(correct, false)
-    print(correct / len(result))
-    print(np.average(result))
-    return np.average(result)
-
-def predict_suffix(model, test_log):
-    all_parents, attributes = get_prediction_attributes(model, test_log.activity)
+        results = p.map(predict_case_func, log.get_cases())
 
     prefix_results = {}
-    total_predictions = 0
-
-    predict_case_func = functools.partial(predict_case, all_parents=all_parents, attributes=attributes, model=model,
-                                          end_event=test_log.convert_string2int(test_log.activity, "END"),
-                                          activity_attr=test_log.activity, k=test_log.k)
-    with mp.Pool(mp.cpu_count()) as p:
-        results = p.map(predict_case_func, test_log.get_cases())
-
-    # results = map(predict_case_func, test_log.get_cases())
-
-    #results = []
-    #for case in test_log.get_cases():
-    #    results.append(predict_case(case, all_parents, attributes, model, test_log.convert_string2int(test_log.activity, "END"), test_log.activity ))
-
     for result in results:
         for prefix_size in result:
             if prefix_size not in prefix_results:
                 prefix_results[prefix_size] = []
             prefix_results[prefix_size].extend(result[prefix_size])
 
-    avg_sims = []
     all_sims = []
     for prefix in sorted(prefix_results.keys()):
-        avg_sims.append(np.average(prefix_results[prefix]))
         all_sims.extend(prefix_results[prefix])
-            #predicted_cases.append(predicted_rows)
-    #plt.plot(sorted(prefix_results.keys()), avg_sims)
-    #plt.show()
-    #with mp.Pool(mp.cpu_count()) as p:
-    #    sims = p.map(functools.partial(calculate_similarity, reference_logfile=test_log), predicted_cases)
-    #print("Average Sim (DL - entire log):", np.average(sims))
-
-    #print("Average Sim (leave out - DL):", np.average(calculate_similarity_leavout(predicted_cases, test_log)))
-
-    print("Average Sim (DL - exact trace):", np.average(prefix_results[1]))
 
     total_sim = np.average(all_sims)
-    print("Total Average Sim:", total_sim)
-    print("Total predictions:", total_predictions )
-    #print(sims)
-        #print(case[attributes])
-        #print(predicted_rows)
-        #print("Case:", case_name, test_log.convert_int2string(test_log.trace, case_name))
-        #for row in predicted_rows:
-        #    print([test_log.convert_int2string(attributes[i], row[i]) for i in range(len(row))])
 
-        #break
     return total_sim
 
 
-def predict_case(case, all_parents, attributes, model, end_event, activity_attr, k):
+def predict_suffix_case(case, all_parents, attributes, model, end_event, activity_attr, k):
+    """
+    Predict all suffixes for a single case
+    """
     prefix_results = {}
     case = case[1]
     case_events = case[activity_attr].values
@@ -232,11 +206,7 @@ def predict_case(case, all_parents, attributes, model, end_event, activity_attr,
             else:
                 current_row[iter_k] = [0] * len(attributes)
 
-        # Predict suffix given the last known rows. Stop predicting when END_EVENT has been predicted or predicted size >= 100
-        #predicted_rows, unknown_value = predict_case_suffix_highest_prob(all_parents, attributes, current_row, model, activity_attr, end_event)
-        # predicted_rows, unknown_value = predict_case_suffix_random(all_parents, attributes, current_row, model, test_log.activity, end_event)
         predicted_rows, unknown_value = predict_case_suffix_loop_threshold(all_parents, attributes, current_row, model,activity_attr, end_event)
-        # predicted_rows, unknown_value = predict_case_suffix_return_end(all_parents, attributes, current_row, model, test_log.activity, END_EVENT)
 
         # Get predicted trace
         predicted_events = [i[0] for i in predicted_rows if i[0] is not None]
@@ -247,98 +217,6 @@ def predict_case(case, all_parents, attributes, model, end_event, activity_attr,
                     damerau_levenshtein_distance(predicted_events, case_events[prefix_size:]) / max(
                 len(predicted_events), len(case_events[prefix_size:]))))
     return prefix_results
-
-
-def predict_case_suffix_highest_prob(all_parents, attributes, current_row, model, activity_attr, end_event):
-    """
-    Predict the suffix for a case, given the latest known row(s)
-    Selecting values with highest probability
-
-    :param all_parents: detailed list of attributes
-    :param attributes: ordered list of attributes
-    :param current_row: current row, containg history
-    :param model: eDBN model
-    :param activity_attr: name of control flow attribute
-    :param end_event: event indicating end of a trace
-    :return: updated current_row
-    """
-    predicted_rows = []
-    unknown_value = False
-
-    while current_row[0][0] != end_event and len(predicted_rows) < 100:  # The event attribute should always be the first attribute in the list
-        current_row[2] = current_row[1]
-        current_row[1] = current_row[0]
-        current_row[0] = [None] * len(all_parents)
-        # Predict value for every attribute
-        for attr in attributes:
-            value = []
-            for parent_detail in all_parents[attr]:
-                value.append(current_row[parent_detail["k"]][attributes.index(parent_detail["name"])])
-            tuple_val = tuple(value)
-
-            probs, unknown = get_probabilities(model.variables[attr], tuple_val, [v["variable"] for v in all_parents[attr]])
-
-            if unknown:
-                unknown_value = True
-
-            if 0 not in probs:
-                prediction_value = max(probs, key=lambda l: probs[l])
-
-                current_row[0][attributes.index(attr)] = prediction_value
-            else:
-                current_row[0][attributes.index(activity_attr)] = end_event
-        predicted_rows.append(current_row[0][:])
-    return predicted_rows, unknown_value
-
-
-def predict_case_suffix_random(all_parents, attributes, current_row, model, activity_attr, end_event, correct_case = None):
-    """
-    Predict the suffix for a case, given the latest known row(s)
-    Randomly choosing values according to their probabilities
-
-    :param all_parents: detailed list of attributes
-    :param attributes: ordered list of attributes
-    :param current_row: current row, containg history
-    :param model: eDBN model
-    :param activity_attr: name of control flow attribute
-    :param end_event: event indicating end of a trace
-    :return: updated current_row
-    """
-    predicted_rows = []
-    unknown_value = False
-
-    while current_row[0][0] != end_event and len(predicted_rows) < 100:  # The event attribute should always be the first attribute in the list
-        current_row[2] = current_row[1]
-        current_row[1] = current_row[0]
-        current_row[0] = [None] * len(all_parents)
-        # Predict value for every attribute
-        for attr in attributes:
-            value = []
-            for parent_detail in all_parents[attr]:
-                value.append(current_row[parent_detail["k"]][attributes.index(parent_detail["name"])])
-            tuple_val = tuple(value)
-
-            probs, unknown = get_probabilities(model.variables[attr], tuple_val, [v["variable"] for v in all_parents[attr]])
-
-            if unknown:
-                unknown_value = True
-
-            if 0 not in probs and len(probs) > 0:
-                values = list(probs.keys())
-                random_choice = random.random()
-                values_idx = 0
-                total_prob = probs[values[values_idx]]
-                while total_prob < random_choice and values_idx < len(values) - 1:
-                    values_idx += 1
-                    total_prob += probs[values[values_idx]]
-
-                current_row[0][attributes.index(attr)] = values[values_idx]
-            else:
-                current_row[0][attributes.index(activity_attr)] = end_event
-
-
-        predicted_rows.append(current_row[0][:])
-    return predicted_rows, unknown_value
 
 
 def predict_case_suffix_loop_threshold(all_parents, attributes, current_row, model, activity_attr, end_event):
@@ -398,8 +276,6 @@ def predict_case_suffix_loop_threshold(all_parents, attributes, current_row, mod
         predicted_rows.append(current_row[0][:])
     return predicted_rows, unknown_value
 
-def predict_case_suffix_return_end(all_parents, attributes, current_row, model, activity_attr, end_event):
-    return [[end_event]], False
 
 def get_prediction_attributes(model, activity_attribute):
     """
@@ -425,10 +301,7 @@ def get_prediction_attributes(model, activity_attribute):
     for par_attr in all_parents:
         detailed_attributes = []
         for parent in all_parents[par_attr]:
-            attr_details = {}
-            attr_details["name"] = prev_pattern.sub("", parent.attr_name)
-            attr_details["variable"] = parent
-            k = 0
+            attr_details = {"name": prev_pattern.sub("", parent.attr_name), "variable": parent}
             if "Prev" in parent.attr_name:
                 attr_details["k"] = int(re.sub(r".*_Prev", "", parent.attr_name)) + 1
             else:
@@ -438,38 +311,6 @@ def get_prediction_attributes(model, activity_attribute):
     attributes = list(all_parents.keys())
     return all_parents, attributes
 
-
-def calculate_similarity(prediction, reference_logfile):
-    temp_reference_log = reference_logfile.get_data() #.copy()
-    cases = list(temp_reference_log.groupby([reference_logfile.trace]))
-    min_sim = 1000
-    min_index = 0
-    for i in range(len(cases)):
-        case_events = cases[i][1][reference_logfile.activity].values
-        sim = damerau_levenshtein_distance(prediction, case_events) / (max(len(prediction), len(case_events)))
-        if sim < min_sim:
-            min_sim = sim
-            min_index = i
-    return 1 - min_sim
-
-def calculate_similarity_leavout(predictions, reference_logfile):
-    sims = []
-    temp_reference_log = reference_logfile.get_data() #.copy()
-    cases = list(temp_reference_log.groupby([reference_logfile.trace]))
-    for prediction in predictions:
-        min_sim = 1000
-        min_index = 0
-        for i in range(len(cases)):
-            case_events = cases[i][1][reference_logfile.activity].values
-
-            sim = damerau_levenshtein_distance(prediction, case_events) / (max(len(prediction), len(case_events)))
-            if sim < min_sim:
-                min_sim = sim
-                min_index = i
-
-        sims.append(1 - min_sim)
-        del cases[min_index]
-    return sims
 
 """
 Compute the Damerau-Levenshtein distance between two given
@@ -521,177 +362,9 @@ def learn_duplicated_events(logfile):
     avg_duplicated_events = {}
     for event in duplicated_events:
         avg_duplicated_events[event] = int(np.average(duplicated_events[event]) + 1)
-        #avg_duplicated_events[event] = max(duplicated_events[event])
     return avg_duplicated_events
 
 
 def brier_multi(targets, probs):
     return np.mean(np.sum((probs - targets)**2))
-
-def run_dataset(dataset = None, k = 2):
-    from datetime import datetime
-
-    if dataset is None:
-        dataset = data.BPIC15_1
-    dataset_size = 200000000
-    add_end = False
-    resource_pools = False
-    reduce_tasks = False
-    logfile_k = k
-    bpic_file = 5
-
-    remove_resource = False
-
-    logfile, log_filename = data.get_data(dataset, dataset_size, logfile_k, add_end, reduce_tasks, resource_pools, remove_resource)
-    logfile.convert2int()
-    train_log, test_log = logfile.splitTrainTest(70)
-    train_log.create_k_context()
-    test_log.create_k_context()
-
-    model = edbn.train(train_log)
-
-    # Train average number of duplicated events
-#    print(duplicates)
-    model.duplicate_events = learn_duplicated_events(train_log)
-    acc = predict_next_event(model, test_log)
-    with open("Results.csv", "a") as fout:
-        fout.write(",".join([str(datetime.now()), dataset + "_" + str(logfile_k), "Predict_Next", str(acc)]))
-        fout.write("\n")
-
-    # sim =predict_suffix(model, test_log)
-    # with open("Results.csv", "a") as fout:
-    #     fout.write(",".join([str(datetime.now()), dataset + "_" + str(logfile_k), "Predict_Suffix", str(sim)]))
-    #     fout.write("\n")
-
-def test_datasets():
-    from LogFile import LogFile
-    import pandas as pd
-    from Utils.Uncertainty_Coefficient import calculate_mutual_information, calculate_entropy
-
-    camargo_folder = "../Camargo/output_files/output_run3/BPIC12_20000000_2_1_0_0_1/shared_cat/data/"
-
-    train_camargo = LogFile(camargo_folder + "train_log.csv", ",", 0, 20000000, None, "caseid",
-                        activity_attr="task", convert=False, k=2)
-    train_camargo.keep_attributes(["caseid", "task", "role"])
-
-    test_camargo = LogFile(camargo_folder + "test_log.csv",
-                       ",", 0, 20000000, None, "caseid",
-                       activity_attr="task", convert=False, k=2, values=train_camargo.values)
-    test_camargo.keep_attributes(["caseid", "task", "role"])
-
-    total_camargo = pd.concat([test_camargo.data, train_camargo.data])
-
-    total, name = data.get_data(data.BPIC12, 20000000, 2, True, False, False, True)
-    total_data = total.data
-
-    print(total_camargo)
-    print(total_data)
-
-    print(total_camargo.columns, total_data.columns)
-    for idx in range(3):
-        col1 = total_camargo[total_camargo.columns[idx]]
-        col2 = total_data[total_data.columns[idx]]
-        print(calculate_mutual_information(col1, col2), calculate_entropy(col1), calculate_entropy(col2))
-
-def run_Tax():
-    from LogFile import LogFile
-
-    logfile = LogFile("../Tax/data/helpdesk.csv", ",", 0, 20000000, None, "CaseID", activity_attr="ActivityID", convert=True, k=2)
-    logfile.keep_attributes(["CaseID", "ActivityID"])
-    logfile.create_k_context()
-
-    train_log, test_log = logfile.splitTrainTest(70)
-    model = edbn.train(train_log)
-
-    # Train average number of duplicated events
-    model.duplicate_events = learn_duplicated_events(train_log)
-
-    predict_next_event(model, test_log)
-    #predict_suffix(model, test_log)
-
-
-if __name__ == "__main__":
-    #test_datasets()
-    #run_dataset(data.BPIC15_1, 4)
-    # for k in [2]: #[1,2,3,4,5]:
-    #     for dataset in [data.BPIC12, data.BPIC12W, data.BPIC15_1, data.BPIC15_2, data.BPIC15_3, data.BPIC15_4, data.BPIC15_5, data.HELPDESK]:
-    #        run_dataset(dataset, k)
-    #run_Tax()
-
-
-    from LogFile import LogFile
-    from datetime import datetime
-    import os
-    import pickle
-
-    trainings = []
-    trainings.append({"folder": "../Data/PredictionData/bpic15_1/", "model": "BPIC15_1"})
-    # trainings.append({"folder": "../Camargo/output_files/data/bpic15_1/", "model": "BPIC15_1"})
-    # trainings.append({"folder": "../Camargo/output_files/data/bpic15_2/", "model": "BPIC15_2"})
-    # trainings.append({"folder": "../Camargo/output_files/data/bpic15_3/", "model": "BPIC15_3"})
-    # trainings.append({"folder": "../Camargo/output_files/data/bpic15_4/", "model": "BPIC15_4"})
-    # trainings.append({"folder": "../Camargo/output_files/data/bpic15_5/", "model": "BPIC15_5"})
-    # trainings.append({"folder": "../Camargo/output_files/data/bpic12W/", "model": "BPIC12W"})
-    # trainings.append({"folder": "../Camargo/output_files/data/bpic12/", "model": "BPIC12"})
-    # trainings.append({"folder": "../Camargo/output_files/data/helpdesk/", "model": "HELPDESK"})
-
-
-
-    if not os.path.exists("Results.csv"):
-        with open("Results.csv", "w") as fout:
-            fout.write("Date,Model,Type,Average Similarity")
-            fout.write("\n")
-
-    for training in trainings:
-        print("TRAIN:", training["model"])
-
-        camargo_folder = training["folder"]
-        model_file = training["model"]
-
-        train_log = LogFile(camargo_folder + "train_log.csv", ",", 0, 20000000, None, "case",
-                          activity_attr="event", convert=False, k=4)
-        # train_log.create_trace_attribute()
-        train_log.keep_attributes(["case", "event", "role"])
-        #train_log.add_end_events()
-        train_log.convert2int()
-
-        train_log.create_k_context()
-
-        model = None
-        if os.path.exists(model_file):
-            print("Reading model from file")
-            with open(model_file, "rb") as pickle_file:
-                model = pickle.load(pickle_file)
-            model.print_parents()
-        else:
-            print("Writing model to file")
-            model = edbn.train(train_log)
-
-            # Train average number of duplicated events
-            model.duplicate_events = learn_duplicated_events(train_log)
-
-            with open(model_file, "wb") as pickle_file:
-                pickle.dump(model, pickle_file)
-
-        test_log = LogFile(camargo_folder + "test_log.csv",
-                        ",", 0, 20000000, None, "case",
-                        activity_attr="event", convert=False, k=4, values=train_log.values)
-        # test_log.create_trace_attribute()
-        test_log.keep_attributes(["case", "event", "role"])
-        #test_log.add_end_events()
-        test_log.convert2int()
-        test_log.create_k_context()
-
-
-        acc = predict_next_event(model, test_log)
-        with open("Results.csv", "a") as fout:
-            fout.write(",".join([str(datetime.now()), model_file, "Predict_Next", str(acc)]))
-            fout.write("\n")
-
-
-
-        # sim = predict_suffix(model, test_log)
-        # with open("Results.csv", "a") as fout:
-        #     fout.write(",".join([str(datetime.now()), model_file, "Predict_Suffix", str(sim)]))
-        #     fout.write("\n")
 

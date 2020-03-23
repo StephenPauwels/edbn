@@ -1,8 +1,12 @@
+"""
+    Author: Stephen Pauwels
+"""
 EDBN = "EDBN"
 CAMARGO = "CAMARGO"
 DIMAURO = "DIMAURO"
 LIN = "LIN"
 TAX = "TAX"
+METHODS = [EDBN, CAMARGO, DIMAURO, LIN, TAX]
 
 DATA_DESC = []
 DATA_DESC.append({"folder": "bpic15_1/", "data": "BPIC15_1"})
@@ -13,7 +17,7 @@ DATA_DESC.append({"folder": "bpic15_5/", "data": "BPIC15_5"})
 DATA_DESC.append({"folder": "bpic12w/", "data": "BPIC12W"})
 DATA_DESC.append({"folder": "bpic12/", "data": "BPIC12"})
 DATA_DESC.append({"folder": "helpdesk/", "data": "HELPDESK"})
-# DATA_DESC.append({"folder": "bpic18/", "data": "BPIC18"})
+DATA_DESC.append({"folder": "bpic18/", "data": "BPIC18"})
 # DATA_DESC.append({"folder": "bpic18s/", "data": "BPIC18S"})
 # DATA_DESC.append({"folder": "bpic18m/", "data": "BPIC18M"})
 # DATA_DESC.append({"folder": "bpic18l/", "data": "BPIC18L"})

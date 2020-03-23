@@ -1,3 +1,7 @@
+"""
+    Author: Stephen Pauwels
+"""
+
 class Result:
 
     def __init__(self):

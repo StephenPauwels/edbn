@@ -2,6 +2,8 @@
     Implementation of anomaly detection algorithm in multidimensional sequential data:
        [1] Böhmer, Kristof, and Stefanie Rinderle-Ma. "Multi-perspective anomaly detection in business process execution events."
              OTM Confederated International Conferences" On the Move to Meaningful Internet Systems". Springer, Cham, 2016.
+
+    Author: Stephen Pauwels
 """
 import pandas as pd
 

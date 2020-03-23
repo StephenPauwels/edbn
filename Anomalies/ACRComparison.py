@@ -1,9 +1,11 @@
 """
     File containing the Comparison experiments for the ACR Journal
+
+    Author: Stephen Pauwels
 """
 import pandas as pd
 
-import Bohmer.Execute as bohmer
+import Execute as bohmer
 import EDBN.Execute as edbn
 import Utils.PlotResults as plot
 from LogFile import LogFile

@@ -1,5 +1,7 @@
 """
-Implementation of MM-Pred: A Deep Predictive Model for Multi-attribute Event Sequence [Lin, Wen and Wang]
+    Implementation of MM-Pred: A Deep Predictive Model for Multi-attribute Event Sequence [Lin, Wen and Wang]
+
+    Author: Stephen Pauwels
 """
 
 import os
@@ -15,7 +17,7 @@ from keras.optimizers import Nadam
 from nltk.util import ngrams
 import jellyfish as jf
 
-from Lin.Modulator import Modulator
+from RelatedMethods.Lin.Modulator import Modulator
 
 def create_model_cudnn(vec, vocab_act_size, vocab_role_size, output_folder):
     # Create embeddings + Concat

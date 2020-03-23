@@ -1,20 +1,33 @@
+"""
+    Basic file to train the models for the prediction experiments
+    Use: python Experiments_Train METHOD DATA [args]
+
+    Valid values for METHOD and DATA can be found in Experiments_Variables.py
+
+    Extra arguments:
+        - EDBN: * first extra argument: k-value
+                * second extra argument: use "next" when training optimized for next event, use "suffix" for suffix
+        - CAMARGO: specify architecture to use: chared_cat or specialized
+
+    Author: Stephen Pauwels
+"""
+
 import os
 import pickle
 import sys
 import time
 
-from Camargo.support_modules.support import create_csv_file_header
+from support_modules.support import create_csv_file_header
 from Experiments_Variables import DATA_DESC, DATA_FOLDER, OUTPUT_FOLDER
 from Experiments_Variables import EDBN, CAMARGO, DIMAURO, LIN, TAX
 from Experiments_Variables import K_EDBN, DIMAURO_PARAMS
-from Preprocessing import get_data
+from DataProcessing import get_data
 from Utils.LogFile import LogFile
 
 
-def train_edbn(data_folder, model_folder, k = None):
+def train_edbn(data_folder, model_folder, k = None, next_event = True):
     from EDBN.Execute import train
     from eDBN_Prediction import learn_duplicated_events, predict_next_event, predict_suffix
-    print("Run EDBN")
 
     if k is None:
         best_model = {}
@@ -38,8 +51,10 @@ def train_edbn(data_folder, model_folder, k = None):
             # Train average number of duplicated events
             model.duplicate_events = learn_duplicated_events(train_train_log)
 
-            #acc = predict_next_event(model, train_test_log)
-            acc = predict_suffix(model, train_test_log)
+            if next_event:
+                acc = predict_next_event(model, train_test_log)
+            else:
+                acc = predict_suffix(model, train_test_log)
             print("Testing k=", k, " | Validation acc:", acc)
             if "Acc" not in best_model or best_model["Acc"] < acc:
                 best_model["Acc"] = acc
@@ -68,18 +83,15 @@ def train_edbn(data_folder, model_folder, k = None):
 
 
 def train_camargo(data_folder, model_folder, architecture):
-    import Camargo.embedding_training as em
-    import Camargo.model_training as mo
+    import embedding_training as em
+    import model_training as mo
 
-    print("Run Camargo")
     logfile = LogFile(data_folder + "full_log.csv", ",", 0, None, None, "case",
                         activity_attr="event", convert=False, k=0)
     train_log = LogFile(data_folder + "train_log.csv", ",", 0, None, None, "case",
                         activity_attr="event", convert=False, k=0)
     test_log = LogFile(data_folder + "test_log.csv", ",", 0, None, None, "case",
                         activity_attr="event", convert=False, k=0)
-
-
 
     args = {}
     args["file_name"] = "data"
@@ -92,14 +104,13 @@ def train_camargo(data_folder, model_folder, architecture):
     args['dense_act'] = None # optimization function see keras doc
     args['optim'] = 'Nadam' # optimization function see keras doc
 
-    #em.training_model(logfile, model_folder)
+    em.training_model(logfile, model_folder)
     mo.training_model(logfile, train_log, test_log, model_folder, args)
 
 
 def train_lin(data_folder, model_folder):
-    from Lin.model import train
+    from RelatedMethods.Lin.model import train
 
-    print("Run Lin")
     logfile = LogFile(data_folder + "full_log.csv", ",", 0, None, None, "case",
                         activity_attr="event", convert=False, k=0)
     logfile.add_end_events()
@@ -113,9 +124,8 @@ def train_lin(data_folder, model_folder):
 
 
 def train_dimauro(data_folder, model_folder, params = None):
-    from DiMauro.deeppm_act import train
+    from RelatedMethods.DiMauro.deeppm_act import train
 
-    print("Run DiMauro")
     train_log = os.path.join(data_folder, "train_log.csv")
     test_log = os.path.join(data_folder, "test_log.csv")
 
@@ -123,9 +133,8 @@ def train_dimauro(data_folder, model_folder, params = None):
 
 
 def train_tax(data_folder, model_folder):
-    from Tax.code.train import train
+    from RelatedMethods.Tax.code.train import train
 
-    print("Run Tax")
     train_log = os.path.join(data_folder, "train_log.csv")
     test_log = os.path.join(data_folder, "test_log.csv")
 
@@ -203,8 +212,12 @@ def main(argv):
     ###
     # Execute chosen method
     ###
+    print("EXPERIMENT TRAINING MODEL:", argv)
     if method == EDBN:
-        train_edbn(dataset_folder, model_folder, edbn_k)
+        if len(argv) == 4:
+            train_edbn(dataset_folder, model_folder, edbn_k, argv[3] == "next")
+        else:
+            train_edbn(dataset_folder, model_folder, edbn_k)
     elif method == CAMARGO:
         if len(argv) < 3:
             print("Please indicate the architecture to use: shared_cat or specialized")

@@ -1,3 +1,7 @@
+"""
+    Author: Stephen Pauwels
+"""
+
 import numpy as np
 
 import EDBN.GenerateModel as gm

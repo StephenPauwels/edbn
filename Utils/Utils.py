@@ -1,4 +1,6 @@
-
+"""
+    Author: Stephen Pauwels
+"""
 def convert2ints(file_in, file_out, header = True, dict = None):
     cnt = 0
 

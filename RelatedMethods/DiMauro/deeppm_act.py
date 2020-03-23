@@ -14,7 +14,7 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.callbacks import EarlyStopping
 
-from DiMauro.utils import load_data, load_cases
+from RelatedMethods.DiMauro.utils import load_data, load_cases
 from sklearn.metrics import accuracy_score
 
 from hyperopt import Trials, STATUS_OK, tpe, fmin, hp
@@ -22,9 +22,6 @@ import hyperopt
 from time import perf_counter
 import time
 import os
-import functools
-import multiprocessing as mp
-import tqdm
 
 from tensorflow.keras.utils import Sequence
 
