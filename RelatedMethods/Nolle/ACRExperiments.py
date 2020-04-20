@@ -2,13 +2,9 @@ import itertools
 import socket
 from multiprocessing.pool import Pool
 
+import april.processmining.log
 import arrow
 import pandas as pd
-from sklearn import metrics
-from sqlalchemy.orm import Session
-from tqdm import tqdm
-
-import april.processmining.log
 from april.anomalydetection import *
 from april.anomalydetection.utils import label_collapse
 from april.database import Evaluation
@@ -30,6 +26,9 @@ from april.generation.anomaly import *
 from april.generation.utils import generate_for_process_model
 from april.processmining import ProcessMap
 from april.utils import prettify_dataframe
+from sklearn import metrics
+from sqlalchemy.orm import Session
+from tqdm import tqdm
 
 #####
 # Generate Data Files

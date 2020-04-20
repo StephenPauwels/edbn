@@ -13,7 +13,6 @@ import jellyfish as jf
 import numpy as np
 import pandas as pd
 from keras.models import load_model
-
 from support_modules import support as sup
 
 START_TIMEFORMAT = ''

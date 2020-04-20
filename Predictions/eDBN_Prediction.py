@@ -8,19 +8,19 @@ import multiprocessing as mp
 import re
 import numpy as np
 
-
 def cond_prob(a,b):
     """
     Return the conditional probability of a given b. With a and b sets containing row ids.
     """
     return len(set.intersection(a,b)) / len(b)
 
+
 def get_probabilities(variable, val_tuple, parents):
     """
     Calculate probabilities for all possible next values for the given variable.
     """
-    if val_tuple in variable.cpt:
-        return variable.cpt[val_tuple], False
+    if variable.conditional_table.check_parent_combination(val_tuple):
+        return variable.conditional_table.get_values(val_tuple), False
     else:
         unseen_value = False
         value_combinations = []
@@ -60,22 +60,16 @@ def prob_unseen_combination(variable, val_tuple, parents):
             continue
 
         product = list(itertools.product(*values))
-        if len(product) < len(variable.cpt):
-            iterate_list = product
-            check_list = variable.cpt
-        else:
-            iterate_list = variable.cpt
-            check_list = product
-
-        for combination in [c for c in iterate_list if c in check_list]:
+        for combination in [c for c in product if variable.conditional_table.check_parent_combination(c)]:
+        # for combination in product:
             variable_indexes = attr.value_counts[combination[i]]
 
             parent_prob = cond_prob(variable_indexes, fixed_indexes)
 
-            for value in variable.cpt[combination]:
+            for value, prob in variable.conditional_table.get_values(combination).items():
                 if value not in predictions:
                     predictions[value] = 0
-                predictions[value] += variable.cpt[combination][value] * parent_prob
+                predictions[value] += prob * parent_prob
     for pred_val in predictions:
         predictions[pred_val] = predictions[pred_val] / len(parents)
     if len(predictions) > 0:
@@ -89,7 +83,7 @@ def prob_unseen_value(variable, parents, known_attributes_indexes, unseen_attrib
     Estimate the probabilities for the next value when values that did not occur in the training data occur in the test data
     """
     predictions = {}
-    for combination in variable.cpt:
+    for combination in variable.conditional_table.get_parent_combinations():
         valid_combination = True
         for i in range(len(combination)):
             if combination[i] not in value_combinations[i]:
@@ -104,16 +98,15 @@ def prob_unseen_value(variable, parents, known_attributes_indexes, unseen_attrib
         if known_attributes_indexes is None:
             parent_prob = len(unseen_indexes) / variable.total_rows
         elif len(known_attributes_indexes) == 0:
-            parent_prob = 0
             continue
         else:
             parent_prob = cond_prob(unseen_indexes, known_attributes_indexes)
 
         if parent_prob > 0:
-            for value in variable.cpt[combination]:
+            for value, prob in variable.conditional_table.get_values(combination).items():
                 if value not in predictions:
                     predictions[value] = 0
-                predictions[value] += variable.cpt[combination][value] * parent_prob
+                predictions[value] += prob * parent_prob
     if len(predictions) > 0:
         return predictions, True
     else:
@@ -124,8 +117,9 @@ def predict_next_event(edbn_model, log):
     """"
     Predict next activity for all rows in the logfile
     """
-    with mp.Pool(mp.cpu_count()) as p:
-        result = p.map(functools.partial(predict_next_event_row, model=edbn_model, activity=log.activity), log.contextdata.iterrows())
+    # with mp.Pool(mp.cpu_count()) as p:
+    #     result = p.map(functools.partial(predict_next_event_row, model=edbn_model, activity=log.activity), log.contextdata.iterrows())
+    result = map(functools.partial(predict_next_event_row, model=edbn_model, activity=log.activity), log.contextdata.iterrows())
 
     result = [r for r in result if r != -1]
 
@@ -136,7 +130,7 @@ def predict_next_event_row(row, model, activity):
     """"
     Predict next activity for a single row
     """
-    parents = model.variables[activity].conditional_parents
+    parents = model.variables[activity].conditional_table.parents
 
     value = []
     for parent in parents:
@@ -146,11 +140,7 @@ def predict_next_event_row(row, model, activity):
     activity_var = model.variables[activity]
     probs, unknown = get_probabilities(activity_var, tuple_val, parents)
 
-    # Select value with highest probability
-    if not unknown:
-        predicted_val = max(probs, key=lambda l: probs[l] * activity_var.values[l])
-    else:
-        predicted_val = max(probs, key=lambda l: probs[l])
+    predicted_val = max(probs, key=lambda l: probs[l])
 
     if getattr(row[1], activity) == predicted_val:
         return 1
@@ -167,8 +157,10 @@ def predict_suffix(model, log):
     predict_case_func = functools.partial(predict_suffix_case, all_parents=all_parents, attributes=attributes, model=model,
                                           end_event=log.convert_string2int(log.activity, "END"),
                                           activity_attr=log.activity, k=log.k)
-    with mp.Pool(mp.cpu_count()) as p:
-        results = p.map(predict_case_func, log.get_cases())
+    # with mp.Pool(mp.cpu_count()) as p:
+    #     results = p.map(predict_case_func, log.get_cases())
+
+    results = map(predict_case_func, log.get_cases())
 
     prefix_results = {}
     for result in results:
@@ -288,10 +280,10 @@ def get_prediction_attributes(model, activity_attribute):
     prev_pattern = re.compile(r"_Prev[0-9]*")
     all_parents = {}
     to_check = [activity_attribute]
-    all_parents[activity_attribute] = model.variables[activity_attribute].conditional_parents[:]
+    all_parents[activity_attribute] = model.variables[activity_attribute].conditional_table.parents[:]
     while len(to_check) > 0:
         attr = to_check[0]
-        all_parents[attr] = model.variables[attr].conditional_parents[:]
+        all_parents[attr] = model.variables[attr].conditional_table.parents[:]
         for parent in all_parents[attr]:
             current_attribute_version = prev_pattern.sub("", parent.attr_name)
             if current_attribute_version not in all_parents:

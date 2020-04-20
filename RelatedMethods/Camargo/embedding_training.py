@@ -8,14 +8,12 @@ import itertools
 import math
 import os
 import random
-import multiprocessing as mp
-import functools
 
 import numpy as np
 from keras.layers import Input, Embedding, Dot, Reshape
 from keras.models import Model
 
-from support_modules import support as sup
+from RelatedMethods.Camargo.support_modules import support as sup
 
 
 def training_model(log, outfile):
@@ -62,6 +60,7 @@ def training_model(log, outfile):
     sup.create_file_from_list(reformat_matrix(index_ac, ac_weights), os.path.join(outfile, 'event.emb'))
     sup.create_file_from_list(reformat_matrix(index_rl, rl_weights), os.path.join(outfile, 'role.emb'))
 
+    return reformat_matrix(index_ac, ac_weights), reformat_matrix(index_rl, rl_weights)
 
 
 # =============================================================================
@@ -79,17 +78,17 @@ def train_embedded(log_df, ac_index, rl_index, dim_number):
         # pairs.append((ac_index[log_df.iloc[i]['event']], rl_index[log_df.iloc[i]['role']]))
     pairs = list(zip(log_df.event, log_df.role))
 
-    convert_pair_func = functools.partial(convert_pair, ac_index=ac_index, rl_index=rl_index)
-
-    with mp.Pool(mp.cpu_count()) as p:
-        pairs = p.map(convert_pair_func, pairs)
+    # convert_pair_func = functools.partial(convert_pair, ac_index=ac_index, rl_index=rl_index)
+    #
+    # with mp.Pool(mp.cpu_count()) as p:
+    #     pairs = p.map(convert_pair_func, pairs)
     print("Pairs generated")
 
     model = ac_rl_embedding_model(ac_index, rl_index, dim_number)
     model.summary()
 
     n_positive = 1024
-    gen = generate_batch(pairs, ac_index, rl_index, n_positive, negative_ratio=2)
+    gen = generate_batch(pairs, n_positive, negative_ratio=2)
     # Train
     model.fit_generator(gen, epochs=100,
                         steps_per_epoch=len(pairs) // n_positive,
@@ -108,14 +107,11 @@ def train_embedded(log_df, ac_index, rl_index, dim_number):
 def convert_pair(pair, ac_index, rl_index):
     return (ac_index[pair[0]], rl_index[pair[1]])
 
-def generate_batch(pairs, ac_index, rl_index, n_positive=50,
-                   negative_ratio=1.0):
+def generate_batch(pairs, n_positive=50, negative_ratio=1.0):
     """Generate batches of samples for training"""
     batch_size = n_positive * (1 + negative_ratio)
     batch = np.zeros((batch_size, 3))
     pairs_set = set(pairs)
-    activities = list(ac_index.keys())
-    roles = list(rl_index.keys())
     # This creates a generator
     while True:
         # randomly choose positive examples
@@ -128,8 +124,8 @@ def generate_batch(pairs, ac_index, rl_index, n_positive=50,
         # Add negative examples until reach batch size
         while idx < batch_size:
             # random selection
-            random_ac = random.randrange(len(activities))
-            random_rl = random.randrange(len(roles))
+            random_ac = 0
+            random_rl = 0
 
             # Check to make sure this is not a positive example
             if (random_ac, random_rl) not in pairs_set:
@@ -152,12 +148,12 @@ def ac_rl_embedding_model(ac_index, rl_index, embedding_size):
 
     # Embedding the activity (shape will be (None, 1, embedding_size))
     activity_embedding = Embedding(name='activity_embedding',
-                                   input_dim=len(ac_index),
+                                   input_dim=ac_index,
                                    output_dim=embedding_size)(activity)
 
     # Embedding the role (shape will be (None, 1, embedding_size))
     role_embedding = Embedding(name='role_embedding',
-                               input_dim=len(rl_index),
+                               input_dim=rl_index,
                                output_dim=embedding_size)(role)
 
     # Merge the layers with a dot product along the second axis (shape will be (None, 1, 1))
@@ -175,7 +171,7 @@ def ac_rl_embedding_model(ac_index, rl_index, embedding_size):
 # =============================================================================
 # Support
 # =============================================================================
-def reformat_matrix(index, weigths):
+def reformat_matrix(weigths):
     """Reformating of the embedded matrix for exporting.
     Args:
         index: index of activities or roles.
@@ -184,9 +180,8 @@ def reformat_matrix(index, weigths):
         matrix with indexes.
     """
     matrix = list()
-    for i, _ in enumerate(index):
-        data = [i, index[i]]
-        data.extend(weigths[i])
+    for i in range(len(weigths)):
+        data = weigths[i]
         matrix.append(data)
     return matrix
 

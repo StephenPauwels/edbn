@@ -13,7 +13,6 @@ from datetime import timedelta
 import numpy as np
 import pandas as pd
 from keras.models import load_model
-
 from support_modules import support as sup
 from support_modules.analyzers import generalization as gen
 

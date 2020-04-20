@@ -15,7 +15,7 @@ from keras.models import Model
 from keras.optimizers import Nadam, Adam, SGD, Adagrad
 
 
-def training_model(vec, ac_weights, rl_weights, output_folder, args):
+def training_model(vec, ac_weights, rl_weights, output_folder, args, epochs, early_stop):
     """Example function with types documented in the docstring.
     Args:
         param1 (int): The first parameter.
@@ -25,7 +25,6 @@ def training_model(vec, ac_weights, rl_weights, output_folder, args):
     """
 
     print('Build model...')
-    print(args)
 # =============================================================================
 #     Input layer
 # =============================================================================
@@ -144,7 +143,7 @@ def training_model(vec, ac_weights, rl_weights, output_folder, args):
     
     model.summary()
     
-    early_stopping = EarlyStopping(monitor='val_loss', patience=20)
+    early_stopping = EarlyStopping(monitor='val_loss', patience=early_stop)
 #
 #    # Output file
     output_file_path = os.path.join(output_folder,
@@ -178,4 +177,7 @@ def training_model(vec, ac_weights, rl_weights, output_folder, args):
               verbose=2,
               callbacks=[early_stopping, model_checkpoint, lr_reducer],
               batch_size=vec['prefixes']['x_ac_inp'].shape[1],
-              epochs=200)
+              epochs=epochs)
+
+    return model
+

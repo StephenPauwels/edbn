@@ -11,6 +11,8 @@ from joblib import Parallel, delayed
 from sklearn.model_selection import GridSearchCV
 from sklearn.neighbors import KernelDensity
 
+from EDBN.CPT import CPT
+# from EDBN.NNTable import NNT
 import Utils.Result as Result
 
 
@@ -41,7 +43,7 @@ class ExtendedDynamicBayesianNetwork():
 
     def print_parents(self):
         for var_name, var in self.variables.items():
-            for parent in var.conditional_parents:
+            for parent in var.conditional_table.parents:
                 print(parent.attr_name, "->", var_name)
             for parent in var.functional_parents:
                 print(parent.attr_name, "=>", var_name)
@@ -227,20 +229,17 @@ class Discrete_Variable(Variable):
     """
     Discrete variable of an EDBN
     """
-    def __init__(self, attr_name, new_values, num_attrs, empty_val):
+    def __init__(self, attr_name, new_values, num_attrs, empty_val, conditional_table="nnt"):
         self.attr_name = attr_name
         self.new_values = new_values
-        self.new_relations = 0
-        #self.num_attrs = num_attrs
         self.empty_val = empty_val
         self.total_rows = 0
 
         self.values = set()
         self.value_counts = {}
 
-        self.conditional_parents = []
-        self.cpt = dict()
-        self.cpt_probs = dict()
+        # self.conditional_table = NNT(self.attr_name)
+        self.conditional_table = CPT(self.attr_name)
         self.functional_parents = []
         self.fdt = []
         self.fdt_violation = []
@@ -249,12 +248,14 @@ class Discrete_Variable(Variable):
         return self.attr_name
 
     def add_parent(self, var):
-        self.conditional_parents.append(var)
+        self.conditional_table.add_parent(var)
 
     def add_mapping(self, var):
         self.functional_parents.append(var)
         self.fdt.append({})
 
+    def get_conditional_parents(self):
+        return self.conditional_table.parents
 
     ###
     # Training
@@ -262,17 +263,8 @@ class Discrete_Variable(Variable):
     def train(self, log):
         self.train_variable(log)
         self.train_fdt(log)
-        self.train_cpt(log)
-        self.set_new_relation(log)
-
-    def set_new_relation(self, log):
-        attrs = set()
-        if len(self.conditional_parents) == 0:
-            self.new_relations = 1
-            return
-        attrs = {p.attr_name for p in self.conditional_parents}
-        grouped = log.groupby([a for a in attrs]).size().reset_index(name='counts')
-        self.new_relations = len(grouped) / log.shape[0]
+        self.conditional_table.train(log)
+        # self.cpt.train(log)
 
     def train_variable(self, log):
         print("Train Variable", self.attr_name)
@@ -280,7 +272,7 @@ class Discrete_Variable(Variable):
         # TODO: rework so self.values becomes obsolete
         self.values = {val: len(self.value_counts[val]) / log.shape[0] for val in self.value_counts}
         self.total_rows = log.shape[0]
-
+        self.conditional_table.num_values = log[self.attr_name].max()
 
     def train_fdt(self, log):
         if len(self.functional_parents) == 0:
@@ -309,28 +301,6 @@ class Discrete_Variable(Variable):
 
             self.fdt_violation.append(violations / log_size)
 
-    def train_cpt(self, log):
-        if len(self.conditional_parents) == 0:
-            return
-
-        parents = [p.attr_name for p in self.conditional_parents]
-        grouped = log.groupby(parents,observed=True)[self.attr_name]
-        val_counts = grouped.value_counts()
-        div = grouped.count().to_dict()
-        total_rows = len(log.index)
-        for t in val_counts.items():
-            parent = t[0][:-1]
-#            if len(parent) == 1:
-#                parent = parent[0]
-            if parent not in self.cpt:
-                self.cpt[parent] = dict()
-            if len(parent) == 1:
-                self.cpt[parent][t[0][-1]] = t[1] / div[parent[0]]
-                self.cpt_probs[parent] = div[parent[0]] / total_rows
-            else:
-                self.cpt[parent][t[0][-1]] = t[1] / div[parent]
-                self.cpt_probs[parent] = div[parent] / total_rows
-
     ###
     # Testing
     ###
@@ -338,7 +308,7 @@ class Discrete_Variable(Variable):
         total_score = 1
         for score in self.test_fdt(row).values():
             total_score *= score
-        total_score *= self.test_cpt(row)
+        total_score *= self.conditional_table.test(row)
         total_score *= self.test_value(row)
         if total_score == 0:
             total_score = 0.0000000001
@@ -358,23 +328,6 @@ class Discrete_Variable(Variable):
                 else:
                     scores[parent.attr_name] = self.fdt_violation[i]
         return scores
-
-    def test_cpt(self, row):
-        if len(self.conditional_parents) > 0:
-            parent_vals = []
-            for p in self.conditional_parents:
-                parent_vals.append(getattr(row, p.attr_name))
-            if len(parent_vals) == 1:
-                parent_vals = parent_vals[0]
-            else:
-                parent_vals = tuple(parent_vals)
-            if parent_vals not in self.cpt:
-                return self.new_relations
-            val = getattr(row, self.attr_name)
-            if val not in self.cpt[parent_vals]:
-                return (1 - self.new_relations) * self.new_relations
-            return (1 - self.new_relations) * self.cpt[parent_vals][val]
-        return 1
 
     def test_value(self, row):
         if getattr(row, self.attr_name) not in self.values:

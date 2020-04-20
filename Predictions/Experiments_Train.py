@@ -17,17 +17,17 @@ import pickle
 import sys
 import time
 
-from support_modules.support import create_csv_file_header
-from Experiments_Variables import DATA_DESC, DATA_FOLDER, OUTPUT_FOLDER
-from Experiments_Variables import EDBN, CAMARGO, DIMAURO, LIN, TAX
-from Experiments_Variables import K_EDBN, DIMAURO_PARAMS
-from DataProcessing import get_data
+from RelatedMethods.Camargo.support_modules.support import create_csv_file_header
+from Predictions.Experiments_Variables import DATA_DESC, DATA_FOLDER, OUTPUT_FOLDER
+from Predictions.Experiments_Variables import EDBN, CAMARGO, DIMAURO, LIN, TAX
+from Predictions.Experiments_Variables import K_EDBN, DIMAURO_PARAMS
+from Predictions.DataProcessing import get_data
 from Utils.LogFile import LogFile
 
 
 def train_edbn(data_folder, model_folder, k = None, next_event = True):
     from EDBN.Execute import train
-    from eDBN_Prediction import learn_duplicated_events, predict_next_event, predict_suffix
+    from Predictions.eDBN_Prediction import learn_duplicated_events, predict_next_event, predict_suffix
 
     if k is None:
         best_model = {}
@@ -83,8 +83,8 @@ def train_edbn(data_folder, model_folder, k = None, next_event = True):
 
 
 def train_camargo(data_folder, model_folder, architecture):
-    import embedding_training as em
-    import model_training as mo
+    import RelatedMethods.Camargo.embedding_training as em
+    import RelatedMethods.Camargo.model_training as mo
 
     logfile = LogFile(data_folder + "full_log.csv", ",", 0, None, None, "case",
                         activity_attr="event", convert=False, k=0)
@@ -230,7 +230,6 @@ def main(argv):
         if len(argv) == 3:
             os.environ["CUDA_VISIBLE_DEVICES"] = argv[2]
         train_dimauro(dataset_folder, model_folder, DIMAURO_PARAMS.get(data, None))
-        #train_dimauro(dataset_folder, model_folder)
     elif method == TAX:
         train_tax(dataset_folder, model_folder)
 
@@ -242,5 +241,7 @@ def main(argv):
     time_output.write("End time: %s\n" % current_time_str)
     time_output.write("Duration: %fs\n\n" % (current_time - start_time))
 
+
 if __name__ == "__main__":
     main(sys.argv[1:])
+

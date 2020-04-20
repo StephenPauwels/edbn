@@ -7,7 +7,7 @@ import pickle
 
 import pandas as pd
 
-from support_modules.role_discovery import role_discovery
+from RelatedMethods.Camargo.support_modules.role_discovery import role_discovery
 from Utils.LogFile import LogFile
 
 BPIC15 = "BPIC15"

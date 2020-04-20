@@ -1,4 +1,4 @@
-# Extended Dynamic Bayesian Network: Detecting Anomalies in Multidimensional Hybrid Business Process Logs</h1>
+# Extended Dynamic Bayesian Network: Probabilities in Business Processes</h1>
 
 This repository contains all implementation files and experiments conducted for the Extended Dynamic Bayesian Networks introduced in
 [1].

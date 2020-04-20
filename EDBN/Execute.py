@@ -12,7 +12,6 @@ def train(data):
     cbn.train(data)
     return cbn
 
-
 def test(test_data, output_file, model, label, normal_val, train_data=None):
 
     if train_data:

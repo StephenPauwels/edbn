@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 from keras.models import load_model
 
-from support_modules import support as sup
+from RelatedMethods.Camargo.support_modules import support as sup
 
 START_TIMEFORMAT = ''
 INDEX_AC = None
@@ -113,7 +113,7 @@ def predict_next_old(timeformat, parameters, is_single_exec=True):
                                                                           'next_event_measures.csv'))
 
 
-def predict_next(data_folder, output_folder, model_file, is_single_exec=True):
+def predict_next(log, model):
     """Main function of the suffix prediction module.
     Args:
         timeformat (str): event-log date-time format.
@@ -121,104 +121,38 @@ def predict_next(data_folder, output_folder, model_file, is_single_exec=True):
         is_single_exec (boolean): generate measurments stand alone or share
                     results with other runing experiments (optional)
     """
-    global INDEX_AC
-    global INDEX_RL
-    global DIM
-    global TBTW
-    global EXP
-
-    output_route = output_folder
-    model_name, _ = os.path.splitext(model_file)
-    # Loading of testing dataframe
-    df_test = pd.read_csv(os.path.join(data_folder, 'test_log.csv'))
-#    df_test['start_timestamp'] = pd.to_datetime(df_test['start_timestamp'])
-#    df_test['end_timestamp'] = pd.to_datetime(df_test['end_timestamp'])
-#    df_test = df_test.drop(columns=['user'])
-#    df_test = df_test.rename(index=str, columns={"role": "user"})
-
-    # Loading of parameters from training
-    with open(os.path.join(output_route, 'model_parameters.json')) as file:
-        data = json.load(file)
-        EXP = {k: v for k, v in data['exp_desc'].items()}
-        print(EXP)
-        DIM['samples'] = int(data['dim']['samples'])
-        DIM['time_dim'] = int(data['dim']['time_dim'])
-        DIM['features'] = int(data['dim']['features'])
-        INDEX_AC = {int(k): v for k, v in data['index_ac'].items()}
-        INDEX_RL = {int(k): v for k, v in data['index_rl'].items()}
-        file.close()
-
-    ac_alias = create_alias(len(INDEX_AC))
-    rl_alias = create_alias(len(INDEX_RL))
 
 #   Next event selection method and numbers of repetitions
     variants = [{'imp': 'Random Choice', 'rep': 1},
                 {'imp': 'Arg Max', 'rep': 1}]
-#   Generation of predictions
-    model = load_model(os.path.join(output_route, model_file))
 
-    measurements = list()
+    accs = []
     for var in variants:
         for i in range(0, var['rep']):
 
-            prefixes = create_pref_suf(df_test, ac_alias, rl_alias)
-            prefixes = predict(model, prefixes, ac_alias, rl_alias, var['imp'])
+            prefixes = create_pref_suf(log)
+            prefixes = predict(model, prefixes, var['imp'])
             
             accuracy = (np.sum([x['ac_true'] for x in prefixes])/len(prefixes))
-
-            if is_single_exec:
-                sup.create_csv_file_header(prefixes, os.path.join(output_route,
-                                                                      model_name +'_rep_'+str(i)+'_next.csv'))
-            
-            # Save results
-            measurements.append({**dict(model=os.path.join(output_route, model_file),
-                                        implementation=var['imp']), **{'accuracy': accuracy},**EXP})
-        if measurements:    
-            if is_single_exec:
-                    sup.create_csv_file_header(measurements, os.path.join(output_route,
-                                                                          model_name +'_next.csv'))
-            else:
-                if os.path.exists(os.path.join(output_route, 'next_event_measures.csv')):
-                    sup.create_csv_file(measurements, os.path.join(output_route,
-                                                                   'next_event_measures.csv'), mode='a')
-                else:
-                    sup.create_csv_file_header(measurements, os.path.join(output_route,
-                                                                              'next_event_measures.csv'))
-
+            accs.append(accuracy)
+    return accs
 # =============================================================================
 # Predic traces
 # =============================================================================
 
-def predict(model, prefixes, ac_alias, rl_alias, imp):
+def predict(model, prefixes, imp):
     """Generate business process suffixes using a keras trained model.
     Args:
         model (keras model): keras trained model.
         prefixes (list): list of prefixes.
-        ac_index (dict): index of activities.
-        rl_index (dict): index of roles.
         imp (str): method of next event selection.
     """
     # Generation of predictions
     for prefix in prefixes:
 
-        # Activities and roles input shape(1,5)
-        x_ac_ngram = np.append(
-                np.zeros(DIM['time_dim']),
-                np.array(prefix['ac_pref']),
-                axis=0)[-DIM['time_dim']:].reshape((1,DIM['time_dim']))
-                
-        x_rl_ngram = np.append(
-                np.zeros(DIM['time_dim']),
-                np.array(prefix['rl_pref']),
-                axis=0)[-DIM['time_dim']:].reshape((1,DIM['time_dim']))
+        x_ac_ngram = [prefix['ac_pref']]
+        x_rl_ngram = [prefix['rl_pref']]
 
-        # times input shape(1,5,1)
-#        x_t_ngram = np.array([np.append(
-#                np.zeros(DIM['time_dim']),
-#                np.array(prefix['t_pref']),
-#                axis=0)[-DIM['time_dim']:].reshape((DIM['time_dim'], 1))])
-                
-#        predictions = model.predict([x_ac_ngram, x_rl_ngram, x_t_ngram])
         predictions = model.predict([x_ac_ngram, x_rl_ngram])
 
         if imp == 'Random Choice':
@@ -246,7 +180,7 @@ def predict(model, prefixes, ac_alias, rl_alias, imp):
 # =============================================================================
 # Reformat
 # =============================================================================
-def create_pref_suf(df_test, ac_alias, rl_alias):
+def create_pref_suf(log):
     """Extraction of prefixes and expected suffixes from event log.
     Args:
         df_test (dataframe): testing dataframe in pandas format.
@@ -256,23 +190,27 @@ def create_pref_suf(df_test, ac_alias, rl_alias):
     Returns:
         list: list of prefixes and expected sufixes.
     """
-    prefixes = list()
-    cases = df_test.case.unique()
+    prefixes = []
+    cases = log.get_cases()
     for case in cases:
-        trace = df_test[df_test.case == case]
-        ac_pref = list()
-        rl_pref = list()
-        t_pref = list()
-        for i in range(0, len(trace)-1):
-            ac_pref.append(trace.iloc[i]['event'])
-            rl_pref.append(trace.iloc[i]['role'])
-            t_pref.append(0)
-            prefixes.append(dict(ac_pref=ac_pref.copy(),
-                                 ac_next=trace.iloc[i + 1]['event'],
-                                 rl_pref=rl_pref.copy(),
-                                 rl_next=trace.iloc[i + 1]['role'],
-                                 t_pref=t_pref.copy()))
+        trace = case[1]
+
+        for row in trace.iterrows():
+            row = row[1]
+            ac_pref = []
+            rl_pref = []
+            t_pref = []
+            for i in range(log.k - 1, -1, -1):
+                ac_pref.append(row["event_Prev%i" % i])
+                rl_pref.append(row["event_Prev%i" % i])
+                t_pref.append(0)
+            prefixes.append(dict(ac_pref=ac_pref,
+                                 ac_next=row["event"],
+                                 rl_pref=rl_pref,
+                                 rl_next=row["role"],
+                                 t_pref=t_pref))
     return prefixes
+
 
 def create_alias(quantity):
     """Creates char aliases for a categorical attributes.

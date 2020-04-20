@@ -114,12 +114,11 @@ def generate_model(data, remove_attrs = None):
     # Create list with allowed edges (only from previous -> current and current -> current)
     restrictions = []
     for attr1 in attributes:
+        if attr1 != data.activity:
+            continue
         for attr2 in attributes:
-    #        if attr1 != attr2:
-    #            restrictions.append((attr2, attr1))
             for i in range(data.k):
                 restrictions.append((attr2 + "_Prev%i" % (i), attr1))
-                #restrictions.append((attr2, attr1 + "_Prev%i" % (i)))
         if "duration_0" in nodes:
             restrictions.append((attr1, "duration_0"))
 
@@ -128,8 +127,8 @@ def generate_model(data, remove_attrs = None):
 
     # Calculate Bayesian Network
     learner = Structure_learner(data, nodes)
-    relations = learner.learn(restrictions)
-    #relations = learner.learn(restrictions, whitelist)
+    # relations = learner.learn(restrictions)
+    relations = learner.learn(restrictions, whitelist)
 
     print("GENERATE: Found Conditional Dependencies:")
     for relation in relations:

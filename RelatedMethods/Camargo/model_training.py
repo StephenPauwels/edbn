@@ -6,7 +6,6 @@ Created on Wed Nov 21 21:23:55 2018
 """
 import csv
 import itertools
-import os
 import multiprocessing as mp
 from functools import partial
 
@@ -15,94 +14,38 @@ import numpy as np
 import pandas as pd
 from nltk.util import ngrams
 
-from models import model_concatenated as mcat
-from models import model_joint as mj
-from models import model_shared as msh
-from models import model_shared_cat as mshcat
-from models import model_specialized as msp
-from support_modules import support as sup
+from RelatedMethods.Camargo.models import model_shared_cat as mshcat
+from RelatedMethods.Camargo.models import model_specialized as msp
 
 
-def training_model(full_log, log_train, log_test, outfile, args):
+def training_model(log, event_emb, role_emb, args, epochs, early_stop):
     """Main method of the training module.
     """
 
-    # Index creation
-    # ac_index = {}
-    # index_ac = {}
-    # i = 1
-    # for val in log_train.values[log_train.activity]:
-    #     ac_index[val] = i
-    #     index_ac[i] = val
-    #     i += 1
-    # ac_index["None"] = 0
-    # index_ac[0] = "None"
-    #
-    # rl_index = {}
-    # index_rl = {}
-    # i = 1
-    # for val in log_train.values["role"]:
-    #     rl_index[val] = i
-    #     index_rl[i] = val
-    #     i += 1
-    # rl_index["None"] = 0
-    # index_rl[0] = "None"
-
-    ac_index = create_index(full_log.data, 'event')
-    ac_index['start'] = 0
-    ac_index['end'] = len(ac_index)
-    index_ac = {v: k for k, v in ac_index.items()}
-
-    rl_index = create_index(full_log.data, 'role')
-    rl_index['start'] = 0
-    rl_index['end'] = len(rl_index)
-    index_rl = {v: k for k, v in rl_index.items()}
-
     # Load embedded matrix
-    ac_weights = load_embedded(index_ac, os.path.join(outfile, 'event.emb'))
-    rl_weights = load_embedded(index_rl, os.path.join(outfile, 'role.emb'))
+    ac_weights = np.array(event_emb)
+    rl_weights = np.array(role_emb)
     # Calculate relative times
-    log_df_train = add_calculated_features(log_train.data, ac_index, rl_index)
-    log_df_test = add_calculated_features(log_test.data, ac_index, rl_index)
-    # Split validation datasets
-    # log_df_train, log_df_test = nsup.split_train_test(log_df, 0.3) # 70%/30%
-    # Input vectorization
-    vec = vectorization(log_df_train, ac_index, rl_index, args)
+    # log_df_train = add_calculated_features(log.contextdata)
+
+    vec = vectorization(log)
     # Parameters export
-    output_folder = outfile
+    # output_folder = outfile
 
     parameters = {}
     parameters['event_log'] = args['file_name']
     parameters['exp_desc'] = args
-    parameters['index_ac'] = index_ac
-    parameters['index_rl'] = index_rl
     parameters['dim'] = dict(samples=str(vec['prefixes']['x_ac_inp'].shape[0]),
                              time_dim=str(vec['prefixes']['x_ac_inp'].shape[1]),
-                             features=str(len(ac_index)))
+                             features=str(len(event_emb)))
 
-    sup.create_json(parameters, os.path.join(output_folder,
-                                             'model_parameters.json'))
-    # sup.create_csv_file_header(log_df_test.to_dict('records'),
-    #                            os.path.join(output_folder,
-    #                                         'data',
-    #                                         'test_log.csv'))
-    # sup.create_csv_file_header(log_df_train.to_dict('record'),
-    #                            os.path.join(output_folder,
-    #                                         'data',
-    #                                         'train_log.csv'))
-
-    if args['model_type'] == 'joint':
-        mj.training_model(vec, ac_weights, rl_weights, output_folder, args)
-    elif args['model_type'] == 'shared':
-        msh.training_model(vec, ac_weights, rl_weights, output_folder, args)
-    elif args['model_type'] == 'specialized':
-        msp.training_model(vec, ac_weights, rl_weights, output_folder, args)
-    elif args['model_type'] == 'concatenated':
-        mcat.training_model(vec, ac_weights, rl_weights, output_folder, args)
+    model = None
+    if args['model_type'] == 'specialized':
+        model = msp.training_model(vec, ac_weights, rl_weights, "tmp", args, epochs, early_stop)
     elif args['model_type'] == 'shared_cat':
-        mshcat.training_model(vec, ac_weights, rl_weights, output_folder, args)
+        model = mshcat.training_model(vec, ac_weights, rl_weights, "tmp", args, epochs, early_stop)
 
-    return output_folder
+    return model
 
 # =============================================================================
 # Load embedded matrix
@@ -129,42 +72,61 @@ def load_embedded(index, filename):
 # =============================================================================
 # Pre-processing: n-gram vectorization
 # =============================================================================
-def vectorization(log_df, ac_index, rl_index, args):
+def vectorization(log):
     """Example function with types documented in the docstring.
     Args:
         log_df (dataframe): event log data.
         ac_index (dict): index of activities.
         rl_index (dict): index of roles.
-        args (dict): parameters for training the network
     Returns:
         dict: Dictionary that contains all the LSTM inputs.
     """
     print("Start Vectorization")
-    cases = log_df["case"].unique()
 
+    vec = {'prefixes': dict(), 'next_evt': dict()}
+
+    train_cases = log.get_cases()
+    part_vect_map = partial(vect_map, prefix_size=log.k)
     with mp.Pool(mp.cpu_count()) as p:
-        train_df = p.map(partial(map_case, log_df=log_df, case_attr="case"), cases)
+        result = np.array(p.map(part_vect_map, train_cases))
 
-    vec = {'prefixes':dict(), 'next_evt':dict()}
+    vec['prefixes']['x_ac_inp'] = np.concatenate(result[:, 0])
+    vec['prefixes']['x_rl_inp'] = np.concatenate(result[:, 1])
+    vec['next_evt']['y_ac_inp'] = np.concatenate(result[:, 2])
+    vec['next_evt']['y_rl_inp'] = np.concatenate(result[:, 3])
 
-    with mp.Pool(mp.cpu_count()) as p:
-        result = np.array(p.map(vect_map, train_df))
-
-    vec['prefixes']['x_ac_inp'] = np.concatenate(result[:,0], axis=0)
-    vec['prefixes']['x_rl_inp'] = np.concatenate(result[:,1], axis=0)
-    vec['next_evt']['y_ac_inp'] = np.concatenate(result[:,2])
-    vec['next_evt']['y_rl_inp'] = np.concatenate(result[:,3])
-
-    print("To_Categorical")
-    vec['next_evt']['y_ac_inp'] = ku.to_categorical(vec['next_evt']['y_ac_inp'], num_classes=len(ac_index))
-    vec['next_evt']['y_rl_inp'] = ku.to_categorical(vec['next_evt']['y_rl_inp'], num_classes=len(rl_index))
-    print("DONE")
+    vec['next_evt']['y_ac_inp'] = ku.to_categorical(vec['next_evt']['y_ac_inp'], num_classes=len(log.values["event"])+1)
+    vec['next_evt']['y_rl_inp'] = ku.to_categorical(vec['next_evt']['y_rl_inp'], num_classes=len(log.values["role"])+1)
     return vec
+
 
 def map_case(x, log_df, case_attr):
     return log_df[log_df[case_attr] == x]
 
-def vect_map(case_df):
+
+def vect_map(case, prefix_size):
+    case_df = case[1]
+
+    x_ac_inps = []
+    x_rl_inps = []
+    y_ac_inps = []
+    y_rl_inps = []
+    for row in case_df.iterrows():
+        row = row[1]
+        x_ac_inp = []
+        x_rl_inp = []
+        for i in range(prefix_size - 1, 0, -1):
+            x_ac_inp.append(row["event_Prev%i" % i])
+            x_rl_inp.append(row["role_Prev%i" % i])
+        x_ac_inp.append(row["event_Prev0"])
+        x_rl_inp.append(row["role_Prev0"])
+
+        x_ac_inps.append(x_ac_inp)
+        x_rl_inps.append(x_rl_inp)
+        y_ac_inps.append(row["event"])
+        y_rl_inps.append(row["role"])
+    return [np.array(x_ac_inps), np.array(x_rl_inps), np.array(y_ac_inps), np.array(y_rl_inps)]
+
     ac_n_grams = list(ngrams(case_df["event"], 5, pad_left=True, left_pad_symbol=0))
     rl_n_grams = list(ngrams(case_df["role"], 5, pad_left=True, left_pad_symbol=0))
 
@@ -179,7 +141,7 @@ def vect_map(case_df):
         y_rl_inp = np.append(y_rl_inp, np.array(rl_n_grams[j+1][-1]))
     return [x_ac_inp, x_rl_inp, y_ac_inp, y_rl_inp]
 
-def add_calculated_features(log_df, ac_index, rl_index):
+def add_calculated_features(log_df):
     """Appends the indexes and relative time to the dataframe.
     Args:
         log_df: dataframe.

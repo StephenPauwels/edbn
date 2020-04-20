@@ -4,20 +4,20 @@
     Author: Stephen Pauwels
 """
 
-import os
 import multiprocessing as mp
+import os
 from functools import partial
 
+import jellyfish as jf
 import keras.utils as ku
 import numpy as np
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 from keras.layers import Input, Embedding, Dropout, Concatenate, LSTM, Dense, BatchNormalization
 from keras.models import Model, load_model
 from keras.optimizers import Nadam
-from nltk.util import ngrams
-import jellyfish as jf
 
 from RelatedMethods.Lin.Modulator import Modulator
+
 
 def create_model_cudnn(vec, vocab_act_size, vocab_role_size, output_folder):
     # Create embeddings + Concat
@@ -81,10 +81,14 @@ def create_model_cudnn(vec, vocab_act_size, vocab_role_size, output_folder):
               callbacks=[early_stopping, model_checkpoint],
               epochs=200)
 
-def create_model(vec, vocab_act_size, vocab_role_size, output_folder):
+def create_model(log, output_folder, epochs, early_stop):
+    vec = vectorization(log)
+    vocab_act_size = len(log.values["event"]) + 1
+    vocab_role_size = len(log.values["role"]) + 1
+
     # Create embeddings + Concat
-    act_input = Input(shape = (vec['prefixes']['x_ac_inp'].shape[1],), name="act_input")
-    role_input = Input(shape = (vec['prefixes']['x_rl_inp'].shape[1],), name="role_input")
+    act_input = Input(shape=(vec['prefixes']['x_ac_inp'].shape[1],), name="act_input")
+    role_input = Input(shape=(vec['prefixes']['x_rl_inp'].shape[1],), name="role_input")
 
     act_embedding = Embedding(vocab_act_size, 100, input_length=vec['prefixes']['x_ac_inp'].shape[1],)(act_input)
     act_dropout = Dropout(0.2)(act_embedding)
@@ -100,8 +104,8 @@ def create_model(vec, vocab_act_size, vocab_role_size, output_folder):
     concat1 = Concatenate(axis=1)([act_e_lstm_2, role_e_lstm_2])
     normal = BatchNormalization()(concat1)
 
-    act_modulator = Modulator(attr_idx=0, num_attrs=1)(normal)
-    role_modulator = Modulator(attr_idx=1, num_attrs=1)(normal)
+    act_modulator = Modulator(attr_idx=0, num_attrs=1, time=log.k)(normal)
+    role_modulator = Modulator(attr_idx=1, num_attrs=1, time=log.k)(normal)
 
     # Use LSTM to decode events
     act_d_lstm_1 = LSTM(100, return_sequences=True)(act_modulator)
@@ -121,7 +125,7 @@ def create_model(vec, vocab_act_size, vocab_role_size, output_folder):
 
     model.summary()
 
-    output_file_path = os.path.join(output_folder, 'model_rd_{epoch:03d}-{val_loss:.2f}.h5')
+    output_file_path = os.path.join(output_folder, 'model_{epoch:03d}-{val_loss:.2f}.h5')
 
     # Saving
     model_checkpoint = ModelCheckpoint(output_file_path,
@@ -131,7 +135,7 @@ def create_model(vec, vocab_act_size, vocab_role_size, output_folder):
                                        save_weights_only=False,
                                        mode='auto')
 
-    early_stopping = EarlyStopping(monitor='val_loss', patience=10)
+    early_stopping = EarlyStopping(monitor='val_loss', patience=early_stop)
 
     model.fit({'act_input':vec['prefixes']['x_ac_inp'],
                'role_input':vec['prefixes']['x_rl_inp']},
@@ -141,19 +145,19 @@ def create_model(vec, vocab_act_size, vocab_role_size, output_folder):
               verbose=2,
               batch_size=5,
               callbacks=[early_stopping, model_checkpoint],
-              epochs=200)
+              epochs=epochs)
+    return model
 
 
-def predict_next(model_file, df_test, case_attr="case", activity_attr="event"):
-    model = load_model(os.path.join(model_file), custom_objects={'Modulator':Modulator})
-
-    prefixes = create_pref_next(df_test, case_attr, activity_attr)
+def predict_next(log, model):
+    prefixes = create_pref_next(log)
     prefixes = _predict_next(model, prefixes)
 
     accuracy = (np.sum([x['ac_true'] for x in prefixes]) / len(prefixes))
 
     print("Accuracy:", accuracy)
     return accuracy
+
 
 def predict_suffix(model_file, df_test, end):
     model = load_model(os.path.join(model_file), custom_objects={'Modulator':Modulator})
@@ -168,85 +172,63 @@ def predict_suffix(model_file, df_test, end):
     return average_dl
 
 
-def vectorization(log_df, case_attr, activity="event", role="role", num_classes=None):
-    """
+def vectorization(log):
+    """Example function with types documented in the docstring.
     Args:
         log_df (dataframe): event log data.
-        case_attr: name of attribute containing case ID
-        activity: name of attribute containing the activity
-        role: name of attribute containing the resource/role
-        num_classes: number of distinct activities
+        ac_index (dict): index of activities.
+        rl_index (dict): index of roles.
     Returns:
         dict: Dictionary that contains all the LSTM inputs.
     """
     print("Start Vectorization")
-    cases = log_df[case_attr].unique()
 
+    vec = {'prefixes': dict(), 'next_evt': dict()}
+
+    train_cases = log.get_cases()
+    part_vect_map = partial(vect_map, prefix_size=log.k)
     with mp.Pool(mp.cpu_count()) as p:
-        train_df = p.map(partial(map_case, log_df=log_df, case_attr=case_attr), cases)
-    #for case in cases:
-    #    train_df.append(log_df[log_df[case_attr] == case])
+        result = np.array(p.map(part_vect_map, train_cases))
 
+    vec['prefixes']['x_ac_inp'] = np.concatenate(result[:, 0])
+    vec['prefixes']['x_rl_inp'] = np.concatenate(result[:, 1])
+    vec['next_evt']['y_ac_inp'] = np.concatenate(result[:, 2])
+    vec['next_evt']['y_rl_inp'] = np.concatenate(result[:, 3])
 
-    vec = {'prefixes':dict(), 'next_evt':dict()}
-    # n-gram definition
-    with mp.Pool(mp.cpu_count()) as p:
-        result = np.array(p.map(vect_map, train_df))
-
-    vec['prefixes']['x_ac_inp'] = np.concatenate(result[:,0], axis=0)
-    vec['prefixes']['x_rl_inp'] = np.concatenate(result[:,1], axis=0)
-    vec['next_evt']['y_ac_inp'] = np.concatenate(result[:,2])
-    vec['next_evt']['y_rl_inp'] = np.concatenate(result[:,3])
-
-    """
-    for i, _ in enumerate(train_df):
-        ac_n_grams = list(ngrams(train_df[i][activity], 5,
-                                 pad_left=True, left_pad_symbol=0))
-        rl_n_grams = list(ngrams(train_df[i][role], 5,
-                                 pad_left=True, left_pad_symbol=0))
-
-        st_idx = 0
-        if i == 0:
-            vec['prefixes']['x_ac_inp'] = np.array([ac_n_grams[0]])
-            vec['prefixes']['x_rl_inp'] = np.array([rl_n_grams[0]])
-            vec['next_evt']['y_ac_inp'] = np.array(ac_n_grams[1][-1])
-            vec['next_evt']['y_rl_inp'] = np.array(rl_n_grams[1][-1])
-            st_idx = 1
-        for j in range(st_idx, len(ac_n_grams)-1):
-            vec['prefixes']['x_ac_inp'] = np.concatenate((vec['prefixes']['x_ac_inp'],
-                                                          np.array([ac_n_grams[j]])), axis=0)
-            vec['prefixes']['x_rl_inp'] = np.concatenate((vec['prefixes']['x_rl_inp'],
-                                                          np.array([rl_n_grams[j]])), axis=0)
-            vec['next_evt']['y_ac_inp'] = np.append(vec['next_evt']['y_ac_inp'],
-                                                    np.array(ac_n_grams[j+1][-1]))
-            vec['next_evt']['y_rl_inp'] = np.append(vec['next_evt']['y_rl_inp'],
-                                                    np.array(rl_n_grams[j+1][-1]))
-    """
-    print("To_Categorical")
-    vec['next_evt']['y_ac_inp'] = ku.to_categorical(vec['next_evt']['y_ac_inp'], num_classes=num_classes)
-    vec['next_evt']['y_rl_inp'] = ku.to_categorical(vec['next_evt']['y_rl_inp'])
-    print("DONE")
+    vec['next_evt']['y_ac_inp'] = ku.to_categorical(vec['next_evt']['y_ac_inp'], num_classes=len(log.values["event"])+1)
+    vec['next_evt']['y_rl_inp'] = ku.to_categorical(vec['next_evt']['y_rl_inp'], num_classes=len(log.values["role"])+1)
     return vec
+
 
 def map_case(x, log_df, case_attr):
     return log_df[log_df[case_attr] == x]
 
-def vect_map(case_df):
-    ac_n_grams = list(ngrams(case_df["event"], 5, pad_left=True, left_pad_symbol=0))
-    rl_n_grams = list(ngrams(case_df["role"], 5, pad_left=True, left_pad_symbol=0))
 
-    x_ac_inp = np.array([ac_n_grams[0]])
-    x_rl_inp = np.array([rl_n_grams[0]])
-    y_ac_inp = np.array(ac_n_grams[1][-1])
-    y_rl_inp = np.array(rl_n_grams[1][-1])
-    for j in range(1, len(ac_n_grams) - 1):
-        x_ac_inp = np.concatenate((x_ac_inp, np.array([ac_n_grams[j]])), axis=0)
-        x_rl_inp = np.concatenate((x_rl_inp, np.array([rl_n_grams[j]])), axis=0)
-        y_ac_inp = np.append(y_ac_inp, np.array(ac_n_grams[j+1][-1]))
-        y_rl_inp = np.append(y_rl_inp, np.array(rl_n_grams[j+1][-1]))
-    return [x_ac_inp, x_rl_inp, y_ac_inp, y_rl_inp]
+def vect_map(case, prefix_size):
+    case_df = case[1]
 
-def create_pref_next(df_test, case_attr="case", activity_attr="event"):
+    x_ac_inps = []
+    x_rl_inps = []
+    y_ac_inps = []
+    y_rl_inps = []
+    for row in case_df.iterrows():
+        row = row[1]
+        x_ac_inp = []
+        x_rl_inp = []
+        for i in range(prefix_size - 1, 0, -1):
+            x_ac_inp.append(row["event_Prev%i" % i])
+            x_rl_inp.append(row["role_Prev%i" % i])
+        x_ac_inp.append(row["event_Prev0"])
+        x_rl_inp.append(row["role_Prev0"])
+
+        x_ac_inps.append(x_ac_inp)
+        x_rl_inps.append(x_rl_inp)
+        y_ac_inps.append(row["event"])
+        y_rl_inps.append(row["role"])
+    return [np.array(x_ac_inps), np.array(x_rl_inps), np.array(y_ac_inps), np.array(y_rl_inps)]
+
+
+def create_pref_next(log):
     """Extraction of prefixes and expected suffixes from event log.
     Args:
         df_test (dataframe): testing dataframe in pandas format.
@@ -255,21 +237,25 @@ def create_pref_next(df_test, case_attr="case", activity_attr="event"):
     Returns:
         list: list of prefixes and expected sufixes.
     """
-    prefixes = list()
-    cases = df_test[case_attr].unique()
+    prefixes = []
+    cases = log.get_cases()
     for case in cases:
-        trace = df_test[df_test[case_attr] == case]
-        ac_pref = list()
-        rl_pref = list()
-        t_pref = list()
-        for i in range(0, len(trace)-1):
-            ac_pref.append(trace.iloc[i][activity_attr])
-            rl_pref.append(trace.iloc[i]['role'])
-            prefixes.append(dict(ac_pref=ac_pref.copy(),
-                                 ac_next=trace.iloc[i + 1][activity_attr],
-                                 rl_pref=rl_pref.copy(),
-                                 rl_next=trace.iloc[i + 1]['role'],
-                                 t_pref=t_pref.copy()))
+        trace = case[1]
+
+        for row in trace.iterrows():
+            row = row[1]
+            ac_pref = []
+            rl_pref = []
+            t_pref = []
+            for i in range(log.k - 1, -1, -1):
+                ac_pref.append(row["event_Prev%i" % i])
+                rl_pref.append(row["event_Prev%i" % i])
+                t_pref.append(0)
+            prefixes.append(dict(ac_pref=ac_pref,
+                                 ac_next=row["event"],
+                                 rl_pref=rl_pref,
+                                 rl_next=row["role"],
+                                 t_pref=t_pref))
     return prefixes
 
 def create_pref_suff(df_test, end):
@@ -309,15 +295,8 @@ def _predict_next(model, prefixes):
     for prefix in prefixes:
 
         # Activities and roles input shape(1,5)
-        x_ac_ngram = np.append(
-            np.zeros(5),
-            np.array(prefix['ac_pref']),
-            axis=0)[-5:].reshape((1, 5))
-
-        x_rl_ngram = np.append(
-            np.zeros(5),
-            np.array(prefix['rl_pref']),
-            axis=0)[-5:].reshape((1, 5))
+        x_ac_ngram = [prefix['ac_pref']]
+        x_rl_ngram = [prefix['rl_pref']]
 
         predictions = model.predict([x_ac_ngram, x_rl_ngram])
 

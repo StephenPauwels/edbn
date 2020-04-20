@@ -275,7 +275,6 @@ class LogFile:
         return False
 
     def add_end_events(self):
-        # TODO make in parallel
         cases = self.get_cases()
         print("Run end event map")
         with mp.Pool(mp.cpu_count()) as p:
@@ -303,43 +302,62 @@ class LogFile:
         new_data.append(record)
         return new_data
 
-
-    def splitTrainTest(self, train_percentage):
+    def splitTrainTest(self, train_percentage, case, method="random"):
         import random
+        train_percentage = train_percentage / 100.0
 
-        grouped = self.data.groupby([self.trace])
-        train_cases = []
-        test_cases = []
-        test_length = len(grouped) * 0.3
-        for group in grouped:
-            # if len(test_cases) < test_length:
-            #    test_cases.append(group[1])
-            # else:
-            #    train_cases.append(group[1])
-            if random.randint(0,100) < train_percentage:
-                train_cases.append(group[1])
+        if not case:
+            if method == "random":
+                train_inds = random.sample(range(self.contextdata.shape[0]), k=round(self.contextdata.shape[0] * train_percentage))
+                test_inds = list(set(range(self.contextdata.shape[0])).difference(set(train_inds)))
+            elif method == "train-test":
+                train_inds = np.arange(0, self.contextdata.shape[0] * train_percentage)
+                test_inds = list(set(range(self.contextdata.shape[0])).difference(set(train_inds)))
             else:
-                test_cases.append(group[1])
+                test_inds = np.arange(0, self.contextdata.shape[0] * (1 - train_percentage))
+                train_inds = list(set(range(self.contextdata.shape[0])).difference(set(test_inds)))
+        else:
+            train_inds = []
+            test_inds = []
+            cases = self.contextdata[self.trace].unique()
+            if method == "random":
+                train_cases = random.sample(list(cases), k=round(len(cases) * train_percentage))
+                test_cases = list(set(cases).difference(set(train_cases)))
+            elif method == "train-test":
+                train_cases = cases[:round(len(cases) * train_percentage)]
+                test_cases = cases[round(len(cases) * train_percentage):]
+            else:
+                train_cases = cases[round(len(cases) * (1 - train_percentage)):]
+                test_cases = cases[:round(len(cases) * (1 - train_percentage))]
 
-        train = pd.concat(train_cases)
-        test = pd.concat(test_cases)
+            for train_case in train_cases:
+                train_inds.extend(list(self.contextdata[self.contextdata[self.trace] == train_case].index))
+            for test_case in test_cases:
+                test_inds.extend(list(self.contextdata[self.contextdata[self.trace] == test_case].index))
+
+        train = self.contextdata.loc[train_inds]
+        test = self.contextdata.loc[test_inds]
+
+        print("Train:", len(train_inds))
+        print("Test:", len(test_inds))
 
         train_logfile = LogFile(None, None, None, None, self.time, self.trace, self.activity, self.values, False, False)
         train_logfile.filename = self.filename
         train_logfile.values = self.values
-        train_logfile.contextdata = None
+        train_logfile.contextdata = train
         train_logfile.categoricalAttributes = self.categoricalAttributes
         train_logfile.numericalAttributes = self.numericalAttributes
-        train_logfile.data = train
+        train_logfile.data = self.data.loc[train_inds]
         train_logfile.k = self.k
 
         test_logfile = LogFile(None, None, None, None, self.time, self.trace, self.activity, self.values, False, False)
         test_logfile.filename = self.filename
         test_logfile.values = self.values
-        test_logfile.contextdata = None
+        test_logfile.contextdata = test
         test_logfile.categoricalAttributes = self.categoricalAttributes
         test_logfile.numericalAttributes = self.numericalAttributes
-        test_logfile.data = test
+        test_logfile.data = self.data.loc[test_inds]
         test_logfile.k = self.k
 
         return train_logfile, test_logfile
+
