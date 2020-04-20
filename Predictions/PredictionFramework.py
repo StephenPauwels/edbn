@@ -10,14 +10,7 @@ from RelatedMethods.DiMauro import adapter as dimauro
 from Predictions import edbn_adapter as edbn
 from Predictions import base_adapter as baseline
 
-if __name__ == "__main__":
-    data = "../Data/BPIC15_1_sorted_new.csv"
-    prefix_size = 5
-    add_end_event = False
-    split_method = "train-test"
-    split_cases = True
-    train_percentage = 70
-
+def run_experiment(data, prefix_size, add_end_event, split_method, split_cases, train_percentage):
     logfile = LogFile(data, ",", 0, None, None, "case",
                       activity_attr="event", convert=False, k=prefix_size)
     if add_end_event:
@@ -74,3 +67,29 @@ if __name__ == "__main__":
     print("Di Mauro:", dimauro_acc)
     print("EDBN:", edbn_acc)
     print("Baseline:", baseline_acc)
+
+def experiments_helpdesk():
+    data = "../Data/Camargo_Helpdesk.csv"
+    prefix_size = [1,2,3,4,5,6]
+    add_end_event = [True, False]
+    split_method = ["train-test", "test-train", "random"]
+    split_cases = [True, False]
+    train_percentage = [70, 80]
+
+    for ps in prefix_size:
+        for aee in add_end_event:
+            for sm in split_method:
+                for sc in split_cases:
+                    for tp in train_percentage:
+                        run_experiment(data, ps, aee, sm, sc, tp)
+
+
+if __name__ == "__main__":
+    data = ["../Data/BPIC15_1_sorted_new.csv"
+    prefix_size = 5
+    add_end_event = False
+    split_method = "train-test"
+    split_cases = True
+    train_percentage = 70
+
+
