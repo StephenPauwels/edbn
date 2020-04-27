@@ -127,19 +127,6 @@ def vect_map(case, prefix_size):
         y_rl_inps.append(row["role"])
     return [np.array(x_ac_inps), np.array(x_rl_inps), np.array(y_ac_inps), np.array(y_rl_inps)]
 
-    ac_n_grams = list(ngrams(case_df["event"], 5, pad_left=True, left_pad_symbol=0))
-    rl_n_grams = list(ngrams(case_df["role"], 5, pad_left=True, left_pad_symbol=0))
-
-    x_ac_inp = np.array([ac_n_grams[0]])
-    x_rl_inp = np.array([rl_n_grams[0]])
-    y_ac_inp = np.array(ac_n_grams[1][-1])
-    y_rl_inp = np.array(rl_n_grams[1][-1])
-    for j in range(1, len(ac_n_grams) - 1):
-        x_ac_inp = np.concatenate((x_ac_inp, np.array([ac_n_grams[j]])), axis=0)
-        x_rl_inp = np.concatenate((x_rl_inp, np.array([rl_n_grams[j]])), axis=0)
-        y_ac_inp = np.append(y_ac_inp, np.array(ac_n_grams[j+1][-1]))
-        y_rl_inp = np.append(y_rl_inp, np.array(rl_n_grams[j+1][-1]))
-    return [x_ac_inp, x_rl_inp, y_ac_inp, y_rl_inp]
 
 def add_calculated_features(log_df):
     """Appends the indexes and relative time to the dataframe.

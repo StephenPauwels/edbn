@@ -1,5 +1,6 @@
 from Utils.LogFile import LogFile
 from keras import utils as ku
+import time
 import numpy as np
 from keras.layers import Embedding, Dense, Input, Concatenate, Softmax, Dropout, Flatten
 from keras.models import Model
@@ -97,19 +98,50 @@ def test(log, model):
 
     return np.sum(np.equal(predict_vals, expected_vals)) / len(predict_vals)
 
-if __name__ == "__main__":
-    data = "../Data/Camargo_Helpdesk.csv"
-    # data = "../../Data/Taymouri_bpi_12_w.csv"
-    case_attr = "case"
-    act_attr = "event"
-
-    logfile = LogFile(data, ",", 0, None, None, case_attr,
-                      activity_attr=act_attr, convert=False, k=5)
+def run_experiment(data, prefix_size, add_end_event, split_method, split_cases, train_percentage):
+    logfile = LogFile(data, ",", 0, None, None, "case",
+                      activity_attr="event", convert=False, k=prefix_size)
+    if add_end_event:
+        logfile.add_end_events()
+    logfile.keep_attributes(["case", "event", "role"])
     logfile.convert2int()
-
     logfile.create_k_context()
-    train_log, test_log = logfile.splitTrainTest(80, case=True, method="train-test")
+    train_log, test_log = logfile.splitTrainTest(train_percentage, case=split_cases, method=split_method)
 
-    model = train(train_log, epochs=100, early_stop=5)
-    acc = test(test_log, model)
-    print(acc)
+    with open("results.txt", "a") as fout:
+        fout.write("Data: " + data)
+        fout.write("\nPrefix Size: " + str(prefix_size))
+        fout.write("\nEnd event: " + str(add_end_event))
+        fout.write("\nSplit method: " + split_method)
+        fout.write("\nSplit cases: " + str(split_cases))
+        fout.write("\nTrain percentage: " + str(train_percentage))
+        fout.write("\nDate: " + time.strftime("%d.%m.%y-%H.%M", time.localtime()))
+        fout.write("\n------------------------------------")
+
+        baseline_acc = test(test_log, train(train_log, epochs=100, early_stop=10))
+        fout.write("\nBaseline: " + str(baseline_acc))
+        fout.write("\n")
+        fout.write("====================================\n\n")
+
+if __name__ == "__main__":
+    data = []
+    # data.append("../Data/Camargo_Helpdesk.csv")
+    # data.append("../Data/BPIC15_1_sorted_new.csv")
+    # data.append("../Data/BPIC15_3_sorted_new.csv")
+    data.append("../Data/BPIC15_5_sorted_new.csv")
+    data.append("../Data/Camargo_BPIC12W.csv")
+    data.append("../Data/Camargo_BPIC2012.csv")
+
+    prefix_size = [1,2,4,5,10,15,20,25,30,35]
+    add_end_event = [True, False]
+    split_method = ["train-test", "test-train", "random"]
+    split_cases = [True, False]
+    train_percentage = [70, 80]
+
+    for d in data:
+        for ps in prefix_size:
+            for aee in add_end_event:
+                for sm in split_method:
+                    for sc in split_cases:
+                        for tp in train_percentage:
+                            run_experiment(d, ps, aee, sm, sc, tp)

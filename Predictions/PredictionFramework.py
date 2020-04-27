@@ -1,3 +1,7 @@
+import os
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"] = ""
+
 import time
 
 from Utils.LogFile import LogFile
@@ -10,7 +14,7 @@ from RelatedMethods.DiMauro import adapter as dimauro
 from Predictions import edbn_adapter as edbn
 from Predictions import base_adapter as baseline
 
-def run_experiment(data, prefix_size, add_end_event, split_method, split_cases, train_percentage):
+def run_experiment(data, prefix_size, add_end_event, split_method, split_cases, train_percentage, filename="results.txt"):
     logfile = LogFile(data, ",", 0, None, None, "case",
                       activity_attr="event", convert=False, k=prefix_size)
     if add_end_event:
@@ -20,7 +24,7 @@ def run_experiment(data, prefix_size, add_end_event, split_method, split_cases, 
     logfile.create_k_context()
     train_log, test_log = logfile.splitTrainTest(train_percentage, case=split_cases, method=split_method)
 
-    with open("results.txt", "a") as fout:
+    with open(filename, "a") as fout:
         fout.write("Data: " + data)
         fout.write("\nPrefix Size: " + str(prefix_size))
         fout.write("\nEnd event: " + str(add_end_event))
@@ -28,7 +32,7 @@ def run_experiment(data, prefix_size, add_end_event, split_method, split_cases, 
         fout.write("\nSplit cases: " + str(split_cases))
         fout.write("\nTrain percentage: " + str(train_percentage))
         fout.write("\nDate: " + time.strftime("%d.%m.%y-%H.%M", time.localtime()))
-        fout.write("------------------------------------")
+        fout.write("\n------------------------------------")
         tax_acc = tax.test(test_log, tax.train(train_log, epochs=100, early_stop=10))
         fout.write("\nTax: " + str(tax_acc))
         fout.write("\n")
@@ -70,26 +74,21 @@ def run_experiment(data, prefix_size, add_end_event, split_method, split_cases, 
 
 def experiments_helpdesk():
     data = "../Data/Camargo_Helpdesk.csv"
-    prefix_size = [1,2,3,4,5,6]
-    add_end_event = [True, False]
-    split_method = ["train-test", "test-train", "random"]
-    split_cases = [True, False]
-    train_percentage = [70, 80]
+    prefix_size = [1, 5, 10, 15, 20, 25, 30, 35]
+    add_end_event = [False]
+    split_method = ["train-test"]
+    split_cases = [True]
+    train_percentage = [70]
 
     for ps in prefix_size:
         for aee in add_end_event:
             for sm in split_method:
                 for sc in split_cases:
                     for tp in train_percentage:
-                        run_experiment(data, ps, aee, sm, sc, tp)
+                        run_experiment(data, ps, aee, sm, sc, tp, filename="test_prefix_size.txt")
 
 
 if __name__ == "__main__":
-    data = ["../Data/BPIC15_1_sorted_new.csv"
-    prefix_size = 5
-    add_end_event = False
-    split_method = "train-test"
-    split_cases = True
-    train_percentage = 70
+    experiments_helpdesk()
 
 

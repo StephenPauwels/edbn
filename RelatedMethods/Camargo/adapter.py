@@ -1,6 +1,8 @@
 import itertools
 import math
 
+from keras.models import load_model
+
 import RelatedMethods.Camargo.embedding_training as em
 import RelatedMethods.Camargo.model_training as mo
 import RelatedMethods.Camargo.predict_next as pn
@@ -32,20 +34,20 @@ def test(log, model):
 
 
 if __name__ == "__main__":
-    data = "../../Data/Camargo_Helpdesk.csv"
-    # data = "../../Data/Taymouri_bpi_12_w.csv"
+    # data = "../../Data/Camargo_Helpdesk.csv"
+    data = "../../Data/BPIC15_3_sorted_new.csv"
     case_attr = "case"
     act_attr = "event"
 
     logfile = LogFile(data, ",", 0, None, None, case_attr,
-                      activity_attr=act_attr, convert=False, k=4)
+                      activity_attr=act_attr, convert=False, k=5)
     logfile.convert2int()
 
     logfile.create_k_context()
-    train_log, test_log = logfile.splitTrainTest(80, case=True, method="train-test")
+    train_log, test_log = logfile.splitTrainTest(70, case=True, method="random")
 
     model = train(train_log, epochs=100, early_stop=5)
-    # model = load_model("tmp\model_rd_100_Nadam_021-2.13.h5")
+    # model = load_model("tmp\model_rd_100_Nadam_002-4.39.h5")
     acc = test(test_log, model)
     print(acc)
 
