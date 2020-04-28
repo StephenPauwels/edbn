@@ -1,8 +1,10 @@
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
+import sys
 
 import time
+from multiprocessing import Process
 
 from Utils.LogFile import LogFile
 
@@ -33,47 +35,96 @@ def run_experiment(data, prefix_size, add_end_event, split_method, split_cases, 
         fout.write("\nTrain percentage: " + str(train_percentage))
         fout.write("\nDate: " + time.strftime("%d.%m.%y-%H.%M", time.localtime()))
         fout.write("\n------------------------------------")
-        tax_acc = tax.test(test_log, tax.train(train_log, epochs=100, early_stop=10))
-        fout.write("\nTax: " + str(tax_acc))
+
+        processes = []
+        processes.append(Process(target=execute_tax, args=(train_log, test_log, filename), name="Tax"))
+        processes.append(Process(target=execute_taymouri, args=(train_log, test_log, filename), name="Taymouri"))
+        processes.append(Process(target=execute_camargo, args=(train_log, test_log, filename), name="Camargo"))
+        processes.append(Process(target=execute_lin, args=(train_log, test_log, filename), name="Lin"))
+        processes.append(Process(target=execute_dimauro, args=(train_log, test_log, filename), name="Di Mauro"))
+        processes.append(Process(target=execute_edbn, args=(train_log, test_log, filename), name="EDBN"))
+        processes.append(Process(target=execute_baseline, args=(train_log, test_log, filename), name="Baseline"))
+
+        print("Starting Processes")
+        for p in processes:
+            p.start()
+            print(p.name, "started")
+
+        print("All processes running")
+
+        for p in processes:
+            p.join()
+            print(p.name, "stopped")
+
+        fout.write("====================================\n\n")
+        print("All processes stopped")
+
+def execute_baseline(train_log, test_log, filename):
+    sys.stdout = open(os.devnull, "w")
+    sys.stderr = open(os.devnull, "w")
+    baseline_acc = baseline.test(test_log, baseline.train(train_log, epochs=100, early_stop=10))
+    with open(filename, "a") as fout:
+        fout.write("Baseline: " + str(baseline_acc))
         fout.write("\n")
 
-        train_data, test_data = taymouri.create_input(train_log, test_log, 5)
-        taymouri_acc = taymouri.test(test_data, taymouri.train(train_data))
-        fout.write("Taymouri: " + str(taymouri_acc))
-        fout.write("\n")
 
-        camargo_acc = camargo.test(test_log, camargo.train(train_log, epochs=100, early_stop=10))
-        fout.write("Camargo: " + str(camargo_acc))
-        fout.write("\n")
-
-        lin_acc = lin.test(test_log, lin.train(train_log, epochs=100, early_stop=10))
-        fout.write("Lin: " + str(lin_acc))
-        fout.write("\n")
-
-        dimauro_acc = dimauro.test(test_log, dimauro.train(train_log, epochs=100, early_stop=10))
-        fout.write("Di Mauro: " + str(dimauro_acc))
-        fout.write("\n")
-
-        edbn_acc = edbn.test(test_log, edbn.train(train_log))
+def execute_edbn(train_log, test_log, filename):
+    sys.stdout = open(os.devnull, "w")
+    sys.stderr = open(os.devnull, "w")
+    edbn_acc = edbn.test(test_log, edbn.train(train_log))
+    with open(filename, "a") as fout:
         fout.write("EDBN: " + str(edbn_acc))
         fout.write("\n")
 
-        baseline_acc = baseline.test(test_log, baseline.train(train_log, epochs=100, early_stop=10))
-        fout.write("Baseline: " + str(baseline_acc))
-        fout.write("\n")
-        fout.write("====================================\n\n")
 
-    print("ACCURACIES")
-    print("Tax:", tax_acc)
-    print("Taymouri:", taymouri_acc)
-    print("Camargo:", camargo_acc)
-    print("Lin:", lin_acc)
-    print("Di Mauro:", dimauro_acc)
-    print("EDBN:", edbn_acc)
-    print("Baseline:", baseline_acc)
+def execute_dimauro(train_log, test_log, filename):
+    sys.stdout = open(os.devnull, "w")
+    sys.stderr = open(os.devnull, "w")
+    dimauro_acc = dimauro.test(test_log, dimauro.train(train_log, epochs=100, early_stop=10))
+    with open(filename, "a") as fout:
+        fout.write("Di Mauro: " + str(dimauro_acc))
+        fout.write("\n")
+
+
+def execute_lin(train_log, test_log, filename):
+    sys.stdout = open(os.devnull, "w")
+    sys.stderr = open(os.devnull, "w")
+    lin_acc = lin.test(test_log, lin.train(train_log, epochs=100, early_stop=10))
+    with open(filename, "a") as fout:
+        fout.write("Lin: " + str(lin_acc))
+        fout.write("\n")
+
+
+def execute_camargo(train_log, test_log, filename):
+    sys.stdout = open(os.devnull, "w")
+    sys.stderr = open(os.devnull, "w")
+    camargo_acc = camargo.test(test_log, camargo.train(train_log, epochs=100, early_stop=10))
+    with open(filename, "a") as fout:
+        fout.write("Camargo: " + str(camargo_acc))
+        fout.write("\n")
+
+
+def execute_taymouri(train_log, test_log, filename):
+    sys.stdout = open(os.devnull, "w")
+    sys.stderr = open(os.devnull, "w")
+    train_data, test_data = taymouri.create_input(train_log, test_log, 5)
+    taymouri_acc = taymouri.test(test_data, taymouri.train(train_data))
+    with open(filename, "a") as fout:
+        fout.write("Taymouri: " + str(taymouri_acc))
+        fout.write("\n")
+
+
+def execute_tax(train_log, test_log, filename):
+    sys.stdout = open(os.devnull, "w")
+    sys.stderr = open(os.devnull, "w")
+    tax_acc = tax.test(test_log, tax.train(train_log, epochs=100, early_stop=10))
+    with open(filename, "a") as fout:
+        fout.write("\nTax: " + str(tax_acc))
+        fout.write("\n")
+
 
 def experiments_helpdesk():
-    data = "../Data/Camargo_Helpdesk.csv"
+    data = "../Data/BPIC15_5_sorted_new.csv"
     prefix_size = [1, 5, 10, 15, 20, 25, 30, 35]
     add_end_event = [False]
     split_method = ["train-test"]

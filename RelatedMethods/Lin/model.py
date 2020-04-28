@@ -249,7 +249,7 @@ def create_pref_next(log):
             t_pref = []
             for i in range(log.k - 1, -1, -1):
                 ac_pref.append(row["event_Prev%i" % i])
-                rl_pref.append(row["event_Prev%i" % i])
+                rl_pref.append(row["role_Prev%i" % i])
                 t_pref.append(0)
             prefixes.append(dict(ac_pref=ac_pref,
                                  ac_next=row["event"],

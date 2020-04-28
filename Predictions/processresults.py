@@ -1,7 +1,12 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
 
-result_file = "results.txt"
+METHODS = ["Tax", "Taymouri", "Camargo_random", "Camargo_argmax", "Lin", "Di Mauro", "EDBN", "Baseline"]
+DATA = ["Camargo_Helpdesk.csv", "Camargo_BPIC12W.csv", "Camargo_BPIC2012.csv", "BPIC15_1_sorted_new.csv",
+        "BPIC15_3_sorted_new.csv", "BPIC15_5_sorted_new.csv"]
+
+result_file = "../results.txt"
 
 with open(result_file, "r") as finn:
     result_string = finn.read()
@@ -18,24 +23,20 @@ for result in single_results:
                   end_event=splitted_result[2].split(" ")[-1],
                   split_method=splitted_result[3].split(" ")[-1],
                   split_cases=splitted_result[4].split(" ")[-1],
-                  train_percentage=splitted_result[5].split(" ")[-1],
-                  accuracy=splitted_result[-2].split(" ")[-1])
+                  train_percentage=splitted_result[5].split(" ")[-1])
+    for acc_string in splitted_result[8:-1]:
+        method, acc = acc_string.split(": ")
+        if method == "Camargo":
+            acc_list = eval(acc)
+            record["Camargo_random"] = float(acc_list[0])
+            record["Camargo_argmax"] = float(acc_list[1])
+        else:
+            record[method] = float(acc)
     records.append(record)
 
 result_data = pd.DataFrame()
 result_data = result_data.from_records(records)
-result_data["accuracy"] = pd.to_numeric(result_data["accuracy"])
 print(result_data.dtypes)
-
-
-def calc_min_max_average(dataframe):
-    min_val = dataframe["accuracy"].min()
-    max_val = dataframe["accuracy"].max()
-    print("Min:", min_val)
-    print(dataframe[dataframe["accuracy"] == min_val].squeeze())
-    print("Average:", dataframe["accuracy"].mean())
-    print("Max:", dataframe["accuracy"].max())
-    print(dataframe[dataframe["accuracy"] == max_val].squeeze())
 
 
 def plot_acc_values(dataframe, x_axis, divide=None, title=""):
@@ -49,11 +50,36 @@ def plot_acc_values(dataframe, x_axis, divide=None, title=""):
     plt.show()
 
 
+def plot_all_acc_values(dataframe, x_axis, title=""):
+    for m in METHODS:
+        plt.scatter(dataframe[x_axis], dataframe[m], label=m)
+    plt.title(title)
+    plt.legend(loc="upper center", bbox_to_anchor=(0.5, -0.05), ncol=3)
+    plt.show()
 
-data = ["Camargo_Helpdesk.csv", "Camargo_BPIC12W.csv", "Camargo_BPIC2012.csv", "BPIC15_1_sorted_new.csv",
-        "BPIC15_3_sorted_new.csv", "BPIC15_5_sorted_new.csv"]
-for d in data:
-    print("Data:", d)
-    # calc_min_max_average(result_data[result_data["data"] == d])
-    plot_acc_values(result_data[result_data["data"] == d], "prefix_size", ["train_percentage"], title=d)
-    print()
+
+def get_max_per_x(dataframe, x_axis):
+    # dataframe = dataframe[dataframe["end_event"] == "False"]
+    result = {}
+    for prefix, group in dataframe.groupby(x_axis):
+        for m in METHODS:
+            if m not in result:
+                result[m] = []
+            result[m].append((prefix, max(group[m])))
+    return result
+
+
+def plot_max_acc_values(max_vals, title=""):
+    for method in max_vals:
+        x = [i[0] for i in max_vals[method]]
+        y = [i[1] for i in max_vals[method]]
+        plt.plot(x, y, "-o", label=method)
+    plt.ylim([0.7, 1])
+    plt.title(title)
+    plt.legend(loc="upper center", bbox_to_anchor=(0.5, -0.05), ncol=3)
+    plt.show()
+
+
+# plot_all_acc_values(result_data[result_data["data"] == DATA[0]], "prefix_size", title="Helpdesk")
+plot_max_acc_values(get_max_per_x(result_data[result_data["data"] == DATA[0]], "prefix_size"), "Helpdesk - Max per method")
+
