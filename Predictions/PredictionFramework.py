@@ -36,28 +36,31 @@ def run_experiment(data, prefix_size, add_end_event, split_method, split_cases, 
         fout.write("\nDate: " + time.strftime("%d.%m.%y-%H.%M", time.localtime()))
         fout.write("\n------------------------------------")
 
-        processes = []
-        processes.append(Process(target=execute_tax, args=(train_log, test_log, filename), name="Tax"))
-        processes.append(Process(target=execute_taymouri, args=(train_log, test_log, filename), name="Taymouri"))
-        processes.append(Process(target=execute_camargo, args=(train_log, test_log, filename), name="Camargo"))
-        processes.append(Process(target=execute_lin, args=(train_log, test_log, filename), name="Lin"))
-        processes.append(Process(target=execute_dimauro, args=(train_log, test_log, filename), name="Di Mauro"))
-        processes.append(Process(target=execute_edbn, args=(train_log, test_log, filename), name="EDBN"))
-        processes.append(Process(target=execute_baseline, args=(train_log, test_log, filename), name="Baseline"))
+    processes = []
+    processes.append(Process(target=execute_tax, args=(train_log, test_log, filename), name="Tax"))
+    processes.append(Process(target=execute_taymouri, args=(train_log, test_log, filename), name="Taymouri"))
+    processes.append(Process(target=execute_camargo, args=(train_log, test_log, filename), name="Camargo"))
+    processes.append(Process(target=execute_lin, args=(train_log, test_log, filename), name="Lin"))
+    processes.append(Process(target=execute_dimauro, args=(train_log, test_log, filename), name="Di Mauro"))
+    processes.append(Process(target=execute_edbn, args=(train_log, test_log, filename), name="EDBN"))
+    processes.append(Process(target=execute_baseline, args=(train_log, test_log, filename), name="Baseline"))
 
-        print("Starting Processes")
-        for p in processes:
-            p.start()
-            print(p.name, "started")
+    print("Starting Processes")
+    for p in processes:
+        p.start()
+        print(p.name, "started")
 
-        print("All processes running")
+    print("All processes running")
 
-        for p in processes:
-            p.join()
-            print(p.name, "stopped")
+    for p in processes:
+        p.join()
+        print(p.name, "stopped")
 
+    with open(filename, "a") as fout:
         fout.write("====================================\n\n")
-        print("All processes stopped")
+
+    print("All processes stopped")
+
 
 def execute_baseline(train_log, test_log, filename):
     sys.stdout = open(os.devnull, "w")
