@@ -6,7 +6,7 @@ METHODS = ["Tax", "Taymouri", "Camargo_random", "Camargo_argmax", "Lin", "Di Mau
 DATA = ["Camargo_Helpdesk.csv", "Camargo_BPIC12W.csv", "Camargo_BPIC2012.csv", "BPIC15_1_sorted_new.csv",
         "BPIC15_3_sorted_new.csv", "BPIC15_5_sorted_new.csv"]
 
-result_file = "../results.txt"
+result_file = "test_end_event.txt"
 
 with open(result_file, "r") as finn:
     result_string = finn.read()
@@ -39,12 +39,12 @@ result_data = result_data.from_records(records)
 print(result_data.dtypes)
 
 
-def plot_acc_values(dataframe, x_axis, divide=None, title=""):
+def plot_acc_values(dataframe, method, x_axis, divide=None, title=""):
     if divide is not None:
         for group_id, group in dataframe.groupby(divide):
-            plt.scatter(group[x_axis], group["accuracy"], label=group_id)
+            plt.scatter(group[x_axis], group[method], label=group_id)
     else:
-        plt.scatter(dataframe[x_axis], dataframe["accuracy"])
+        plt.scatter(dataframe[x_axis], dataframe[method])
     plt.title(title)
     plt.legend(loc="upper center", bbox_to_anchor=(0.5, -0.05), ncol=3)
     plt.show()
@@ -52,7 +52,7 @@ def plot_acc_values(dataframe, x_axis, divide=None, title=""):
 
 def plot_all_acc_values(dataframe, x_axis, title=""):
     for m in METHODS:
-        plt.scatter(dataframe[x_axis], dataframe[m], label=m)
+        plt.plot(dataframe[x_axis], dataframe[m], "-o", label=m)
     plt.title(title)
     plt.legend(loc="upper center", bbox_to_anchor=(0.5, -0.05), ncol=3)
     plt.show()
@@ -80,6 +80,7 @@ def plot_max_acc_values(max_vals, title=""):
     plt.show()
 
 
-# plot_all_acc_values(result_data[result_data["data"] == DATA[0]], "prefix_size", title="Helpdesk")
-plot_max_acc_values(get_max_per_x(result_data[result_data["data"] == DATA[0]], "prefix_size"), "Helpdesk - Max per method")
-
+# for d in DATA:
+#     plot_acc_values(result_data[result_data["data"] == d], "Baseline", "prefix_size", "end_event", title=d)
+# plot_max_acc_values(get_max_per_x(result_data[result_data["data"] == DATA[0]], "prefix_size"), "Helpdesk - Max per method")
+plot_all_acc_values(result_data[result_data["data"] == DATA[0]], "end_event", title=DATA[0])

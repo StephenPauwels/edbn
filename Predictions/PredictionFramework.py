@@ -16,6 +16,9 @@ from RelatedMethods.DiMauro import adapter as dimauro
 from Predictions import edbn_adapter as edbn
 from Predictions import base_adapter as baseline
 
+DATA = ["Camargo_Helpdesk.csv", "Camargo_BPIC12W.csv", "Camargo_BPIC2012.csv", "BPIC15_1_sorted_new.csv",
+        "BPIC15_3_sorted_new.csv", "BPIC15_5_sorted_new.csv"]
+
 def run_experiment(data, prefix_size, add_end_event, split_method, split_cases, train_percentage, filename="results.txt"):
     logfile = LogFile(data, ",", 0, None, None, "case",
                       activity_attr="event", convert=False, k=prefix_size)
@@ -34,7 +37,7 @@ def run_experiment(data, prefix_size, add_end_event, split_method, split_cases, 
         fout.write("\nSplit cases: " + str(split_cases))
         fout.write("\nTrain percentage: " + str(train_percentage))
         fout.write("\nDate: " + time.strftime("%d.%m.%y-%H.%M", time.localtime()))
-        fout.write("\n------------------------------------")
+        fout.write("\n------------------------------------\n")
 
     processes = []
     processes.append(Process(target=execute_tax, args=(train_log, test_log, filename), name="Tax"))
@@ -122,7 +125,7 @@ def execute_tax(train_log, test_log, filename):
     sys.stderr = open(os.devnull, "w")
     tax_acc = tax.test(test_log, tax.train(train_log, epochs=100, early_stop=10))
     with open(filename, "a") as fout:
-        fout.write("\nTax: " + str(tax_acc))
+        fout.write("Tax: " + str(tax_acc))
         fout.write("\n")
 
 
@@ -142,7 +145,60 @@ def experiments_helpdesk():
                         run_experiment(data, ps, aee, sm, sc, tp, filename="test_prefix_size.txt")
 
 
+def experiment_split_method():
+    data = DATA
+    prefix_size = [10]
+    add_end_event = [False]
+    split_method = ["random", "train-test", "test-train"]
+    split_cases = [True]
+    train_percentage = [70]
+
+    for d in data:
+        for ps in prefix_size:
+            for aee in add_end_event:
+                for sm in split_method:
+                    for sc in split_cases:
+                        for tp in train_percentage:
+                            run_experiment(d, ps, aee, sm, sc, tp, filename="test_split_method.txt")
+
+
+def experiment_end_event():
+    data = DATA
+    prefix_size = [10]
+    add_end_event = [True, False]
+    split_method = ["train-test"]
+    split_cases = [True]
+    train_percentage = [70]
+
+    for d in data:
+        for ps in prefix_size:
+            for aee in add_end_event:
+                for sm in split_method:
+                    for sc in split_cases:
+                        for tp in train_percentage:
+                            run_experiment(d, ps, aee, sm, sc, tp, filename="test_end_event.txt")
+
+
+def experiment_prefix():
+    data = DATA
+    prefix_size = [1, 2, 5, 10, 15, 20, 25, 30, 35, 40]
+    add_end_event = [True,False]
+    split_method = ["train-test"]
+    split_cases = [True]
+    train_percentage = [70]
+
+    for d in data:
+        for ps in prefix_size:
+            for aee in add_end_event:
+                for sm in split_method:
+                    for sc in split_cases:
+                        for tp in train_percentage:
+                            run_experiment(d, ps, aee, sm, sc, tp, filename="test_prefix.txt")
+
+
 if __name__ == "__main__":
-    experiments_helpdesk()
+    experiment_split_method()
+    experiment_end_event()
+    experiment_prefix()
 
 
