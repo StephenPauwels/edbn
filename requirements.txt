@@ -18,4 +18,5 @@ tensorboard
 tensorflow
 tensorflow-estimator
 torch
+bottleneck
 
