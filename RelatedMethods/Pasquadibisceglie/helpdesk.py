@@ -14,8 +14,7 @@ from keras.layers.normalization import BatchNormalization
 
 seed = 123
 np.random.seed(seed)
-from tensorflow import set_random_seed
-set_random_seed(seed)
+
 
 def get_label(act):
     i = 0
@@ -29,7 +28,7 @@ def get_label(act):
                 pass
             j = j + 1
         i = i + 1
-    return  list_label
+    return list_label
 
 
 def dataset_summary(dataset):
@@ -57,53 +56,22 @@ def get_image(act_val, time_val, max_trace, n_activity):
         j = 0
         list_act = []
         list_temp = []
-        cont1, cont2, cont3, cont4, cont5, cont6, cont7, cont8, cont9 = 0, 0, 0, 0, 0, 0, 0, 0, 0
-        diff1, diff2, diff3, diff4, diff5, diff6, diff7, diff8, diff9 = 0, 0, 0, 0, 0, 0, 0, 0, 0
+        conts = np.zeros(n_activity + 1)
+        diffs = np.zeros(n_activity + 1)
         while j < (len(act_val.iat[i, 0]) - 1):
             start_trace = time_val.iat[i, 0][0]
-            if act_val.iat[i, 0][0 + j] == 1:
-                cont1 = cont1 + 1
-                diff1 = time_val.iat[i, 0][0 + j] - start_trace
-            elif act_val.iat[i, 0][0 + j] == 2:
-                cont2 = cont2 + 1
-                diff2 = time_val.iat[i, 0][0 + j] - start_trace
-            elif act_val.iat[i, 0][0 + j] == 3:
-                cont3 = cont3 + 1
-                diff3 = time_val.iat[i, 0][0 + j] - start_trace
-            elif act_val.iat[i, 0][0 + j] == 4:
-                cont4 = cont4 + 1
-                diff4 = time_val.iat[i, 0][0 + j] - start_trace
-            elif act_val.iat[i, 0][0 + j] == 5:
-                cont5 = cont5 + 1
-                diff5 = time_val.iat[i, 0][0 + j] - start_trace
-            elif act_val.iat[i, 0][0 + j] == 6:
-                cont6 = cont6 + 1
-                diff6 = time_val.iat[i, 0][0 + j] - start_trace
-            elif act_val.iat[i, 0][0 + j] == 7:
-                cont7 = cont7 + 1
-                diff7 = time_val.iat[i, 0][0 + j] - start_trace
-            elif act_val.iat[i, 0][0 + j] == 8:
-                cont8 = cont8 + 1
-                diff8 = time_val.iat[i, 0][0 + j] - start_trace
-            elif act_val.iat[i, 0][0 + j] == 9:
-                cont9 = cont9 + 1
-                diff9 = time_val.iat[i, 0][0 + j] - start_trace
 
-            list_act.append([cont1, cont2, cont3, cont4, cont5, cont6, cont7, cont8, cont9])
-            list_temp.append([diff1, diff2, diff3, diff4, diff5, diff6, diff7, diff8, diff9])
+            conts[act_val.iat[i, 0][0 + j]] += 1
+            diffs[act_val.iat[i, 0][0 + j]] = time_val.iat[i, 0][0 + j] - start_trace
+
+            list_act.append(conts[1:])
+            list_temp.append(diffs[1:])
             j = j + 1
             cont = 0
             lenk = len(list_act) - 1
             while cont <= lenk:
-                image[(max_trace - 1) - cont][0] = [list_act[lenk - cont][0], list_temp[lenk - cont][0]]
-                image[(max_trace - 1) - cont][1] = [list_act[lenk - cont][1], list_temp[lenk - cont][1]]
-                image[(max_trace - 1) - cont][2] = [list_act[lenk - cont][2], list_temp[lenk - cont][2]]
-                image[(max_trace - 1) - cont][3] = [list_act[lenk - cont][3], list_temp[lenk - cont][3]]
-                image[(max_trace - 1) - cont][4] = [list_act[lenk - cont][4], list_temp[lenk - cont][4]]
-                image[(max_trace - 1) - cont][5] = [list_act[lenk - cont][5], list_temp[lenk - cont][5]]
-                image[(max_trace - 1) - cont][6] = [list_act[lenk - cont][6], list_temp[lenk - cont][6]]
-                image[(max_trace - 1) - cont][7] = [list_act[lenk - cont][7], list_temp[lenk - cont][7]]
-                image[(max_trace - 1) - cont][8] = [list_act[lenk - cont][8], list_temp[lenk - cont][8]]
+                image[(max_trace - 1) - cont] = np.array(list(zip(list_act[lenk - cont], list_temp[lenk - cont])))
+
                 cont = cont + 1
             if cont == 1:
                 pass
@@ -132,6 +100,9 @@ test_temp = temp[size:]
 #generate training and test set
 X_train = get_image(train_act, train_temp, max_trace, n_activity)
 X_test = get_image(test_act, test_temp, max_trace, n_activity)
+
+print(X_train[0])
+input("Wait")
 
 l_train = get_label(train_act)
 l_test = get_label(test_act)

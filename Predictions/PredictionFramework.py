@@ -13,11 +13,12 @@ from RelatedMethods.Taymouri import adapter as taymouri
 from RelatedMethods.Camargo import adapter as camargo
 from RelatedMethods.Lin import adapter as lin
 from RelatedMethods.DiMauro import adapter as dimauro
+from RelatedMethods.Pasquadibisceglie import adapter as pasquadibisceglie
 from Predictions import edbn_adapter as edbn
 from Predictions import base_adapter as baseline
 
 DATA = ["Camargo_Helpdesk.csv", "Camargo_BPIC12W.csv", "Camargo_BPIC2012.csv", "BPIC15_1_sorted_new.csv",
-        "BPIC15_3_sorted_new.csv", "BPIC15_5_sorted_new.csv"]
+        "BPIC15_2_sorted_new.csv", "BPIC15_3_sorted_new.csv", "BPIC15_4_sorted_new.csv", "BPIC15_5_sorted_new.csv"]
 
 def run_experiment(data, prefix_size, add_end_event, split_method, split_cases, train_percentage, filename="results.txt"):
     logfile = LogFile(data, ",", 0, None, None, "case",
@@ -45,6 +46,7 @@ def run_experiment(data, prefix_size, add_end_event, split_method, split_cases, 
     processes.append(Process(target=execute_camargo, args=(train_log, test_log, filename), name="Camargo"))
     processes.append(Process(target=execute_lin, args=(train_log, test_log, filename), name="Lin"))
     processes.append(Process(target=execute_dimauro, args=(train_log, test_log, filename), name="Di Mauro"))
+    processes.append(Process(target=execute_pasquadibisceglie, args=(train_log, test_log, filename), name="Pasquadibisceglie"))
     processes.append(Process(target=execute_edbn, args=(train_log, test_log, filename), name="EDBN"))
     processes.append(Process(target=execute_baseline, args=(train_log, test_log, filename), name="Baseline"))
 
@@ -126,6 +128,15 @@ def execute_tax(train_log, test_log, filename):
     tax_acc = tax.test(test_log, tax.train(train_log, epochs=100, early_stop=10))
     with open(filename, "a") as fout:
         fout.write("Tax: " + str(tax_acc))
+        fout.write("\n")
+
+
+def execute_pasquadibisceglie(train_log, test_log, filename):
+    sys.stdout = open(os.devnull, "w")
+    sys.stderr = open(os.devnull, "w")
+    pasq_acc = pasquadibisceglie.test(test_log, pasquadibisceglie.train(train_log, epochs=100, early_stop=10))
+    with open(filename, "a") as fout:
+        fout.write("Pasquadibisceglie: " + str(pasq_acc))
         fout.write("\n")
 
 
