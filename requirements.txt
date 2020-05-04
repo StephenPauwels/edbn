@@ -14,7 +14,8 @@ pandas
 numpy
 hyperopt
 sklearn==0.0
-tensorboard==2.1.0
-tensorflow==2.1.0
-tensorflow-estimator==2.1.0
+tensorboard
+tensorflow
+tensorflow-estimator
+torch
 
