@@ -138,19 +138,19 @@ def get_data(dataset, dataset_size, k, add_end, reduce_tasks, resource_pools, re
             logfile.keep_attributes(colTitles)
             logfile.filter_case_length(5)
         elif dataset == BPIC12:
-            logfile = LogFile("../Data/Camargo_BPIC2012.csv", ",", 0, dataset_size, "completeTime", "case", activity_attr="event", convert=False, k=k)
+            logfile = LogFile("../Data/BPIC12.csv", ",", 0, dataset_size, "completeTime", "case", activity_attr="event", convert=False, k=k)
             resource_attr = "org:resource"
             colTitles = ["case", "event", "org:resource"]
             logfile.keep_attributes(colTitles)
             logfile.filter_case_length(5)
         elif dataset == BPIC12W:
-            logfile = LogFile("../Data/Camargo_BPIC12W.csv", ",", 0, dataset_size, "completeTime", "case", activity_attr="event", convert=False, k=k)
+            logfile = LogFile("../Data/BPIC12W.csv", ",", 0, dataset_size, "completeTime", "case", activity_attr="event", convert=False, k=k)
             resource_attr = "org:resource"
             colTitles = ["case", "event", "org:resource"]
             logfile.keep_attributes(colTitles)
             logfile.filter_case_length(5)
         elif dataset == HELPDESK:
-            logfile = LogFile("../Data/Camargo_Helpdesk.csv", ",", 0, dataset_size, "completeTime", "case", activity_attr="event", convert=False, k=k)
+            logfile = LogFile("../Data/Helpdesk.csv", ",", 0, dataset_size, "completeTime", "case", activity_attr="event", convert=False, k=k)
             resource_attr = "Resource"
             colTitles = ["case", "event", "Resource"]
             logfile.keep_attributes(colTitles)

@@ -125,12 +125,12 @@ def run_experiment(data, prefix_size, add_end_event, split_method, split_cases, 
 
 if __name__ == "__main__":
     data = []
-    # data.append("../Data/Camargo_Helpdesk.csv")
+    # data.append("../Data/Helpdesk.csv")
     # data.append("../Data/BPIC15_1_sorted_new.csv")
     # data.append("../Data/BPIC15_3_sorted_new.csv")
     data.append("../Data/BPIC15_5_sorted_new.csv")
-    data.append("../Data/Camargo_BPIC12W.csv")
-    data.append("../Data/Camargo_BPIC2012.csv")
+    data.append("../Data/BPIC12W.csv")
+    data.append("../Data/BPIC12.csv")
 
     prefix_size = [1,2,4,5,10,15,20,25,30,35]
     add_end_event = [True, False]

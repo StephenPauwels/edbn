@@ -34,7 +34,7 @@ def test(log, model):
 
 
 if __name__ == "__main__":
-    # data = "../../Data/Camargo_Helpdesk.csv"
+    # data = "../../Data/Helpdesk.csv"
     data = "../../Data/BPIC15_3_sorted_new.csv"
     case_attr = "case"
     act_attr = "event"

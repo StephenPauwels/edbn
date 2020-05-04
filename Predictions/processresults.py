@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 METHODS = ["Tax", "Taymouri", "Camargo_random", "Camargo_argmax", "Lin", "Di Mauro", "EDBN", "Baseline"]
-DATA = ["Camargo_Helpdesk.csv", "Camargo_BPIC12W.csv", "Camargo_BPIC2012.csv", "BPIC15_1_sorted_new.csv",
+DATA = ["Helpdesk.csv", "BPIC12W.csv", "BPIC12.csv", "BPIC15_1_sorted_new.csv",
         "BPIC15_3_sorted_new.csv", "BPIC15_5_sorted_new.csv"]
 
 result_file = "test_end_event.txt"

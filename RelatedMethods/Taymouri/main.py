@@ -86,6 +86,6 @@ if __name__ == "__main__":
     # data = "../../Data/PredictionData/bpic15_1/full_log.csv"
     # data = "../../Data/PredictionData/bpic12w/full_log.csv"
     data = "../../Data/Taymouri_bpi_12_w.csv"
-    # data = "../../Data/Camargo_Helpdesk.csv"
+    # data = "../../Data/Helpdesk.csv"
     run(data, "event_prediction", prefix=4)
 

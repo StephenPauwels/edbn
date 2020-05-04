@@ -89,7 +89,7 @@ def test(log, model):
 
 
 if __name__ == "__main__":
-    data = "../../Data/Camargo_Helpdesk.csv"
+    data = "../../Data/Helpdesk.csv"
     # data = "../../Data/Taymouri_bpi_12_w.csv"
     case_attr = "case"
     act_attr = "event"
