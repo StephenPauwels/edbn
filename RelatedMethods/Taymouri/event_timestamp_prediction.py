@@ -320,11 +320,11 @@ def model_eval_test(modelG, mode, obj):
 
     if (mode == 'test'):
         #pprint.pprint(mistakes)
-        if(os.path.isfile(obj.path+'/results.txt')):
-            with open(obj.path+'/results.txt', "a") as fout:
+        if(os.path.isfile(obj.path+'/ful_helpdesk.txt')):
+            with open(obj.path+'/ful_helpdesk.txt', "a") as fout:
                 pprint.pprint(mistakes, stream=fout)
         else:
-            with open(obj.path+'/results.txt', "w") as fout:
+            with open(obj.path+'/ful_helpdesk.txt', "w") as fout:
                 pprint.pprint(mistakes, stream=fout)
 
         with open(obj.path + '/results.txt', "a") as fout:
