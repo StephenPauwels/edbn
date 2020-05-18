@@ -66,7 +66,7 @@ def load_data(log):
             row = row[1]
             t_raw = row[log.time + "_Prev%i" % (log.k-1)]
             if t_raw != 0:
-                t = datetime.strptime(t_raw, "%Y/%m/%d %H:%M:%S.%f")
+                t = datetime.strptime(t_raw, "%Y-%m-%d %H:%M:%S")
                 lasteventtime = t
             line = []
             times = []
@@ -74,7 +74,7 @@ def load_data(log):
                 line.append(row["event_Prev%i" % i])
                 t_raw = row[log.time + "_Prev%i" % i]
                 if t_raw != 0:
-                    t = datetime.strptime(t_raw, "%Y/%m/%d %H:%M:%S.%f")
+                    t = datetime.strptime(t_raw, "%Y-%m-%d %H:%M:%S")
                     if lasteventtime is None:
                         times.append(1)
                     else:

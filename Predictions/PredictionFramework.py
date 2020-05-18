@@ -24,7 +24,7 @@ DATA_FOLDER = "../Data/"
 
 def run_experiment(data, prefix_size, add_end_event, split_method, split_cases, train_percentage, filename="results.txt"):
     data = DATA_FOLDER + data
-    logfile = LogFile(data, ",", 0, None, "completeTime", "case",
+    logfile = LogFile(data, ",", 0, None, "Complete Timestamp", "case",
                       activity_attr="event", convert=False, k=prefix_size)
     if add_end_event:
         logfile.add_end_events()
@@ -48,10 +48,10 @@ def run_experiment(data, prefix_size, add_end_event, split_method, split_cases, 
     # processes.append(Process(target=execute_taymouri, args=(train_log, test_log, filename), name="Taymouri"))
     # processes.append(Process(target=execute_camargo, args=(train_log, test_log, filename), name="Camargo"))
     # processes.append(Process(target=execute_lin, args=(train_log, test_log, filename), name="Lin"))
-    processes.append(Process(target=execute_dimauro, args=(train_log, test_log, filename), name="Di Mauro"))
+    # processes.append(Process(target=execute_dimauro, args=(train_log, test_log, filename), name="Di Mauro"))
     # processes.append(Process(target=execute_pasquadibisceglie, args=(train_log, test_log, filename), name="Pasquadibisceglie"))
     # processes.append(Process(target=execute_edbn, args=(train_log, test_log, filename), name="EDBN"))
-    # processes.append(Process(target=execute_baseline, args=(train_log, test_log, filename), name="Baseline"))
+    processes.append(Process(target=execute_baseline, args=(train_log, test_log, filename), name="Baseline"))
 
     print("Starting Processes")
     for p in processes:
@@ -209,10 +209,31 @@ def experiment_prefix():
                         for tp in train_percentage:
                             run_experiment(d, ps, aee, sm, sc, tp, filename="test_prefix.txt")
 
+def experiment_bpm2020():
+    data = ["BPIC15_1_sorted_new.csv", "BPIC15_2_sorted_new.csv", "BPIC15_3_sorted_new.csv", "BPIC15_4_sorted_new.csv", "BPIC15_5_sorted_new.csv"]
+    for d in data:
+        run_experiment(d, 5, False, "test-train", True, 70, filename="test_bpm_dimauro.txt")
+
+
+def all_experiments():
+    data = DATA
+    prefix_size = [1, 2, 5, 10, 15, 20, 25, 30, 35, 40]
+    add_end_event = [True, False]
+    split_method = ["train-test", "test-train", "random"]
+    split_cases = [True, False]
+    train_percentage = [70, 80]
+
+    for d in data:
+        for ps in prefix_size:
+            for aee in add_end_event:
+                for sm in split_method:
+                    for sc in split_cases:
+                        for tp in train_percentage:
+                            run_experiment(d, ps, aee, sm, sc, tp, filename="test_base_full.txt")
 
 if __name__ == "__main__":
     # experiment_split_method()
-    experiment_end_event()
+    # experiment_end_event()
     # experiment_prefix()
-
-
+    # experiment_bpm2020()
+    all_experiments()
