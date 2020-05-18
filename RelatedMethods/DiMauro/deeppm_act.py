@@ -9,7 +9,7 @@ seed = 123
 np.random.seed(seed)
 
 from tensorflow.keras.models import Model, load_model
-from tensorflow.keras.layers import Input, Concatenate, Conv1D, GlobalMaxPooling1D, MaxPooling1D, Dense, Embedding
+from tensorflow.keras.layers import Input, Concatenate, Conv1D, GlobalMaxPooling1D, MaxPooling1D, Dense, Embedding, Reshape
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.callbacks import EarlyStopping
@@ -89,8 +89,19 @@ class DataGenerator(Sequence):
 def get_model(input_length=10, n_filters=3, vocab_size=10, n_classes=9, embedding_size=5, n_modules=5, model_type='ACT', learning_rate=0.002):
     #inception model
 
-    input = Input(shape=(input_length,))
-    filters_inputs = Embedding(vocab_size, embedding_size, input_length=input_length)(input)
+    inputs = []
+    for i in range(2):
+        inputs.append(Input(shape=(input_length,)))
+
+    inputs_ = []
+    for i in range(2):
+        if (i==0):
+            a = Embedding(vocab_size, embedding_size, input_length=input_length)(inputs[0])
+            inputs_.append(Embedding(vocab_size, embedding_size, input_length=input_length)(inputs[i]))
+        else:
+            inputs_.append(Reshape((input_length, 1))(inputs[i]))
+
+    filters_inputs = Concatenate(axis=2)(inputs_)
 
     for m in range(n_modules):
         filters = []
@@ -112,16 +123,16 @@ def get_model(input_length=10, n_filters=3, vocab_size=10, n_classes=9, embeddin
     if (model_type == 'BOTH'):
         out_a = Dense(n_classes, activation='softmax', name='output_a')(pool)
         out_t = Dense(1, activation='linear', name='output_t')(pool)
-        model = Model(inputs=input, outputs=[out_a, out_t])
+        model = Model(inputs=inputs, outputs=[out_a, out_t])
         model.compile(optimizer=optimizer, loss={'output_a':'categorical_crossentropy', 'output_t':'mae'})
     else:
         if (model_type=='ACT'):
             out = Dense(n_classes, activation='softmax')(pool)
-            model = Model(inputs=input, outputs=out)
+            model = Model(inputs=inputs, outputs=out)
             model.compile(optimizer=optimizer, loss='mse',metrics=['acc'])
         elif (model_type=='TIME'):
             out = Dense(1, activation='linear')(pool)
-            model = Model(inputs=input, outputs=out)
+            model = Model(inputs=inputs, outputs=out)
             model.compile(optimizer=optimizer, loss='mae')
 
     model.summary()
@@ -141,7 +152,7 @@ def fit_and_score(params):
         # h = model.fit(params["X_train"],
         #               params["Y_train"], epochs=200, verbose=2,
         #               validation_split=0.2, callbacks=[early_stopping], batch_size=2**params['batch_size'])
-        h = model.fit(params['X'], params['y'], epochs=200, verbose=2,
+        h = model.fit([params['X'], params['X_t']], params['y'], epochs=200, verbose=2,
                       validation_split=0.2, callbacks=[early_stopping], batch_size=2**params['batch_size'])
 
     scores = [h.history['val_loss'][epoch] for epoch in range(len(h.history['loss']))]

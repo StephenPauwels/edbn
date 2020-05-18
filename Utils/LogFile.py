@@ -99,6 +99,9 @@ class LogFile:
         if self.isNumericAttribute(x.name):
             return x
 
+        if self.time is not None and x.name == self.time:
+            return x
+
         print("PREPROCESSING: Converting", x.name)
         if x.name not in self.values:
             x = x.astype("str")
@@ -212,14 +215,15 @@ class LogFile:
         contextdata = pd.DataFrame()
 
         trace_data = trace[1]
-        shift_data = trace_data.shift().fillna(0).astype(int)
+        shift_data = trace_data.shift().fillna(0)
         shift_data.at[shift_data.first_valid_index(), self.trace] = trace[0]
         joined_trace = shift_data.join(trace_data, lsuffix="_Prev0")
         for i in range(1, self.k):
-            shift_data = shift_data.shift().fillna(0).astype(int)
+            shift_data = shift_data.shift().fillna(0)
             shift_data.at[shift_data.first_valid_index(), self.trace] = trace[0]
             joined_trace = shift_data.join(joined_trace, lsuffix="_Prev%i" % i)
         contextdata = contextdata.append(joined_trace, ignore_index=True)
+        contextdata = contextdata.astype("int", errors="ignore")
         return contextdata
 
     def add_duration_to_k_context(self):

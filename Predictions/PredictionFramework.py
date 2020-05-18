@@ -20,15 +20,15 @@ from Predictions import base_adapter as baseline
 DATA = ["Helpdesk.csv", "BPIC12W.csv", "BPIC12.csv", "BPIC15_1_sorted_new.csv",
         "BPIC15_2_sorted_new.csv", "BPIC15_3_sorted_new.csv", "BPIC15_4_sorted_new.csv", "BPIC15_5_sorted_new.csv"]
 
-DATA_FOLDER = "Data/"
+DATA_FOLDER = "../Data/"
 
 def run_experiment(data, prefix_size, add_end_event, split_method, split_cases, train_percentage, filename="results.txt"):
     data = DATA_FOLDER + data
-    logfile = LogFile(data, ",", 0, None, None, "case",
+    logfile = LogFile(data, ",", 0, None, "completeTime", "case",
                       activity_attr="event", convert=False, k=prefix_size)
     if add_end_event:
         logfile.add_end_events()
-    logfile.keep_attributes(["case", "event", "role"])
+    # logfile.keep_attributes(["case", "event", "role"])
     logfile.convert2int()
     logfile.create_k_context()
     train_log, test_log = logfile.splitTrainTest(train_percentage, case=split_cases, method=split_method)
@@ -44,14 +44,14 @@ def run_experiment(data, prefix_size, add_end_event, split_method, split_cases, 
         fout.write("\n------------------------------------\n")
 
     processes = []
-    processes.append(Process(target=execute_tax, args=(train_log, test_log, filename), name="Tax"))
-    processes.append(Process(target=execute_taymouri, args=(train_log, test_log, filename), name="Taymouri"))
-    processes.append(Process(target=execute_camargo, args=(train_log, test_log, filename), name="Camargo"))
-    processes.append(Process(target=execute_lin, args=(train_log, test_log, filename), name="Lin"))
+    # processes.append(Process(target=execute_tax, args=(train_log, test_log, filename), name="Tax"))
+    # processes.append(Process(target=execute_taymouri, args=(train_log, test_log, filename), name="Taymouri"))
+    # processes.append(Process(target=execute_camargo, args=(train_log, test_log, filename), name="Camargo"))
+    # processes.append(Process(target=execute_lin, args=(train_log, test_log, filename), name="Lin"))
     processes.append(Process(target=execute_dimauro, args=(train_log, test_log, filename), name="Di Mauro"))
-    processes.append(Process(target=execute_pasquadibisceglie, args=(train_log, test_log, filename), name="Pasquadibisceglie"))
-    processes.append(Process(target=execute_edbn, args=(train_log, test_log, filename), name="EDBN"))
-    processes.append(Process(target=execute_baseline, args=(train_log, test_log, filename), name="Baseline"))
+    # processes.append(Process(target=execute_pasquadibisceglie, args=(train_log, test_log, filename), name="Pasquadibisceglie"))
+    # processes.append(Process(target=execute_edbn, args=(train_log, test_log, filename), name="EDBN"))
+    # processes.append(Process(target=execute_baseline, args=(train_log, test_log, filename), name="Baseline"))
 
     print("Starting Processes")
     for p in processes:
@@ -89,8 +89,8 @@ def execute_edbn(train_log, test_log, filename):
 
 
 def execute_dimauro(train_log, test_log, filename):
-    sys.stdout = open(os.devnull, "w")
-    sys.stderr = open(os.devnull, "w")
+    # sys.stdout = open(os.devnull, "w")
+    # sys.stderr = open(os.devnull, "w")
     dimauro_acc = dimauro.test(test_log, dimauro.train(train_log, epochs=100, early_stop=10))
     with open(filename, "a") as fout:
         fout.write("Di Mauro: " + str(dimauro_acc))
@@ -190,7 +190,7 @@ def experiment_end_event():
                 for sm in split_method:
                     for sc in split_cases:
                         for tp in train_percentage:
-                            run_experiment(d, ps, aee, sm, sc, tp, filename="test_end_event.txt")
+                            run_experiment(d, ps, aee, sm, sc, tp, filename="test_end_event2.txt")
 
 
 def experiment_prefix():
@@ -211,8 +211,8 @@ def experiment_prefix():
 
 
 if __name__ == "__main__":
-    experiment_split_method()
+    # experiment_split_method()
     experiment_end_event()
-    experiment_prefix()
+    # experiment_prefix()
 
 

@@ -1,7 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-METHODS = ["Tax", "Taymouri", "Camargo_random", "Camargo_argmax", "Lin", "Di Mauro", "EDBN", "Baseline"]
+METHODS = ["Tax", "Taymouri", "Camargo_random", "Camargo_argmax", "Lin", "Di Mauro", "EDBN", "Baseline", "Pasquadibisceglie"]
 DATA = ["Helpdesk.csv", "BPIC12W.csv", "BPIC12.csv", "BPIC15_1_sorted_new.csv", "BPIC15_2_sorted_new.csv",
         "BPIC15_3_sorted_new.csv", "BPIC15_4_sorted_new.csv", "BPIC15_5_sorted_new.csv"]
 

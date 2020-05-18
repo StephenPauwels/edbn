@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import pandas as pd
 import numpy as np
 from keras.utils import np_utils
@@ -93,9 +95,17 @@ def get_image_from_log(log):
         image = np.zeros(matrix_zero)
         conts = np.zeros(n_activity + 1)
         diffs = np.zeros(n_activity + 1)
+        starttime = None
         for i in range(log.k - 1, -1, -1):
             event = row[1]["%s_Prev%i" % (log.activity, i)]
             conts[event] += 1
+            time = row[1]["%s_Prev%i" % (log.time, i)]
+            if time != 0:
+                # time = datetime.strptime(time, "%Y/%m/%d %H:%M:%S.%f")
+                time = datetime.strptime(time, "%Y-%m-%d %H:%M:%S")
+                if starttime is None:
+                    starttime = time
+                diffs[event] = (time - starttime).days
             image[log.k - 1 - i] = np.array(list(zip(conts[1:], diffs[1:])))
         list_image.append(image)
     return list_image
@@ -154,7 +164,7 @@ def train(log, epochs=500, early_stop=42):
     return model
 
 
-def test(log, model):
+def notest(log, model):
     X_test = get_image_from_log(log)
     y_test = get_label_from_log(log)
 
@@ -174,12 +184,12 @@ if __name__ == "__main__":
     case_attr = "case"
     act_attr = "event"
 
-    logfile = LogFile(data, ",", 0, None, None, case_attr,
-                      activity_attr=act_attr, convert=False, k=5)
+    logfile = LogFile(data, ",", 0, None, "Complete Timestamp", case_attr,
+                      activity_attr=act_attr, convert=False, k=10)
     logfile.convert2int()
 
     logfile.create_k_context()
     train_log, test_log = logfile.splitTrainTest(80, case=True, method="train-test")
 
     model = train(train_log, epochs=100, early_stop=10)
-    test(test_log, model)
+    notest(test_log, model)
