@@ -99,13 +99,15 @@ def get_image_from_log(log):
         for i in range(log.k - 1, -1, -1):
             event = row[1]["%s_Prev%i" % (log.activity, i)]
             conts[event] += 1
-            time = row[1]["%s_Prev%i" % (log.time, i)]
-            if time != 0:
-                # time = datetime.strptime(time, "%Y/%m/%d %H:%M:%S.%f")
-                time = datetime.strptime(time, "%Y-%m-%d %H:%M:%S")
+            t_raw = row[1]["%s_Prev%i" % (log.time, i)]
+            if t_raw != 0:
+                try:
+                    t = datetime.strptime(t_raw, "%Y-%m-%d %H:%M:%S")
+                except ValueError:
+                    t = datetime.strptime(t_raw, "%Y/%m/%d %H:%M:%S.%f")
                 if starttime is None:
-                    starttime = time
-                diffs[event] = (time - starttime).days
+                    starttime = t
+                diffs[event] = (t - starttime).days
             image[log.k - 1 - i] = np.array(list(zip(conts[1:], diffs[1:])))
         list_image.append(image)
     return list_image
@@ -164,7 +166,7 @@ def train(log, epochs=500, early_stop=42):
     return model
 
 
-def notest(log, model):
+def test(log, model):
     X_test = get_image_from_log(log)
     y_test = get_label_from_log(log)
 

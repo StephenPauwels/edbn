@@ -108,7 +108,7 @@ def run_experiment(data, prefix_size, add_end_event, split_method, split_cases, 
     logfile.create_k_context()
     train_log, test_log = logfile.splitTrainTest(train_percentage, case=split_cases, method=split_method)
 
-    with open("results.txt", "a") as fout:
+    with open("Baseline/results.txt", "a") as fout:
         fout.write("Data: " + data)
         fout.write("\nPrefix Size: " + str(prefix_size))
         fout.write("\nEnd event: " + str(add_end_event))

@@ -1,0 +1,176 @@
+Data: Data/Helpdesk.csv
+Prefix Size: 10
+End event: True
+Split method: train-test
+Split cases: True
+Train percentage: 70
+Date: 05.05.20-18.01
+------------------------------------
+Pasquadibisceglie: 0.8650957942008972
+====================================
+
+Data: Data/Helpdesk.csv
+Prefix Size: 10
+End event: False
+Split method: train-test
+Split cases: True
+Train percentage: 70
+Date: 05.05.20-18.02
+------------------------------------
+Pasquadibisceglie: 0.8366929292678833
+====================================
+
+Data: Data/BPIC12W.csv
+Prefix Size: 10
+End event: True
+Split method: train-test
+Split cases: True
+Train percentage: 70
+Date: 05.05.20-18.05
+------------------------------------
+Pasquadibisceglie: 0.6503832340240479
+====================================
+
+Data: Data/BPIC12W.csv
+Prefix Size: 10
+End event: False
+Split method: train-test
+Split cases: True
+Train percentage: 70
+Date: 05.05.20-18.10
+------------------------------------
+Pasquadibisceglie: 0.7393640279769897
+====================================
+
+Data: Data/BPIC12.csv
+Prefix Size: 10
+End event: True
+Split method: train-test
+Split cases: True
+Train percentage: 70
+Date: 05.05.20-18.15
+------------------------------------
+Pasquadibisceglie: 0.8057284951210022
+====================================
+
+Data: Data/BPIC12.csv
+Prefix Size: 10
+End event: False
+Split method: train-test
+Split cases: True
+Train percentage: 70
+Date: 05.05.20-18.25
+------------------------------------
+Pasquadibisceglie: 0.7986384034156799
+====================================
+
+Data: Data/BPIC15_1_sorted_new.csv
+Prefix Size: 10
+End event: True
+Split method: train-test
+Split cases: True
+Train percentage: 70
+Date: 05.05.20-18.35
+------------------------------------
+Pasquadibisceglie: 0.6388800740242004
+====================================
+
+Data: Data/BPIC15_1_sorted_new.csv
+Prefix Size: 10
+End event: False
+Split method: train-test
+Split cases: True
+Train percentage: 70
+Date: 05.05.20-18.41
+------------------------------------
+Pasquadibisceglie: 0.6552059650421143
+====================================
+
+Data: Data/BPIC15_2_sorted_new.csv
+Prefix Size: 10
+End event: True
+Split method: train-test
+Split cases: True
+Train percentage: 70
+Date: 05.05.20-18.48
+------------------------------------
+Pasquadibisceglie: 0.36714622378349304
+====================================
+
+Data: Data/BPIC15_2_sorted_new.csv
+Prefix Size: 10
+End event: False
+Split method: train-test
+Split cases: True
+Train percentage: 70
+Date: 05.05.20-18.54
+------------------------------------
+Pasquadibisceglie: 0.4152493178844452
+====================================
+
+Data: Data/BPIC15_3_sorted_new.csv
+Prefix Size: 10
+End event: True
+Split method: train-test
+Split cases: True
+Train percentage: 70
+Date: 05.05.20-19.00
+------------------------------------
+Pasquadibisceglie: 0.37987223267555237
+====================================
+
+Data: Data/BPIC15_3_sorted_new.csv
+Prefix Size: 10
+End event: False
+Split method: train-test
+Split cases: True
+Train percentage: 70
+Date: 05.05.20-19.08
+------------------------------------
+Pasquadibisceglie: 0.36910632252693176
+====================================
+
+Data: Data/BPIC15_4_sorted_new.csv
+Prefix Size: 10
+End event: True
+Split method: train-test
+Split cases: True
+Train percentage: 70
+Date: 05.05.20-19.15
+------------------------------------
+Pasquadibisceglie: 0.6150608062744141
+====================================
+
+Data: Data/BPIC15_4_sorted_new.csv
+Prefix Size: 10
+End event: False
+Split method: train-test
+Split cases: True
+Train percentage: 70
+Date: 05.05.20-19.21
+------------------------------------
+Pasquadibisceglie: 0.5613632202148438
+====================================
+
+Data: Data/BPIC15_5_sorted_new.csv
+Prefix Size: 10
+End event: True
+Split method: train-test
+Split cases: True
+Train percentage: 70
+Date: 05.05.20-19.27
+------------------------------------
+Pasquadibisceglie: 0.6473791003227234
+====================================
+
+Data: Data/BPIC15_5_sorted_new.csv
+Prefix Size: 10
+End event: False
+Split method: train-test
+Split cases: True
+Train percentage: 70
+Date: 05.05.20-19.34
+------------------------------------
+Pasquadibisceglie: 0.6368758678436279
+====================================
+
