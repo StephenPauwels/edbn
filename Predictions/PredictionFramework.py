@@ -11,6 +11,9 @@ from Utils.LogFile import LogFile
 DATA = ["Helpdesk.csv", "BPIC12W.csv", "BPIC12.csv", "BPIC15_1_sorted_new.csv",
         "BPIC15_2_sorted_new.csv", "BPIC15_3_sorted_new.csv", "BPIC15_4_sorted_new.csv", "BPIC15_5_sorted_new.csv"]
 
+DATA = ["BPIC12W.csv", "BPIC12.csv", "BPIC15_1_sorted_new.csv",
+        "BPIC15_2_sorted_new.csv", "BPIC15_3_sorted_new.csv", "BPIC15_4_sorted_new.csv", "BPIC15_5_sorted_new.csv"]
+
 DATA_FOLDER = "../Data/"
 
 def run_experiment(data, prefix_size, add_end_event, split_method, split_cases, train_percentage, filename="results.txt"):
@@ -24,7 +27,7 @@ def run_experiment(data, prefix_size, add_end_event, split_method, split_cases, 
 
     if add_end_event:
         logfile.add_end_events()
-    # logfile.keep_attributes(["case", "event", "role"])
+    logfile.keep_attributes(["case", "event", "role"])
     logfile.convert2int()
     logfile.create_k_context()
     train_log, test_log = logfile.splitTrainTest(train_percentage, case=split_cases, method=split_method)
@@ -45,7 +48,7 @@ def run_experiment(data, prefix_size, add_end_event, split_method, split_cases, 
     # processes.append(Process(target=execute_camargo, args=(train_log, test_log, filename), name="Camargo"))
     # processes.append(Process(target=execute_lin, args=(train_log, test_log, filename), name="Lin"))
     # processes.append(Process(target=execute_dimauro, args=(train_log, test_log, filename), name="Di Mauro"))
-    processes.append(Process(target=execute_pasquadibisceglie, args=(train_log, test_log, filename), name="Pasquadibisceglie"))
+    # processes.append(Process(target=execute_pasquadibisceglie, args=(train_log, test_log, filename), name="Pasquadibisceglie"))
     processes.append(Process(target=execute_edbn, args=(train_log, test_log, filename), name="EDBN"))
     # processes.append(Process(target=execute_baseline, args=(train_log, test_log, filename), name="Baseline"))
 
@@ -80,8 +83,10 @@ def execute_baseline(train_log, test_log, filename):
 def execute_edbn(train_log, test_log, filename):
     from Predictions import edbn_adapter as edbn
 
-    sys.stdout = open("log/edbn.out", "a")
-    sys.stderr = open("log/edbn.error", "a")
+    # sys.stdout = open("log/edbn.out", "a")
+    # sys.stderr = open("log/edbn.error", "a")
+    train_log.keep_attributes(["case", "event", "role"])
+    test_log.keep_attributes(["case", "event", "role"])
     edbn_acc = edbn.test(test_log, edbn.train(train_log))
     with open(filename, "a") as fout:
         fout.write("EDBN: " + str(edbn_acc))

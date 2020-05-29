@@ -307,69 +307,43 @@ class Structure_learner():
         return_queue.put((max_arc, max_delta, max_operation, max_qi))
 
     def test_arc_additions(self, cache, bandwidth_cache, return_queue):
-        ### TEST ARC ADDITIONS ###
-        max_delta = 0
-        max_operation = None
-        max_arc = None
-        max_qi = 0
-        procs = []
-        result_queue = Queue()
+        # Create all tuples of edges to check
+        edges = []
         for u in self.nodes.keys():
-            p = Process(target=self.test_arcs, args=(cache, bandwidth_cache, u, result_queue))
-            procs.append(p)
-            p.start()
+            for v in self.nodes.keys():
+                if u != v and v not in self.c_dict[u] and not would_cause_cycle(self.c_dict, u, v):
+                    if self.restriction is None or (u, v) in self.restriction:
+                        edges.append((u, v))
 
-        i = 0
-        for p in procs:
-            p.join()
-            i += 1
+        from functools import partial
+        test_func = partial(self.test_arcs, cache=cache, bandwidth_cache=bandwidth_cache)
+        with mp.Pool(mp.cpu_count()) as p:
+            results = p.map(test_func, edges)
 
-        while not result_queue.empty():
-            results = result_queue.get()
+        max_result = max(results, key=lambda l: l[0])
 
-            if results[1] - max_delta > 10 ** (-10):
-                max_arc = results[0]
-                max_delta = results[1]
-                max_operation = results[2]
-                max_qi = results[3]
-        return_queue.put((max_arc, max_delta, max_operation, max_qi))
+        return_queue.put((max_result[2], max_result[0], max_result[1], max_result[3]))
 
-    def test_arcs(self, cache, bandwidth_cache, u, result_queue):
-        max_delta = 0
-        max_operation = None
-        max_arc = None
-        max_qi = 0
-        tmp = [n for n in self.nodes.keys() if
-                  u != n and n not in self.c_dict[u] and not would_cause_cycle(self.c_dict, u, n)]
-        i = 0
-        for v in [n for n in self.nodes.keys() if
-                  u != n and n not in self.c_dict[u] and not would_cause_cycle(self.c_dict, u, n)]:
-            # FOR MMHC ALGORITHM -> Edge Restrictions
-            if self.restriction is None or (u, v) in self.restriction:
-                if self.log.isCategoricalAttribute(v):
-                    old_cache_cols = (v,) + tuple(self.p_dict[v])
-                    if old_cache_cols not in cache:
-                        cache[old_cache_cols] = self.categoricalScore(v, self.p_dict[v])
-                    old_score, old_qi = cache[old_cache_cols]
 
-                    new_cache_cols = (v,) + tuple(self.p_dict[v] + [u])
-                    if new_cache_cols not in cache:
-                        cache[new_cache_cols] = self.categoricalScore(v, self.p_dict[v] + [u])
-                    new_score, new_qi = cache[new_cache_cols]
-                elif self.log.isNumericAttribute(v):
-                    old_score = self.numericalDelta(v, [par for par in self.p_dict[v]], cache, bandwidth_cache)
-                    new_score = self.numericalDelta(v, [par for par in self.p_dict[v] + [u]], cache, bandwidth_cache)
-                    new_qi = None
-                delta_score = (new_score - new_qi) - (old_score - old_qi)
+    def test_arcs(self, edge, cache, bandwidth_cache):
+        u = edge[0]
+        v = edge[1]
+        if self.log.isCategoricalAttribute(v):
+            old_cache_cols = (v,) + tuple(self.p_dict[v])
+            if old_cache_cols not in cache:
+                cache[old_cache_cols] = self.categoricalScore(v, self.p_dict[v])
+            old_score, old_qi = cache[old_cache_cols]
 
-                if delta_score - max_delta > 10 ** (-10):
-                    max_delta = delta_score
-                    max_operation = 'Addition'
-                    max_arc = (u, v)
-                    max_qi = new_qi
-            i += 1
-        result_queue.put((max_arc, max_delta, max_operation, max_qi))
-
+            new_cache_cols = (v,) + tuple(self.p_dict[v] + [u])
+            if new_cache_cols not in cache:
+                cache[new_cache_cols] = self.categoricalScore(v, self.p_dict[v] + [u])
+            new_score, new_qi = cache[new_cache_cols]
+        elif self.log.isNumericAttribute(v):
+            old_score = self.numericalDelta(v, [par for par in self.p_dict[v]], cache, bandwidth_cache)
+            new_score = self.numericalDelta(v, [par for par in self.p_dict[v] + [u]], cache, bandwidth_cache)
+            new_qi = None
+        delta_score = (new_score - new_qi) - (old_score - old_qi)
+        return delta_score, "Addition", (u, v), new_qi
 
 
 def would_cause_cycle(graph, u, v, visited = None):
