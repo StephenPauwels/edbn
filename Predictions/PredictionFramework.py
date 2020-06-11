@@ -23,11 +23,13 @@ def run_experiment(data, prefix_size, add_end_event, split_method, split_cases, 
 
     if prefix_size is None:
         prefix_size = max(logfile.data.groupby(logfile.trace).size())
+        if prefix_size > 40:
+            prefix_size = 40
     logfile.k = prefix_size
 
     if add_end_event:
         logfile.add_end_events()
-    logfile.keep_attributes(["case", "event", "role"])
+    logfile.keep_attributes(["case", "event", "role", "completeTime"])
     logfile.convert2int()
     logfile.create_k_context()
     train_log, test_log = logfile.splitTrainTest(train_percentage, case=split_cases, method=split_method)
@@ -47,9 +49,9 @@ def run_experiment(data, prefix_size, add_end_event, split_method, split_cases, 
     # processes.append(Process(target=execute_taymouri, args=(train_log, test_log, filename), name="Taymouri"))
     # processes.append(Process(target=execute_camargo, args=(train_log, test_log, filename), name="Camargo"))
     # processes.append(Process(target=execute_lin, args=(train_log, test_log, filename), name="Lin"))
-    # processes.append(Process(target=execute_dimauro, args=(train_log, test_log, filename), name="Di Mauro"))
-    # processes.append(Process(target=execute_pasquadibisceglie, args=(train_log, test_log, filename), name="Pasquadibisceglie"))
-    processes.append(Process(target=execute_edbn, args=(train_log, test_log, filename), name="EDBN"))
+    processes.append(Process(target=execute_dimauro, args=(train_log, test_log, filename), name="Di Mauro"))
+    processes.append(Process(target=execute_pasquadibisceglie, args=(train_log, test_log, filename), name="Pasquadibisceglie"))
+    # processes.append(Process(target=execute_edbn, args=(train_log, test_log, filename), name="EDBN"))
     # processes.append(Process(target=execute_baseline, args=(train_log, test_log, filename), name="Baseline"))
 
     print("Starting Processes")
@@ -281,4 +283,9 @@ if __name__ == "__main__":
     # experiment_prefix()
     # experiment_bpm2020()
     # all_experiments()
-    paper_experiments()
+    # paper_experiments()
+    DATA.reverse()
+    for d in DATA:
+        config = {"data": d, "prefix_size": None, "add_end_event": True, "split_method": "train-test",
+                  "split_cases": False, "train_percentage": 66, "filename": "paper_tax.txt"}
+        run_experiment(**config)

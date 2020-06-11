@@ -2,13 +2,6 @@ import copy
 import os
 
 import numpy as np
-from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
-from keras.layers import Input
-from keras.layers.core import Dense
-from keras.layers.normalization import BatchNormalization
-from keras.layers.recurrent import LSTM
-from keras.models import Model
-from keras.optimizers import Nadam
 
 from Utils.LogFile import LogFile
 
@@ -29,6 +22,14 @@ def convert_log(log):
 
 
 def train(log, epochs=500, early_stop=42):
+    from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
+    from keras.layers import Input
+    from keras.layers.core import Dense
+    from keras.layers.normalization import BatchNormalization
+    from keras.layers.recurrent import LSTM
+    from keras.models import Model
+    from keras.optimizers import Nadam
+    
     # lines = convert_log(log)
     lines = convert_log(log)
 

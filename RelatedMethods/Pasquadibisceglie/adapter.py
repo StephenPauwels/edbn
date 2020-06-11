@@ -2,17 +2,9 @@ from datetime import datetime
 
 import pandas as pd
 import numpy as np
-from keras.utils import np_utils
-from sklearn import preprocessing
-from keras.layers import Conv2D, Activation
-from keras import regularizers
-from sklearn.metrics import classification_report
-from keras.models import Sequential
-from keras.layers.core import Flatten, Dense
-from keras.layers.convolutional import MaxPooling2D
-from keras.optimizers import Nadam
-from keras.callbacks import EarlyStopping
-from keras.layers.normalization import BatchNormalization
+
+import multiprocessing as mp
+from functools import partial
 
 from Utils.LogFile import LogFile
 
@@ -112,6 +104,37 @@ def get_image_from_log(log):
         list_image.append(image)
     return list_image
 
+def get_image_from_log2(log):
+    n_activity = len(log.values[log.activity])
+    matrix_zero = (log.k, n_activity, 2)
+    list_image = []
+
+    create_image_func = partial(create_image, matrix_zero=matrix_zero, activity_attr=log.activity, time_attr=log.time)
+
+    with mp.Pool(mp.cpu_count()) as p:
+        list_image = p.map(create_image_func, log.contextdata.iterrows())
+
+    return list_image
+
+def create_image(row, matrix_zero, activity_attr, time_attr):
+    image = np.zeros(matrix_zero)
+    conts = np.zeros(matrix_zero[1] + 1)
+    diffs = np.zeros(matrix_zero[1] + 1)
+    starttime = None
+    for i in range(matrix_zero[0] - 1, -1, -1):
+        event = row[1]["%s_Prev%i" % (activity_attr, i)]
+        conts[event] += 1
+        t_raw = row[1]["%s_Prev%i" % (time_attr, i)]
+        if t_raw != 0:
+            try:
+                t = datetime.strptime(t_raw, "%Y-%m-%d %H:%M:%S")
+            except ValueError:
+                t = datetime.strptime(t_raw, "%Y/%m/%d %H:%M:%S.%f")
+            if starttime is None:
+                starttime = t
+            diffs[event] = (t - starttime).total_seconds()
+        image[matrix_zero[0] - 1 - i] = np.array(list(zip(conts[1:], diffs[1:])))
+    return image
 
 def get_label_from_log(log):
     list_label = []
@@ -121,6 +144,16 @@ def get_label_from_log(log):
 
 
 def train(log, epochs=500, early_stop=42):
+    from keras.models import Sequential
+    from keras.layers.core import Flatten, Dense
+    from keras.layers.convolutional import MaxPooling2D
+    from keras.optimizers import Nadam
+    from keras.callbacks import EarlyStopping
+    from keras.layers.normalization import BatchNormalization
+    from keras.layers import Conv2D, Activation
+    from keras import regularizers
+    from keras.utils import np_utils
+
     X_train = get_image_from_log(log)
     y_train = get_label_from_log(log)
 
@@ -186,7 +219,7 @@ if __name__ == "__main__":
     case_attr = "case"
     act_attr = "event"
 
-    logfile = LogFile(data, ",", 0, None, "Complete Timestamp", case_attr,
+    logfile = LogFile(data, ",", 0, None, "completeTime", case_attr,
                       activity_attr=act_attr, convert=False, k=10)
     logfile.convert2int()
 

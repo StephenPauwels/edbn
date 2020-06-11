@@ -64,6 +64,7 @@ def load_data(log):
         case_df = case[1]
         for row in case_df.iterrows():
             row = row[1]
+            print(row)
             t_raw = row[log.time + "_Prev%i" % (log.k-1)]
             if t_raw != 0:
                 try:

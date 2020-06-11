@@ -1,0 +1,48 @@
+Data: ../Data/Helpdesk.csv
+Prefix Size: 5
+End event: True
+Split method: test-train
+Split cases: False
+Train percentage: 70
+Date: 09.06.20-10.43
+------------------------------------
+EDBN: 0.8612932253503021
+Baseline: 0.8636071474482582
+Taymouri: 0.7820732657833204
+Tax: 0.521969404807816
+Lin: 0.8614217765779664
+Camargo: [0.7931610746882632, 0.8584650983416892]
+====================================
+
+Data: ../Data/BPIC12W.csv
+Prefix Size: 5
+End event: True
+Split method: test-train
+Split cases: False
+Train percentage: 70
+Date: 09.06.20-19.14
+------------------------------------
+EDBN: 0.6927138331573389
+Baseline: 0.6881244415563318
+Taymouri: 0.6730406803033785
+Tax: 0.5573877020550727
+Lin: 0.6960441881244416
+Camargo: [0.47684997157014053, 0.5484119892778816]
+====================================
+
+Data: ../Data/BPIC12.csv
+Prefix Size: 5
+End event: True
+Split method: test-train
+Split cases: False
+Train percentage: 70
+Date: 10.06.20-20.37
+------------------------------------
+EDBN: 0.8054760931753168
+Baseline: 0.8229015120555783
+Taymouri: 0.7654054054054054
+Camargo: [0.7525786677564364, 0.8112300776460972]
+Lin: 0.8043808745402534
+Tax: 0.6756354720065386
+====================================
+

@@ -1,0 +1,32 @@
+Data: ../Data/Helpdesk.csv
+Prefix Size: 5
+End event: True
+Split method: train-test
+Split cases: True
+Train percentage: 80
+Date: 09.06.20-14.29
+------------------------------------
+EDBN: 0.867402245451026
+Baseline: 0.8718544328300426
+Taymouri: 0.8282352941176471
+Tax: 0.5245838172667441
+Camargo: [0.7921022067363531, 0.8608207510646535]
+Lin: 0.8672086720867209
+====================================
+
+Data: ../Data/BPIC12W.csv
+Prefix Size: 5
+End event: True
+Split method: train-test
+Split cases: True
+Train percentage: 80
+Date: 10.06.20-10.17
+------------------------------------
+EDBN: 0.6777953378111419
+Baseline: 0.6710786250493876
+Taymouri: 0.6448301886792452
+Tax: 0.5551955748715922
+Camargo: [0.4268405109969709, 0.5333201633083103]
+Lin: 0.6892532595811932
+====================================
+
