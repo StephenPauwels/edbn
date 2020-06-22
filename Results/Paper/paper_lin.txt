@@ -1,31 +1,143 @@
-Data: ../Data/Helpdesk.csv
-Prefix Size: 15
+Data: Data/Helpdesk.csv
+Prefix Size: 5
 End event: True
 Split method: train-test
 Split cases: False
 Train percentage: 70
-Date: 09.06.20-11.24
+Date: 13.06.20-09.05
 ------------------------------------
 EDBN: 0.869889431730522
-Baseline: 0.8725893545898689
-Taymouri: 0.8056293979671618
-Camargo: [0.7942915916688095, 0.86911802519928]
-Tax: 0.18734036170395132
-Lin: 0.8720750835690408
+Baseline: 0.8750321419388017
+Taymouri: 0.8311180609851446
+Tax: 0.5298277192080226
+Lin: 0.8728464901002828
+Camargo: [0.782977629210594, 0.8592183080483414]
+Pasquadibisceglie: 0.6283106207847595
+Di Mauro: 0.868732321933659
 ====================================
 
-Data: ../Data/BPIC12W.csv
-Prefix Size: 40
+Data: Data/BPIC12W.csv
+Prefix Size: 5
 End event: True
 Split method: train-test
 Split cases: False
 Train percentage: 70
-Date: 09.06.20-20.14
+Date: 13.06.20-09.08
 ------------------------------------
 EDBN: 0.6880711587669063
-Baseline: 0.657243816254417
-Taymouri: 0.6469826589595375
-Camargo: [0.5771902034848301, 0.6601681491409772]
-Tax: 0.12116790544657
-Lin: 0.686893302465375
+Baseline: 0.6771455261768409
+Taymouri: 0.6517456647398844
+Tax: 0.5296373014905975
+Camargo: [0.3985622029974412, 0.45229681978798586]
+Lin: 0.696113074204947
+Pasquadibisceglie: 0.6120791435241699
+Di Mauro: 0.6395759717314488
+====================================
+
+Data: Data/BPIC12.csv
+Prefix Size: 5
+End event: True
+Split method: train-test
+Split cases: False
+Train percentage: 70
+Date: 13.06.20-09.12
+------------------------------------
+EDBN: 0.7924935430084676
+Baseline: 0.8217052996371007
+Taymouri: 0.7594365211304576
+Tax: 0.6289077058881224
+Lin: 0.8179128387877203
+Camargo: [0.7697551247261909, 0.818959034884101]
+Pasquadibisceglie: 0.8057998418807983
+Di Mauro: 0.8263151011867786
+====================================
+
+Data: Data/BPIC15_1_sorted_new.csv
+Prefix Size: 5
+End event: True
+Split method: train-test
+Split cases: False
+Train percentage: 70
+Date: 13.06.20-09.24
+------------------------------------
+EDBN: 0.6152646030953569
+Baseline: 0.6526460309535697
+Tax: 0.5770718921617574
+Lin: 0.6234398402396405
+Camargo: [0.43160259610584123, 0.5029331003494758]
+Taymouri: 0.17480916030534352
+Pasquadibisceglie: 0.1808537244796753
+Di Mauro: 0.6717423864203694
+====================================
+
+Data: Data/BPIC15_2_sorted_new.csv
+Prefix Size: 5
+End event: True
+Split method: train-test
+Split cases: False
+Train percentage: 70
+Date: 13.06.20-09.27
+------------------------------------
+EDBN: 0.3917373662855035
+Baseline: 0.4236075248985614
+Tax: 0.3466469937292512
+Camargo: [0.13131685724824788, 0.1716709701217263]
+Lin: 0.3200295094061232
+Taymouri: 0.1259789156626506
+Pasquadibisceglie: 0.10756178200244904
+Di Mauro: 0.38959793434157136
+====================================
+
+Data: Data/BPIC15_3_sorted_new.csv
+Prefix Size: 5
+End event: True
+Split method: train-test
+Split cases: False
+Train percentage: 70
+Date: 13.06.20-09.31
+------------------------------------
+EDBN: 0.584165438969826
+Baseline: 0.3875702515414416
+Tax: 0.342663829322857
+Camargo: [0.1240792273694549, 0.14093959731543623]
+Lin: 0.349702624543024
+Taymouri: 0.20485897793912314
+Pasquadibisceglie: 0.17536967992782593
+Di Mauro: 0.3576690129317401
+====================================
+
+Data: Data/BPIC15_4_sorted_new.csv
+Prefix Size: 5
+End event: True
+Split method: train-test
+Split cases: False
+Train percentage: 70
+Date: 13.06.20-09.37
+------------------------------------
+EDBN: 0.6744811418327242
+Baseline: 0.5980142039578018
+Camargo: [0.29911052885609873, 0.40784665241674134]
+Tax: 0.5725160311659656
+Lin: 0.540439908984348
+Taymouri: 0.16985242445537596
+Pasquadibisceglie: 0.17844584584236145
+Di Mauro: 0.5662966282838033
+====================================
+
+Data: Data/BPIC15_5_sorted_new.csv
+Prefix Size: 5
+End event: True
+Split method: train-test
+Split cases: False
+Train percentage: 70
+Date: 13.06.20-09.40
+------------------------------------
+EDBN: 0.6481655691439323
+Baseline: 0.6680316529245753
+Tax: 0.5704609595484478
+Camargo: [0.4497260804604062, 0.517735598472691]
+Lin: 0.3085606773283161
+Taymouri: 0.1862651280607937
+Pasquadibisceglie: 0.1638536900281906
+Di Mauro: 0.665264788888274
 ====================================

@@ -16,17 +16,33 @@ for i in range(len(tableau20)):
 DATA = ["Helpdesk.csv", "BPIC12W.csv", "BPIC12.csv", "BPIC15_1_sorted_new.csv", "BPIC15_2_sorted_new.csv",
         "BPIC15_3_sorted_new.csv", "BPIC15_4_sorted_new.csv", "BPIC15_5_sorted_new.csv"]
 # METHODS = ["Tax", "Taymouri", "Camargo random", "Camargo argmax", "Lin", "Di Mauro", "EDBN", "Baseline", "Pasquadibisceglie"]
-METHODS = ["Tax", "Taymouri", "Camargo random", "Camargo argmax", "Lin", "EDBN", "Baseline"]
+METHODS = ["Tax", "Camargo argmax", "Lin", "Di Mauro", "Pasquadibisceglie", "Taymouri", "EDBN", "Baseline"]
 SETTINGS = ["Tax", "Camargo", "Lin", "Di Mauro", "Pasquadibisceglie", "Taymouri"]
+
+scores = {}
 
 for setting in SETTINGS:
     results = pr.read_result_file("paper_%s.txt" % (setting.lower().replace(" ", "")))
-    scores = results[METHODS].mean().sort_values()
-    print("SETTING", setting)
-    print(scores)
+    scores[setting] = results[METHODS].mean().sort_values()
 
-    print("Done")
-    print()
+LATEX_ROW = {}
+
+for setting in SETTINGS:
+    score = scores[setting]
+    i = 8
+    for score_item in score.iteritems():
+        print(score_item)
+        if score_item[0] not in LATEX_ROW:
+            LATEX_ROW[score_item[0]] = ""
+        if i == 1:
+            LATEX_ROW[score_item[0]] += "& \\textbf{%i \\emph{(%.2f)}} " % (i, score_item[1])
+        else:
+            LATEX_ROW[score_item[0]] += "& %i \\emph{(%.2f)} " % (i, score_item[1])
+        i -= 1
+
+for method in METHODS:
+    print(method, LATEX_ROW[method], "\\\\")
+
 
 
 

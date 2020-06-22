@@ -200,6 +200,8 @@ def train(log, epochs=500, early_stop=42):
 
 
 def test(log, model):
+    from keras.utils import np_utils
+
     X_test = get_image_from_log(log)
     y_test = get_label_from_log(log)
 

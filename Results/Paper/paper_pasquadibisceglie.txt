@@ -12,6 +12,8 @@ Taymouri: 0.8322981366459627
 Camargo: [0.7941009642654566, 0.8628474191718661]
 Tax: 0.18684817545849877
 Lin: 0.8726035167328418
+Di Mauro: 0.8662507090187181
+Pasquadibisceglie: 0.6710153222084045
 ====================================
 
 Data: ../Data/BPIC12W.csv
@@ -28,5 +30,114 @@ Taymouri: 0.6551203590371277
 Camargo: [0.560493119266055, 0.6457855504587156]
 Tax: 0.12006611955275229
 Lin: 0.6934489678899083
+Di Mauro: 0.6415926032110092
+Pasquadibisceglie: 0.6095541715621948
 ====================================
 
+Data: ../Data/BPIC12.csv
+Prefix Size: 40
+End event: True
+Split method: train-test
+Split cases: False
+Train percentage: 66
+Date: 11.06.20-22.25
+------------------------------------
+EDBN: 0.799221116399827
+Baseline: 0.8109620654839175
+Camargo: [0.7549834126640704, 0.7965527188807154]
+Taymouri: 0.7571516741243636
+Tax: 0.26727174383383817
+Lin: 0.7501802971296697
+Di Mauro: 0.8250108178277802
+Pasquadibisceglie: 0.7889225482940674
+====================================
+
+Data: ../Data/BPIC15_1_sorted_new.csv
+Prefix Size: 40
+End event: True
+Split method: train-test
+Split cases: False
+Train percentage: 66
+Date: 14.06.20-12.24
+------------------------------------
+EDBN: 0.5766202301635373
+Baseline: 0.5969935576234788
+Camargo: [0.05979846924728815, 0.08584329056770001]
+Lin: 0.5917075050933319
+Tax: 0.405782996531028
+Taymouri: 0.15183833847880998
+Di Mauro: 0.5943505313584053
+Pasquadibisceglie: 0.5890644788742065
+====================================
+
+Data: ../Data/BPIC15_2_sorted_new.csv
+Prefix Size: 40
+End event: True
+Split method: train-test
+Split cases: False
+Train percentage: 66
+Date: 16.06.20-07.30
+------------------------------------
+EDBN: 0.40493393217470547
+Baseline: 0.34973637961335674
+Camargo: [0.1003710212849053, 0.12126537785588752]
+Lin: 0.31816702466966085
+Tax: 0.22162500813643168
+Taymouri: 0.0900033211557622
+Di Mauro: 0.30098288094773157
+Pasquadibisceglie: 0.27520665526390076
+====================================
+
+Data: ../Data/BPIC15_3_sorted_new.csv
+Prefix Size: 40
+End event: True
+Split method: train-test
+Split cases: False
+Train percentage: 66
+Date: 18.06.20-08.53
+------------------------------------
+EDBN: 0.518006740491093
+Baseline: 0.3231102551757342
+Camargo: [0.10101107366393837, 0.11227732306210882]
+Tax: 0.18740491092922484
+Lin: 0.30024073182474725
+Taymouri: 0.16453201970443349
+Di Mauro: 0.325565719788156
+Pasquadibisceglie: 0.3406836688518524
+====================================
+
+Data: Data/BPIC15_4_sorted_new.csv
+Prefix Size: 40
+End event: True
+Split method: train-test
+Split cases: False
+Train percentage: 66
+Date: 12.06.20-04.40
+------------------------------------
+EDBN: 0.5249741437001886
+Baseline: 0.56305895236357
+Camargo: [0.08535620855387237, 0.11504532457261057]
+Lin: 0.5959116627121738
+Tax: 0.3993246942872787
+Taymouri: 0.13527588344699318
+Di Mauro: 0.5584960759262639
+Pasquadibisceglie: 0.5426172614097595
+====================================
+
+Data: Data/BPIC15_5_sorted_new.csv
+Prefix Size: 40
+End event: True
+Split method: train-test
+Split cases: False
+Train percentage: 66
+Date: 12.06.20-07.08
+------------------------------------
+EDBN: 0.6153996386895171
+Baseline: 0.6194033494458279
+Camargo: [0.22274303012548216, 0.28538645573946586]
+Tax: 0.43645329817879985
+Lin: 0.6059762706899077
+Taymouri: 0.15381177054879563
+Di Mauro: 0.5895219959962893
+Pasquadibisceglie: 0.5828328728675842
+====================================

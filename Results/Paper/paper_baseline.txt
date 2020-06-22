@@ -1,0 +1,95 @@
+Data: Data/Helpdesk.csv
+Prefix Size: 10
+End event: False
+Split method: train-test
+Split cases: False
+Train percentage: 70
+Date: 22.06.20-09.25
+------------------------------------
+Pasquadibisceglie: 0.5927545428276062
+Di Mauro: 0.8408806995627732
+====================================
+
+Data: Data/BPIC12W.csv
+Prefix Size: 10
+End event: False
+Split method: train-test
+Split cases: False
+Train percentage: 70
+Date: 22.06.20-09.27
+------------------------------------
+Pasquadibisceglie: 0.7000414133071899
+Di Mauro: 0.7406895916770243
+====================================
+
+Data: Data/BPIC12.csv
+Prefix Size: 10
+End event: False
+Split method: train-test
+Split cases: False
+Train percentage: 70
+Date: 22.06.20-09.29
+------------------------------------
+Pasquadibisceglie: 0.8026830554008484
+Di Mauro: 0.8221073225265512
+====================================
+
+Data: Data/BPIC15_1_sorted_new.csv
+Prefix Size: 10
+End event: False
+Split method: train-test
+Split cases: False
+Train percentage: 70
+Date: 22.06.20-09.39
+------------------------------------
+Pasquadibisceglie: 0.30469200015068054
+Di Mauro: 0.6543249281838494
+====================================
+
+Data: Data/BPIC15_2_sorted_new.csv
+Prefix Size: 10
+End event: False
+Split method: train-test
+Split cases: False
+Train percentage: 70
+Date: 22.06.20-09.46
+------------------------------------
+Pasquadibisceglie: 0.09687358886003494
+Di Mauro: 0.3947091537652187
+====================================
+
+Data: Data/BPIC15_3_sorted_new.csv
+Prefix Size: 10
+End event: False
+Split method: train-test
+Split cases: False
+Train percentage: 70
+Date: 22.06.20-09.52
+------------------------------------
+Pasquadibisceglie: 0.15739499032497406
+Di Mauro: 0.34986595174262736
+====================================
+
+Data: Data/BPIC15_4_sorted_new.csv
+Prefix Size: 10
+End event: False
+Split method: train-test
+Split cases: False
+Train percentage: 70
+Date: 22.06.20-09.59
+------------------------------------
+Pasquadibisceglie: 0.3215619921684265
+Di Mauro: 0.6084443504616903
+====================================
+
+Data: Data/BPIC15_5_sorted_new.csv
+Prefix Size: 10
+End event: False
+Split method: train-test
+Split cases: False
+Train percentage: 70
+Date: 22.06.20-10.05
+------------------------------------
+Pasquadibisceglie: 0.3234032988548279
+Di Mauro: 0.695554051004288
+====================================

@@ -8,6 +8,8 @@ import multiprocessing as mp
 import re
 import numpy as np
 
+LAMBDA = 0.7
+
 def cond_prob(a,b):
     """
     Return the conditional probability of a given b. With a and b sets containing row ids.
@@ -20,7 +22,15 @@ def get_probabilities(variable, val_tuple, parents):
     Calculate probabilities for all possible next values for the given variable.
     """
     if variable.conditional_table.check_parent_combination(val_tuple):
-        return variable.conditional_table.get_values(val_tuple), False
+        cpt_probs = variable.conditional_table.get_values(val_tuple)
+        probs = {}
+        for value in cpt_probs:
+            p_value = len(variable.value_counts[value]) / variable.total_rows
+            probs[value] = cpt_probs[value] * \
+                           (LAMBDA + (1 - LAMBDA) * (variable.conditional_table.cpt_probs[val_tuple] / p_value))
+
+        return probs, False
+        # return variable.conditional_table.get_values(val_tuple), False
     else:
         unseen_value = False
         value_combinations = []

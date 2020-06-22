@@ -16,7 +16,8 @@ results = pr.read_result_file("split_method.txt")
 
 DATA = ["Helpdesk.csv", "BPIC12W.csv", "BPIC12.csv", "BPIC15_1_sorted_new.csv", "BPIC15_2_sorted_new.csv",
         "BPIC15_3_sorted_new.csv", "BPIC15_4_sorted_new.csv", "BPIC15_5_sorted_new.csv"]
-METHODS = ["Tax", "Taymouri", "Camargo random", "Camargo argmax", "Lin", "Di Mauro", "EDBN", "Baseline", "Pasquadibisceglie"]
+METHODS = ["Tax", "Taymouri", "Camargo argmax", "Lin", "Di Mauro", "EDBN", "Baseline", "Pasquadibisceglie"]
+METHODS2 = ["Tax", "Taymouri", "Camargo", "Lin", "Di Mauro", "EDBN", "Baseline", "Pasquadibisceglie"]
 
 DATA_NAMES = {}
 DATA_NAMES["Helpdesk.csv"] = "Helpdesk"
@@ -44,7 +45,10 @@ for d in DATA:
     ax = figure.add_subplot(fig_num)
     for m in METHODS:
         x, y = np.array([t for t in data_result[["split_method", m]].values if t[1] != 0]).transpose()
-        ax.plot(x, y, "o-", label=m, marker=MARKERS[col_num], color=tableau20[col_num])
+        if m == "Camargo argmax":
+            ax.plot(x, y, "o-", label="Camargo", marker=MARKERS[col_num], color=tableau20[col_num])
+        else:
+            ax.plot(x, y, "o-", label=m, marker=MARKERS[col_num], color=tableau20[col_num])
         ax.set_ylim([-0.05, 0.9])
         col_num += 1
     ax.set_title(DATA_NAMES[d])
@@ -55,6 +59,6 @@ for d in DATA:
     # plt.title(d)
     # plt.legend(loc="upper center", bbox_to_anchor=(0.5, -0.05), ncol=3)
 
-figure.legend(labels=METHODS, loc="lower center", ncol=5, frameon=False, markerscale=2, fontsize="xx-large")
+figure.legend(labels=METHODS2, loc="lower center", ncol=4, frameon=False, markerscale=2, fontsize="xx-large")
 figure.savefig("splitmethod.png", bbox_inches="tight")
 figure.show()
