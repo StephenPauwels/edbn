@@ -167,12 +167,6 @@ def create_latex(output_folder, dataframe, x_axis, use_methods=None):
         fout.write("\\end{document}")
 
 def create_latex_average(output_folder, dataframe, x_axises, use_methods=None):
-    if not os.path.exists(output_folder):
-        os.mkdir(output_folder)
-        os.mkdir(os.path.join(output_folder, "figures"))
-
-    output = ""
-
     if use_methods is None:
         use_methods = METHODS
 
@@ -226,53 +220,9 @@ def create_latex_average(output_folder, dataframe, x_axises, use_methods=None):
                   frameon=False, bbox_to_anchor=(0.38, -0.025), bbox_transform=ax.transAxes, labelspacing=1.3,
                   markerscale=2)
 
-    # plt.legend(loc="lower center", ncol=6)
-    fig_location = os.path.join(output_folder, "Overview.png")
-    plt.savefig(fig_location)
+    plt.savefig("Overview.png")
     plt.show()
 
-    num_x_vals = len(d_dataframe[x_axis])
-
-    print(accs)
-
-    #     output += "\subsection{%s}" % d_name.replace("_", "\_")
-    #
-    #     for i in range(len(d_dataframe[x_axis])):
-    #         output += "\\begin{table}[h!]"
-    #         output += "\centering"
-    #         output += "\caption{Results for value \\textbf{%s} of axis %s}" % (d_dataframe[x_axis].values[i], x_axis.replace("_", " "))
-    #         output += "\\begin{tabular}{l | l}"
-    #         output += "Method & Accuracy\\\\"
-    #         output += "\hline "
-    #         tmp = sorted([(m[0], m[1]) for m in accs], key=lambda l:l[1], reverse=True)
-    #         for result_tuple in tmp:
-    #             output += "%s & %f \\\\" % result_tuple
-    #         output += "\end{tabular}"
-    #         output += "\end{table}"
-    #
-    #     # output += "\\begin{figure}[h!]"
-    #     # output += "\centering"
-    #     output += "\includegraphics{figures/" + d_name + ".png}"
-    #     # output += "\end{figure}"
-    #     output += "\\newpage"
-    #     output += "\n"
-    #
-    # with open(output_folder + "/main.tex", "w") as fout:
-    #     fout.write("\\documentclass{article}\n\\usepackage{graphicx}\n\\begin{document}")
-    #     fout.write(output)
-    #     fout.write("\\end{document}")
-
-# result1 = read_result_file("test_end_event.txt")
-# result2 = read_result_file("test_end_event2.txt")
-#
-# result = pd.merge(result1, result2)
-# print(result)
-
-# for d in DATA:
-#     plot_acc_values(result_data[result_data["data"] == d], "Baseline", "prefix_size", "end_event", title=d)
-# plot_max_acc_values(get_max_per_x(result_data[result_data["data"] == DATA[0]], "prefix_size"), "Helpdesk - Max per method")
-# plot_all_acc_values(result_data[result_data["data"] == DATA[0]], "end_event", title=DATA[0])
-#create_latex("Split Method", result_data, "split_method")
 
 
 DATA = ["Camargo_Helpdesk.csv", "Camargo_BPIC12W.csv", "Camargo_BPIC2012.csv", "BPIC15_1_sorted_new.csv",

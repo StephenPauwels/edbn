@@ -20,7 +20,7 @@ results = pd.merge(results1, results2)
 DATA = ["Helpdesk.csv", "BPIC12W.csv", "BPIC12.csv", "BPIC15_1_sorted_new.csv", "BPIC15_2_sorted_new.csv",
         "BPIC15_3_sorted_new.csv", "BPIC15_4_sorted_new.csv", "BPIC15_5_sorted_new.csv"]
 METHODS = ["Tax", "Taymouri", "Camargo argmax", "Lin", "Di Mauro", "EDBN", "Baseline", "Pasquadibisceglie"]
-METHODS2 = ["Tax", "Taymouri", "Camargo", "Lin", "Di Mauro", "EDBN", "Baseline", "Pasquadibisceglie"]
+METHODS2 = ["Tax", "Taymouri", "Camargo", "Lin", "Di Mauro", "EDBN", "SDL", "Pasquadibisceglie"]
 
 DATA_NAMES = {}
 DATA_NAMES["Helpdesk.csv"] = "Helpdesk"
