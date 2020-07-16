@@ -1,4 +1,5 @@
-import processresults as pr
+import pandas as pd
+from ICPM2020 import processresults as pr
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -12,7 +13,15 @@ for i in range(len(tableau20)):
     r, g, b = tableau20[i]
     tableau20[i] = (r / 255., g / 255., b / 255.)
 
-results = pr.read_result_file("split_method.txt")
+results1 = pr.read_result_file("test_prefix.txt")
+results2 = pr.read_result_file("test_prefix_pasquadibisceglie.txt")
+results = pd.merge(results1, results2)
+results = results.drop(columns=["Di Mauro"])
+
+result3 = pr.read_result_file("test_prefix_dimauro.txt")
+results = pd.merge(results, result3)
+
+print(results)
 
 DATA = ["Helpdesk.csv", "BPIC12W.csv", "BPIC12.csv", "BPIC15_1_sorted_new.csv", "BPIC15_2_sorted_new.csv",
         "BPIC15_3_sorted_new.csv", "BPIC15_4_sorted_new.csv", "BPIC15_5_sorted_new.csv"]
@@ -44,7 +53,8 @@ for d in DATA:
     data_result = results[results.data == d]
     ax = figure.add_subplot(fig_num)
     for m in METHODS:
-        x, y = np.array([t for t in data_result[["split_method", m]].values if t[1] != 0]).transpose()
+        x, y = np.array([t for t in data_result[["prefix_size", m]].values if t[1] != 0]).transpose()
+        x = [int(xi) for xi in x]
         if m == "Camargo argmax":
             ax.plot(x, y, "o-", label="Camargo", marker=MARKERS[col_num], color=tableau20[col_num])
         else:
@@ -60,5 +70,8 @@ for d in DATA:
     # plt.legend(loc="upper center", bbox_to_anchor=(0.5, -0.05), ncol=3)
 
 figure.legend(labels=METHODS2, loc="lower center", ncol=4, frameon=False, markerscale=2, fontsize="xx-large")
-figure.savefig("splitmethod.png", bbox_inches="tight")
+figure.savefig("prefixsize.png", bbox_inches="tight")
 figure.show()
+    # pr.plot_acc_dots(data_result, "prefix_size", title=d)
+
+

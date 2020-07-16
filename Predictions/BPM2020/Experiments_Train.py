@@ -18,9 +18,9 @@ import sys
 import time
 
 from RelatedMethods.Camargo.support_modules.support import create_csv_file_header
-from Predictions.Experiments_Variables import DATA_DESC, DATA_FOLDER, OUTPUT_FOLDER
-from Predictions.Experiments_Variables import EDBN, CAMARGO, DIMAURO, LIN, TAX
-from Predictions.Experiments_Variables import K_EDBN, DIMAURO_PARAMS
+from BPM2020.Experiments_Variables import DATA_DESC, DATA_FOLDER, OUTPUT_FOLDER
+from BPM2020.Experiments_Variables import EDBN, CAMARGO, DIMAURO, LIN, TAX
+from BPM2020.Experiments_Variables import K_EDBN, DIMAURO_PARAMS
 from Predictions.DataProcessing import get_data
 from Utils.LogFile import LogFile
 

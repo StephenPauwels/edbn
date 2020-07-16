@@ -1,5 +1,5 @@
 import pandas as pd
-import processresults as pr
+from ICPM2020 import processresults as pr
 import matplotlib.pyplot as plt
 import numpy as np
 

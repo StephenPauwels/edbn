@@ -23,7 +23,7 @@ DATA_DESC.append({"folder": "bpic18/", "data": "BPIC18"})
 # DATA_DESC.append({"folder": "bpic18l/", "data": "BPIC18L"})
 
 # Location to output the splitted log files
-DATA_FOLDER = "../Data/PredictionData/"
+DATA_FOLDER = "../../Data/PredictionData/"
 
 # Location to output model and result files
 OUTPUT_FOLDER = "Output/"

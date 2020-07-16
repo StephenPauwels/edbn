@@ -14,7 +14,7 @@ DATA = ["Helpdesk.csv", "BPIC12W.csv", "BPIC12.csv", "BPIC15_1_sorted_new.csv",
 DATA = ["BPIC12W.csv", "BPIC12.csv", "BPIC15_1_sorted_new.csv",
         "BPIC15_2_sorted_new.csv", "BPIC15_3_sorted_new.csv", "BPIC15_4_sorted_new.csv", "BPIC15_5_sorted_new.csv"]
 
-DATA_FOLDER = "../Data/"
+DATA_FOLDER = "../../Data/"
 
 def run_experiment(data, prefix_size, add_end_event, split_method, split_cases, train_percentage, filename="results.txt"):
     data = DATA_FOLDER + data
@@ -46,15 +46,15 @@ def run_experiment(data, prefix_size, add_end_event, split_method, split_cases, 
         fout.write("\n------------------------------------\n")
 
     processes = []
-    # processes.append(Process(target=execute_tax, args=(train_log, test_log, filename), name="Tax"))
-    # processes.append(Process(target=execute_taymouri, args=(train_log, test_log, filename), name="Taymouri"))
-    # processes.append(Process(target=execute_camargo, args=(train_log, test_log, filename), name="Camargo"))
-    # processes.append(Process(target=execute_lin, args=(train_log, test_log, filename), name="Lin"))
-    # processes.append(Process(target=execute_dimauro, args=(train_log, test_log, filename), name="Di Mauro"))
-    # processes.append(Process(target=execute_pasquadibisceglie, args=(train_log, test_log, filename), name="Pasquadibisceglie"))
-    # processes.append(Process(target=execute_edbn, args=(train_log, test_log, filename), name="EDBN"))
-    # processes.append(Process(target=execute_baseline, args=(train_log, test_log, filename), name="Baseline"))
-    processes.append(Process(target=execute_new_method, args=(train_log, test_log, filename), name="New Method"))
+    processes.append(Process(target=execute_tax, args=(train_log, test_log, filename), name="Tax"))
+    processes.append(Process(target=execute_taymouri, args=(train_log, test_log, filename), name="Taymouri"))
+    processes.append(Process(target=execute_camargo, args=(train_log, test_log, filename), name="Camargo"))
+    processes.append(Process(target=execute_lin, args=(train_log, test_log, filename), name="Lin"))
+    processes.append(Process(target=execute_dimauro, args=(train_log, test_log, filename), name="Di Mauro"))
+    processes.append(Process(target=execute_pasquadibisceglie, args=(train_log, test_log, filename), name="Pasquadibisceglie"))
+    processes.append(Process(target=execute_edbn, args=(train_log, test_log, filename), name="EDBN"))
+    processes.append(Process(target=execute_baseline, args=(train_log, test_log, filename), name="Baseline"))
+    # processes.append(Process(target=execute_new_method, args=(train_log, test_log, filename), name="New Method"))
 
     print("Starting Processes")
     for p in processes:
@@ -76,8 +76,8 @@ def run_experiment(data, prefix_size, add_end_event, split_method, split_cases, 
 def execute_baseline(train_log, test_log, filename):
     from Predictions import base_adapter as baseline
 
-    sys.stdout = open("log/baseline.out", "a")
-    sys.stderr = open("log/baseline.error", "a")
+    sys.stdout = open("../log/baseline.out", "a")
+    sys.stderr = open("../log/baseline.error", "a")
     baseline_acc = baseline.test(test_log, baseline.train(train_log, epochs=100, early_stop=10))
     with open(filename, "a") as fout:
         fout.write("Baseline: " + str(baseline_acc))
@@ -86,8 +86,8 @@ def execute_baseline(train_log, test_log, filename):
 def execute_new_method(train_log, test_log, filename):
     from Predictions import new_method_adapter as new_method
 
-    sys.stdout = open("log/new_method.out", "a")
-    sys.stderr = open("log/new_method.error", "a")
+    sys.stdout = open("../log/new_method.out", "a")
+    sys.stderr = open("../log/new_method.error", "a")
     baseline_acc = new_method.test(test_log, new_method.train(train_log, epochs=100, early_stop=10))
     with open(filename, "a") as fout:
         fout.write("New: " + str(baseline_acc))
@@ -110,8 +110,8 @@ def execute_edbn(train_log, test_log, filename):
 def execute_dimauro(train_log, test_log, filename):
     from RelatedMethods.DiMauro import adapter as dimauro
 
-    sys.stdout = open("log/dimauro.out", "a")
-    sys.stderr = open("log/dimauro.error", "a")
+    sys.stdout = open("../log/dimauro.out", "a")
+    sys.stderr = open("../log/dimauro.error", "a")
     dimauro_acc = dimauro.test(test_log, dimauro.train(train_log, epochs=100, early_stop=10))
     with open(filename, "a") as fout:
         fout.write("Di Mauro: " + str(dimauro_acc))
@@ -121,8 +121,8 @@ def execute_dimauro(train_log, test_log, filename):
 def execute_lin(train_log, test_log, filename):
     from RelatedMethods.Lin import adapter as lin
 
-    sys.stdout = open("log/lin.out", "a")
-    sys.stderr = open("log/lin.error", "a")
+    sys.stdout = open("../log/lin.out", "a")
+    sys.stderr = open("../log/lin.error", "a")
     lin_acc = lin.test(test_log, lin.train(train_log, epochs=100, early_stop=10))
     with open(filename, "a") as fout:
         fout.write("Lin: " + str(lin_acc))
@@ -132,8 +132,8 @@ def execute_lin(train_log, test_log, filename):
 def execute_camargo(train_log, test_log, filename):
     from RelatedMethods.Camargo import adapter as camargo
 
-    sys.stdout = open("log/camargo.out", "a")
-    sys.stderr = open("log/camargo.error", "a")
+    sys.stdout = open("../log/camargo.out", "a")
+    sys.stderr = open("../log/camargo.error", "a")
     camargo_acc = camargo.test(test_log, camargo.train(train_log, epochs=100, early_stop=10))
     with open(filename, "a") as fout:
         fout.write("Camargo: " + str(camargo_acc))
@@ -143,8 +143,8 @@ def execute_camargo(train_log, test_log, filename):
 def execute_taymouri(train_log, test_log, filename):
     from RelatedMethods.Taymouri import adapter as taymouri
 
-    sys.stdout = open("log/taymouri.out", "a")
-    sys.stderr = open("log/taymouri.error", "a")
+    sys.stdout = open("../log/taymouri.out", "a")
+    sys.stderr = open("../log/taymouri.error", "a")
     train_data, test_data = taymouri.create_input(train_log, test_log, 5)
     taymouri_acc = taymouri.test(test_data, taymouri.train(train_data))
     with open(filename, "a") as fout:
@@ -155,8 +155,8 @@ def execute_taymouri(train_log, test_log, filename):
 def execute_tax(train_log, test_log, filename):
     from RelatedMethods.Tax import adapter as tax
 
-    sys.stdout = open("log/tax.out", "a")
-    sys.stderr = open("log/tax.error", "a")
+    sys.stdout = open("../log/tax.out", "a")
+    sys.stderr = open("../log/tax.error", "a")
     tax_acc = tax.test(test_log, tax.train(train_log, epochs=100, early_stop=10))
     with open(filename, "a") as fout:
         fout.write("Tax: " + str(tax_acc))
@@ -166,8 +166,8 @@ def execute_tax(train_log, test_log, filename):
 def execute_pasquadibisceglie(train_log, test_log, filename):
     from RelatedMethods.Pasquadibisceglie import adapter as pasquadibisceglie
 
-    sys.stdout = open("log/pasquadibisceglie.out", "a")
-    sys.stderr = open("log/pasquadibisceglie.error", "a")
+    sys.stdout = open("../log/pasquadibisceglie.out", "a")
+    sys.stderr = open("../log/pasquadibisceglie.error", "a")
     pasq_acc = pasquadibisceglie.test(test_log, pasquadibisceglie.train(train_log, epochs=100, early_stop=10))
     with open(filename, "a") as fout:
         fout.write("Pasquadibisceglie: " + str(pasq_acc))
@@ -187,7 +187,7 @@ def experiments_helpdesk():
             for sm in split_method:
                 for sc in split_cases:
                     for tp in train_percentage:
-                        run_experiment(data, ps, aee, sm, sc, tp, filename="test_prefix_size.txt")
+                        run_experiment(data, ps, aee, sm, sc, tp, filename="../test_prefix_size.txt")
 
 
 def experiment_split_method():
@@ -204,7 +204,7 @@ def experiment_split_method():
                 for sm in split_method:
                     for sc in split_cases:
                         for tp in train_percentage:
-                            run_experiment(d, ps, aee, sm, sc, tp, filename="test_split_method.txt")
+                            run_experiment(d, ps, aee, sm, sc, tp, filename="../test_split_method.txt")
 
 
 def experiment_end_event():
@@ -221,7 +221,7 @@ def experiment_end_event():
                 for sm in split_method:
                     for sc in split_cases:
                         for tp in train_percentage:
-                            run_experiment(d, ps, aee, sm, sc, tp, filename="test_end_event2.txt")
+                            run_experiment(d, ps, aee, sm, sc, tp, filename="../test_end_event2.txt")
 
 
 def experiment_prefix():
@@ -238,12 +238,12 @@ def experiment_prefix():
                 for sm in split_method:
                     for sc in split_cases:
                         for tp in train_percentage:
-                            run_experiment(d, ps, aee, sm, sc, tp, filename="Prefix Size/test_prefix_dimauro.txt")
+                            run_experiment(d, ps, aee, sm, sc, tp, filename="../../Predictions_Results/Prefix Size/test_prefix_dimauro.txt")
 
 def experiment_bpm2020():
     data = ["BPIC15_1_sorted_new.csv", "BPIC15_2_sorted_new.csv", "BPIC15_3_sorted_new.csv", "BPIC15_4_sorted_new.csv", "BPIC15_5_sorted_new.csv"]
     for d in data:
-        run_experiment(d, 5, False, "test-train", True, 70, filename="test_bpm_dimauro.txt")
+        run_experiment(d, 5, False, "test-train", True, 70, filename="../test_bpm_dimauro.txt")
 
 
 def all_experiments():
@@ -293,9 +293,17 @@ def paper_experiments():
         run_experiment(**config)
 
 if __name__ == "__main__":
-    # experiment_split_method()
-    # experiment_end_event()
-    # experiment_prefix()
-    # experiment_bpm2020()
-    # all_experiments()
+    # recreate experiments used in BPM Forum 2020 paper
+    experiment_bpm2020()
+
+    # perform separate experiments on influence of preprocessing choices
+    experiment_split_method()
+    experiment_end_event()
+    experiment_prefix()
+
+    # perform all experiments with all possible preprocessing choices
+    all_experiments()
+
+    # perform ranking experiments, using the settings described in the different papers
     paper_experiments()
+

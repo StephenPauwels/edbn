@@ -1,7 +1,4 @@
-import pandas as pd
-import processresults as pr
-import matplotlib.pyplot as plt
-import numpy as np
+from ICPM2020 import processresults as pr
 
 tableau20 = [(31, 119, 180), (174, 199, 232), (255, 127, 14), (255, 187, 120),
              (44, 160, 44), (152, 223, 138), (214, 39, 40), (255, 152, 150),
@@ -16,7 +13,7 @@ for i in range(len(tableau20)):
 DATA = ["Helpdesk.csv", "BPIC12W.csv", "BPIC12.csv", "BPIC15_1_sorted_new.csv", "BPIC15_2_sorted_new.csv",
         "BPIC15_3_sorted_new.csv", "BPIC15_4_sorted_new.csv", "BPIC15_5_sorted_new.csv"]
 # METHODS = ["Tax", "Taymouri", "Camargo random", "Camargo argmax", "Lin", "Di Mauro", "EDBN", "Baseline", "Pasquadibisceglie"]
-METHODS = ["Tax", "Camargo argmax", "Lin", "Di Mauro", "Pasquadibisceglie", "Taymouri", "EDBN", "Baseline"]
+METHODS = ["Tax", "Camargo argmax", "Lin", "Di Mauro", "Pasquadibisceglie", "Taymouri", "EDBN", "Baseline", "New"]
 SETTINGS = ["Tax", "Camargo", "Lin", "Di Mauro", "Pasquadibisceglie", "Taymouri", "Baseline"]
 
 scores = {}
@@ -29,7 +26,7 @@ LATEX_ROW = {}
 
 for setting in SETTINGS:
     score = scores[setting]
-    i = 8
+    i = 9
     for score_item in score.iteritems():
         print(score_item)
         if score_item[0] not in LATEX_ROW:

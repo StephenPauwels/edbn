@@ -1,5 +1,5 @@
 """
-    Basic file to run the suffix prediction experiments
+    Basic file to run the next event prediction experiments
     Use: python Experiments_Train METHOD DATA [args]
 
     Valid values for METHOD and DATA can be found in Experiments_Variables.py
@@ -17,14 +17,14 @@ import pickle
 import sys
 import time
 
-from Experiments_Variables import DATA_DESC, DATA_FOLDER, OUTPUT_FOLDER
-from Experiments_Variables import EDBN, CAMARGO, DIMAURO, LIN, TAX
-from Experiments_Variables import K_EDBN
+from BPM2020.Experiments_Variables import DATA_DESC, DATA_FOLDER, OUTPUT_FOLDER
+from BPM2020.Experiments_Variables import EDBN, CAMARGO, DIMAURO, LIN, TAX
+from BPM2020.Experiments_Variables import K_EDBN
 from Utils.LogFile import LogFile
 
 
-def test_edbn(dataset_folder, model_folder, k=None):
-    from eDBN_Prediction import predict_suffix
+def test_edbn(dataset_folder, model_folder, k):
+    from eDBN_Prediction import predict_next_event
 
     model_file = os.path.join(model_folder, "model")
 
@@ -38,69 +38,62 @@ def test_edbn(dataset_folder, model_folder, k=None):
             print("K=", k)
 
     train_log = LogFile(dataset_folder + "train_log.csv", ",", 0, None, None, "case",
-                        activity_attr="event", convert=False, k=k)
-    train_log.add_end_events()
-    train_log.convert2int()
+                        activity_attr="event", convert=True, k=k)
 
     test_log = LogFile(dataset_folder + "test_log.csv",",", 0, None, None, "case",
-                       activity_attr="event", convert=False, k=k, values=train_log.values)
-    test_log.add_end_events()
-    test_log.convert2int()
+                       activity_attr="event", convert=True, k=k, values=train_log.values)
     test_log.create_k_context()
 
-    acc = predict_suffix(model, test_log)
-    with open(os.path.join(model_folder, "results_suffix.log"), "a") as fout:
+    acc = predict_next_event(model, test_log)
+    with open(os.path.join(model_folder, "results_next_event.log"), "a") as fout:
         fout.write("Accuracy: (%s) %s\n" % (time.strftime("%d-%m-%y %H:%M:%S", time.localtime()), acc))
 
 
 def test_camargo(dataset_folder, model_folder, architecture):
-    from predict_suffix_full import predict_suffix_full
+    from predict_next import predict_next
 
     model_file = sorted([model_file for model_file in os.listdir(model_folder) if model_file.endswith(".h5")])[-1]
-
-    predict_suffix_full(dataset_folder, model_folder, model_file, True)
+    predict_next(dataset_folder, model_folder, model_file, False)
 
 
 def test_lin(dataset_folder, model_folder):
-    from RelatedMethods.Lin.model import predict_suffix
+    from RelatedMethods.Lin.model import predict_next
 
     logfile = LogFile(dataset_folder + "full_log.csv", ",", 0, None, None, "case",
-                        activity_attr="event", convert=False, k=0)
-    logfile.add_end_events()
-    logfile.convert2int()
-
+                        activity_attr="event", convert=True, k=0)
     test_log = LogFile(dataset_folder + "test_log.csv", ",", 0, None, None, "case",
-                        activity_attr="event", convert=False, k=0, values=logfile.values)
-    test_log.add_end_events()
-    test_log.convert2int()
-
+                        activity_attr="event", convert=True, k=0, values=logfile.values)
     model_file = sorted([model_file for model_file in os.listdir(model_folder) if model_file.endswith(".h5")])[-1]
 
-    acc = predict_suffix(os.path.join(model_folder, model_file), test_log.data, test_log.convert_string2int(test_log.activity, "end"))
-    with open(os.path.join(model_folder, "results_suffix.log"), "a") as fout:
+    acc = predict_next(os.path.join(model_folder, model_file), test_log.data, test_log.trace, test_log.activity)
+    with open(os.path.join(model_folder, "results_next_event.log"), "a") as fout:
         fout.write("Accuracy: (%s) %s\n" % (time.strftime("%d-%m-%y %H:%M:%S", time.localtime()), acc))
 
 
 def test_dimauro(dataset_folder, model_folder):
-    from RelatedMethods.DiMauro.deeppm_act import predict_suffix
+    from RelatedMethods.DiMauro.deeppm_act import evaluate
 
     model_file = sorted([model_file for model_file in os.listdir(model_folder) if model_file.endswith(".h5")])[-1]
-    acc = predict_suffix(dataset_folder + "train_log.csv", dataset_folder + "test_log.csv", os.path.join(model_folder, model_file))
-    with open(os.path.join(model_folder, "results_suffix.log"), "a") as fout:
+
+    train_log = os.path.join(dataset_folder, "train_log.csv")
+    test_log = os.path.join(dataset_folder, "test_log.csv")
+
+    acc = evaluate(train_log, test_log, os.path.join(model_folder, model_file))
+    with open(os.path.join(model_folder, "results_next_event.log"), "a") as fout:
         fout.write("Accuracy: (%s) %s\n" % (time.strftime("%d-%m-%y %H:%M:%S", time.localtime()), acc))
 
 def test_tax(dataset_folder, model_folder):
-    from RelatedMethods.Tax.code.evaluate_suffix_and_remaining_time import evaluate
-    from RelatedMethods.Tax.code.calculate_dl_on_suffix import calc_dl
+    from RelatedMethods.Tax.code.evaluate_next_activity_and_time import evaluate
+    from RelatedMethods.Tax.code.calculate_accuracy_on_next_event import calc_accuracy
 
     train_log = os.path.join(dataset_folder, "train_log.csv")
     test_log = os.path.join(dataset_folder, "test_log.csv")
     model_file = sorted([model_file for model_file in os.listdir(model_folder) if model_file.endswith(".h5")])[-1]
 
     evaluate(train_log, test_log, model_folder, model_file)
-    dam_levenstein = calc_dl(os.path.join(model_folder))
-    with open(os.path.join(model_folder, "results_suffix.log"), "a") as fout:
-        fout.write("Similarity: (%s) %s\n" % (time.strftime("%d-%m-%y %H:%M:%S", time.localtime()), dam_levenstein))
+    acc = calc_accuracy(os.path.join(model_folder))
+    with open(os.path.join(model_folder, "results_next_event.log"), "a") as fout:
+        fout.write("Accuracy: (%s) %s\n" % (time.strftime("%d-%m-%y %H:%M:%S", time.localtime()), acc))
 
 def main(argv):
     if len(argv) < 2:
@@ -134,13 +127,13 @@ def main(argv):
     ###
     start_time = time.mktime(time.localtime())
     start_time_str = time.strftime("%d-%m-%y %H:%M:%S", time.localtime())
-    time_output = open(os.path.join(model_folder, "timings_suffix.log"), 'a')
+    time_output = open(os.path.join(model_folder, "timings_next_event.log"), 'a')
     time_output.write("Starting time: %s\n" % start_time_str)
 
     ###
     # Execute chosen method
     ###
-    print("EXPERIMENT SUFFIX PREDICTION:", argv)
+    print("EXPERIMENT NEXT ACTIVITY PREDICTION:", argv)
     if method == EDBN:
         test_edbn(dataset_folder, model_folder, edbn_k)
     elif method == CAMARGO:
@@ -152,8 +145,6 @@ def main(argv):
     elif method == LIN:
         test_lin(dataset_folder, model_folder)
     elif method == DIMAURO:
-        if len(argv) == 3:
-            os.environ["CUDA_VISIBLE_DEVICES"] = argv[2]
         test_dimauro(dataset_folder, model_folder)
     elif method == TAX:
         test_tax(dataset_folder, model_folder)

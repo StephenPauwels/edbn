@@ -3,21 +3,21 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 
-METHODS = ["Tax", "Taymouri", "Camargo random", "Camargo argmax", "Lin", "Di Mauro", "EDBN", "Baseline"]
-DATA = ["Helpdesk.csv", "BPIC12W.csv", "BPIC12.csv", "BPIC15_1_sorted_new.csv",
-        "BPIC15_3_sorted_new.csv", "BPIC15_5_sorted_new.csv"]
+# METHODS = ["Tax", "Taymouri", "Camargo random", "Camargo argmax", "Lin", "Di Mauro", "EDBN", "Baseline"]
+# DATA = ["Helpdesk.csv", "BPIC12W.csv", "BPIC12.csv", "BPIC15_1_sorted_new.csv",
+#         "BPIC15_3_sorted_new.csv", "BPIC15_5_sorted_new.csv"]
+#
+# DATA_NAMES = {}
+# DATA_NAMES["Helpdesk.csv"] = "Helpdesk"
+# DATA_NAMES["BPIC12W.csv"] = "BPIC12_W"
+# DATA_NAMES["BPIC12.csv"] = "BPIC12"
+# DATA_NAMES["BPIC15_1_sorted_new.csv"] = "BPIC15_1"
+# DATA_NAMES["BPIC15_2_sorted_new.csv"] = "BPIC15_2"
+# DATA_NAMES["BPIC15_3_sorted_new.csv"] = "BPIC15_3"
+# DATA_NAMES["BPIC15_4_sorted_new.csv"] = "BPIC15_4"
+# DATA_NAMES["BPIC15_5_sorted_new.csv"] = "BPIC15_5"
 
-DATA_NAMES = {}
-DATA_NAMES["Helpdesk.csv"] = "Helpdesk"
-DATA_NAMES["BPIC12W.csv"] = "BPIC12_W"
-DATA_NAMES["BPIC12.csv"] = "BPIC12"
-DATA_NAMES["BPIC15_1_sorted_new.csv"] = "BPIC15_1"
-DATA_NAMES["BPIC15_2_sorted_new.csv"] = "BPIC15_2"
-DATA_NAMES["BPIC15_3_sorted_new.csv"] = "BPIC15_3"
-DATA_NAMES["BPIC15_4_sorted_new.csv"] = "BPIC15_4"
-DATA_NAMES["BPIC15_5_sorted_new.csv"] = "BPIC15_5"
-
-result_file = "Split Method/split_method.txt"
+# result_file = "Split Method/split_method.txt"
 
 def read_result_file(result_file):
     with open(result_file, "r") as finn:
@@ -239,19 +239,19 @@ def create_latex_average(output_folder, dataframe, x_axises, use_methods=None):
 #create_latex("Split Method", result_data, "split_method")
 
 
-DATA = ["Camargo_Helpdesk.csv", "Camargo_BPIC12W.csv", "Camargo_BPIC2012.csv", "BPIC15_1_sorted_new.csv",
-        "BPIC15_3_sorted_new.csv", "BPIC15_5_sorted_new.csv"]
-
-DATA_NAMES["Camargo_Helpdesk.csv"] = "Helpdesk"
-DATA_NAMES["Camargo_BPIC12W.csv"] = "BPIC12_W"
-DATA_NAMES["Camargo_BPIC2012.csv"] = "BPIC12"
-
-full_base_results = read_result_file("Baseline/results.txt")
-TESTS = {}
-TESTS["train_percentage"] = "Train Percentage"
-TESTS["split_method"] = "Split Method"
-TESTS["split_cases"] = "Split Cases"
-TESTS["prefix_size"] = "Prefix Size"
-TESTS["end_event"] = "End Event"
-
-create_latex_average("Baseline", full_base_results, TESTS.keys(), use_methods=["Baseline"])
+# DATA = ["Camargo_Helpdesk.csv", "Camargo_BPIC12W.csv", "Camargo_BPIC2012.csv", "BPIC15_1_sorted_new.csv",
+#         "BPIC15_3_sorted_new.csv", "BPIC15_5_sorted_new.csv"]
+#
+# DATA_NAMES["Camargo_Helpdesk.csv"] = "Helpdesk"
+# DATA_NAMES["Camargo_BPIC12W.csv"] = "BPIC12_W"
+# DATA_NAMES["Camargo_BPIC2012.csv"] = "BPIC12"
+#
+# full_base_results = read_result_file("Baseline/results.txt")
+# TESTS = {}
+# TESTS["train_percentage"] = "Train Percentage"
+# TESTS["split_method"] = "Split Method"
+# TESTS["split_cases"] = "Split Cases"
+# TESTS["prefix_size"] = "Prefix Size"
+# TESTS["end_event"] = "End Event"
+#
+# create_latex_average("Baseline", full_base_results, TESTS.keys(), use_methods=["Baseline"])
