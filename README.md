@@ -21,6 +21,8 @@ All experiments in the papers can be reproduced using the files in the Anomalies
     - [Lin](https://github.com/StephenPauwels/edbn/tree/master/Lin): Our implementation of the method described in [10]
     - [Nolle](https://github.com/StephenPauwels/edbn/tree/master/Nolle): Contains the original implementations used by Nolle et al in [7]
     - [Tax](https://github.com/StephenPauwels/edbn/tree/master/Tax): Adapted implementation used in [11]
+    - [Pasquadibisceglie](https://github.com/StephenPauwels/edbn/tree/master/Pasquadibisceglie): Adapted implementation used in [12]
+    - [Taymouri](https://github.com/StephenPauwels/edbn/tree/master/Taymouri): Adapted implementation used in [13]
 
 ## References
 1. [Pauwels, Stephen, and Toon Calders. "An Anomaly Detection Technique for Business Processes based on Extended Dynamic Bayesian Networks." (2019)](http://adrem.uantwerpen.be/bibrem/pubs/PauwelsSAC19.pdf)
@@ -34,4 +36,5 @@ All experiments in the papers can be reproduced using the files in the Anomalies
 9. Di  Mauro,  N.,  Appice,  A.,  Basile,  T.M.:  Activity  prediction  of  business  processinstances  with  inception  cnn  models.  In:  International  Conference  of  the  ItalianAssociation for Artificial Intelligence. pp. 348–361. Springer (2019)
 10.  Lin, L., Wen, L., Wang, J.: Mm-pred: a deep predictive model for multi-attributeevent  sequence.  In:  Proceedings  of  the  2019  SIAM  International  Conference  onData Mining. pp. 118–126. SIAM (2019)
 11.  Tax, N., Verenich, I., La Rosa, M., Dumas, M.: Predictive business process mon-itoring with lstm neural networks. In: International Conference on Advanced In-formation Systems Engineering. pp. 477–492. Springer (2017)
-
+12. Pasquadibisceglie, V., Appice, A., Castellano, G., & Malerba, D. (2019, June). Using convolutional neural networks for predictive process analytics. In 2019 International Conference on Process Mining (ICPM) (pp. 129-136). IEEE.
+13. Taymouri, F., La Rosa, M., Erfani, S., Bozorgi, Z. D., & Verenich, I. (2020). Predictive Business Process Monitoring via Generative Adversarial Nets: The Case of Next Event Prediction. arXiv preprint arXiv:2003.11268.
