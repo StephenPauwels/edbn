@@ -2,7 +2,7 @@
 
 This repository contains all implementation files and experiments conducted for the Extended Dynamic Bayesian Networks introduced in
 [1].
- 
+  
 All code for detecting anomalies [3] and make Predictions [4, 5] in Business Process Logs can be found in this repository.
  
 All experiments in the papers can be reproduced using the files in the Anomalies and Predictions directory in the project.
