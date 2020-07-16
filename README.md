@@ -15,14 +15,14 @@ All experiments in the papers can be reproduced using the files in the Anomalies
 - [Utils](https://github.com/StephenPauwels/edbn/tree/master/Utils): Some extra implementations regarding datastructures, preprocessing and data generation
 - [Data](https://github.com/StephenPauwels/edbn/tree/master/Data): Data used for the experiments
 - [RelatedMethods](https://github.com/StephenPauwels/edbn/tree/master/RelatedMethods): Implementations of the other methods used to run the comparison experiments with
-    - [Bohmer](https://github.com/StephenPauwels/edbn/tree/master/Bohmer): Contains our own implementation of the Likelihood Graphs introduced by Bohmer et al in [6]
-    - [Camargo](https://github.com/StephenPauwels/edbn/tree/master/Camargo): Contains the slightly adapted implementation used in [8]
-    - [DiMauro](https://github.com/StephenPauwels/edbn/tree/master/DiMauro): Implementation used in [9]
-    - [Lin](https://github.com/StephenPauwels/edbn/tree/master/Lin): Our implementation of the method described in [10]
-    - [Nolle](https://github.com/StephenPauwels/edbn/tree/master/Nolle): Contains the original implementations used by Nolle et al in [7]
-    - [Tax](https://github.com/StephenPauwels/edbn/tree/master/Tax): Adapted implementation used in [11]
-    - [Pasquadibisceglie](https://github.com/StephenPauwels/edbn/tree/master/Pasquadibisceglie): Adapted implementation used in [12]
-    - [Taymouri](https://github.com/StephenPauwels/edbn/tree/master/Taymouri): Adapted implementation used in [13]
+    - [Bohmer](https://github.com/StephenPauwels/edbn/tree/master/RelatedMethods/Bohmer): Contains our own implementation of the Likelihood Graphs introduced by Bohmer et al in [6]
+    - [Camargo](https://github.com/StephenPauwels/edbn/tree/master/RelatedMethods/Camargo): Contains the slightly adapted implementation used in [8]
+    - [DiMauro](https://github.com/StephenPauwels/edbn/tree/master/RelatedMethods/DiMauro): Implementation used in [9]
+    - [Lin](https://github.com/StephenPauwels/edbn/tree/master/RelatedMethods/Lin): Our implementation of the method described in [10]
+    - [Nolle](https://github.com/StephenPauwels/edbn/tree/master/RelatedMethods/Nolle): Contains the original implementations used by Nolle et al in [7]
+    - [Tax](https://github.com/StephenPauwels/edbn/tree/master/RelatedMethods/Tax): Adapted implementation used in [11]
+    - [Pasquadibisceglie](https://github.com/StephenPauwels/edbn/tree/master/RelatedMethods/Pasquadibisceglie): Adapted implementation used in [12]
+    - [Taymouri](https://github.com/StephenPauwels/edbn/tree/master/RelatedMethods/Taymouri): Adapted implementation used in [13]
 
 ## References
 1. [Pauwels, Stephen, and Toon Calders. "An Anomaly Detection Technique for Business Processes based on Extended Dynamic Bayesian Networks." (2019)](http://adrem.uantwerpen.be/bibrem/pubs/PauwelsSAC19.pdf)
