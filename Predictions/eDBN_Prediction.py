@@ -8,7 +8,7 @@ import multiprocessing as mp
 import re
 import numpy as np
 
-LAMBDA = 0.7
+LAMBDA = 1
 
 def cond_prob(a,b):
     """
