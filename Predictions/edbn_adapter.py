@@ -1,12 +1,16 @@
 from Utils.LogFile import LogFile
 from EDBN.Execute import train as edbn_train
-from Predictions.eDBN_Prediction import predict_next_event
+from Predictions.eDBN_Prediction import predict_next_event, predict_next_event_update
 
 def train(log):
     return edbn_train(log)
 
 def test(log, model):
     return predict_next_event(model, log)
+
+
+def test_and_update(log, model):
+    return predict_next_event_update(model, log)
 
 
 if __name__ == "__main__":

@@ -1,1 +1,3 @@
 /venv/
+/venv/Lib/site-packages/
+/venv/*

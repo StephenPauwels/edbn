@@ -100,6 +100,10 @@ class ExtendedDynamicBayesianNetwork():
 
         print("GENERATE: Training Done")
 
+    def update(self, row):
+        for (_, value) in self.iterate_variables():
+            value.update(row)
+
     def calculate_scores_per_trace(self, data, accum_attr=None):
         """
         Return the result for all traces in the data
@@ -223,6 +227,8 @@ class Variable:
     def test(self, row):
         pass
 
+    def update(self, row):
+        pass
 
 
 class Discrete_Variable(Variable):
@@ -270,7 +276,7 @@ class Discrete_Variable(Variable):
         print("Train Variable", self.attr_name)
         self.value_counts = {val: set(log.index[log[self.attr_name] == val].tolist()) for val in log[self.attr_name].unique()}
         # TODO: rework so self.values becomes obsolete
-        self.values = {val: len(self.value_counts[val]) / log.shape[0] for val in self.value_counts}
+        self.values = {val: len(self.value_counts[val]) for val in self.value_counts}
         self.total_rows = log.shape[0]
         self.conditional_table.num_values = log[self.attr_name].max()
 
@@ -300,6 +306,13 @@ class Discrete_Variable(Variable):
                 self.fdt[i][p] = tmp_mapping[p][1]
 
             self.fdt_violation.append(violations / log_size)
+
+    def update(self, row):
+        atr_value = getattr(row, self.attr_name)
+        if atr_value in self.values:
+            self.values[atr_value] += 1
+            self.total_rows += 1
+        self.conditional_table.update(row)
 
     ###
     # Testing

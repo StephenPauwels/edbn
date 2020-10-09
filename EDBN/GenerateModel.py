@@ -30,7 +30,6 @@ def generate_model(data, remove_attrs = None):
             nodes.append(column)
     data.keep_attributes(nodes)
 
-
     # Get all normal attributes and remove the trace and time attribute
     attributes = list(data.attributes())
 
@@ -117,8 +116,9 @@ def generate_model(data, remove_attrs = None):
         if attr1 != data.activity:
             continue
         for attr2 in attributes:
-            for i in range(data.k):
-                restrictions.append((attr2 + "_Prev%i" % (i), attr1))
+            if attr2 not in data.ignoreHistoryAttributes:
+                for i in range(data.k):
+                    restrictions.append((attr2 + "_Prev%i" % (i), attr1))
         if "duration_0" in nodes:
             restrictions.append((attr1, "duration_0"))
 

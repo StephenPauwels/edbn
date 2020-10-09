@@ -14,8 +14,9 @@ for i in range(len(tableau20)):
     tableau20[i] = (r / 255., g / 255., b / 255.)
 
 results1 = pr.read_result_file("test_end_event.txt")
-results2 = pr.read_result_file("test_end_event_pasquadibisceglie.txt")
-results = pd.merge(results1, results2)
+# results2 = pr.read_result_file("test_end_event_pasquadibisceglie.txt")
+# results = pd.merge(results1, results2)
+results = results1
 
 DATA = ["Helpdesk.csv", "BPIC12W.csv", "BPIC12.csv", "BPIC15_1_sorted_new.csv", "BPIC15_2_sorted_new.csv",
         "BPIC15_3_sorted_new.csv", "BPIC15_4_sorted_new.csv", "BPIC15_5_sorted_new.csv"]
@@ -63,7 +64,7 @@ for d in DATA:
     # plt.legend(loc="upper center", bbox_to_anchor=(0.5, -0.05), ncol=3)
 
 figure.legend(labels=METHODS2, loc="lower center", ncol=4, frameon=False, markerscale=2, fontsize="xx-large")
-figure.savefig("endevent.png", bbox_inches="tight")
+figure.savefig("endevent.eps", format="eps", bbox_inches="tight")
 figure.show()
 
 

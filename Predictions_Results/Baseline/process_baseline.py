@@ -220,7 +220,7 @@ def create_latex_average(output_folder, dataframe, x_axises, use_methods=None):
                   frameon=False, bbox_to_anchor=(0.38, -0.025), bbox_transform=ax.transAxes, labelspacing=1.3,
                   markerscale=2)
 
-    plt.savefig("Overview.png")
+    plt.savefig("Overview.eps", format="eps")
     plt.show()
 
 
@@ -234,11 +234,11 @@ DATA_NAMES["Camargo_BPIC12W.csv"] = "BPIC12\_W"
 DATA_NAMES["Camargo_BPIC2012.csv"] = "BPIC12"
 
 base_results = read_result_file("test_baseline.txt")
-base_results2 = read_result_file("test_baseline_2.txt")
-base_results3 = read_result_file("test_baseline_3.txt")
+# base_results2 = read_result_file("test_baseline_2.txt")
+# base_results3 = read_result_file("test_baseline_3.txt")
 
-base_results = base_results.append(base_results2)
-base_results = base_results.append(base_results3)
+# base_results = base_results.append(base_results2)
+# base_results = base_results.append(base_results3)
 
 TESTS = {}
 TESTS["train_percentage"] = "Train Percentage"

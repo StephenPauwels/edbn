@@ -25,9 +25,10 @@ def get_probabilities(variable, val_tuple, parents):
         cpt_probs = variable.conditional_table.get_values(val_tuple)
         probs = {}
         for value in cpt_probs:
-            p_value = len(variable.value_counts[value]) / variable.total_rows
-            probs[value] = cpt_probs[value] * \
-                           (LAMBDA + (1 - LAMBDA) * (variable.conditional_table.cpt_probs[val_tuple] / p_value))
+            # p_value = len(variable.value_counts[value]) / variable.total_rows
+            # probs[value] = cpt_probs[value] * \
+            #                (LAMBDA + (1 - LAMBDA) * (variable.conditional_table.cpt_probs[val_tuple] / p_value))
+            probs[value] = cpt_probs[value]
 
         return probs, False
         # return variable.conditional_table.get_values(val_tuple), False
@@ -65,9 +66,10 @@ def prob_unseen_combination(variable, val_tuple, parents):
         values[i] = attr.value_counts.keys()
 
         fixed_attrs = [parents[j].value_counts[val_tuple[j]] for j in range(len(val_tuple)) if j != i]
-        fixed_indexes = set.intersection(*fixed_attrs)
-        if len(fixed_indexes) == 0:
+        if len(fixed_attrs) == 0:
             continue
+        fixed_indexes = set.intersection(*fixed_attrs)
+
 
         product = list(itertools.product(*values))
         for combination in [c for c in product if variable.conditional_table.check_parent_combination(c)]:
@@ -95,6 +97,8 @@ def prob_unseen_value(variable, parents, known_attributes_indexes, unseen_attrib
     predictions = {}
     for combination in variable.conditional_table.get_parent_combinations():
         valid_combination = True
+        if type(combination) == type(0):
+            combination = (combination,)
         for i in range(len(combination)):
             if combination[i] not in value_combinations[i]:
                 valid_combination = False
@@ -157,6 +161,72 @@ def predict_next_event_row(row, model, activity):
     else:
         return 0
 
+def predict_next_event_multi_row(row, models, activity, bypass_unknown=False):
+    """"
+    Predict next activity for a single row
+    """
+    total_prob = {}
+    for model in models:
+        parents = model.variables[activity].conditional_table.parents
+
+        value = []
+        for parent in parents:
+            value.append(getattr(row[1], parent.attr_name))
+        tuple_val = tuple(value)
+
+        activity_var = model.variables[activity]
+        probs, unknown = get_probabilities(activity_var, tuple_val, parents)
+        if not unknown or bypass_unknown:
+            for prob in probs:
+                if prob not in total_prob:
+                    total_prob[prob] = []
+                total_prob[prob].append(probs[prob])
+    if len(total_prob) > 0:
+        predicted_val = max(total_prob, key=lambda l: np.average(total_prob[l]))
+
+        if getattr(row[1], activity) == predicted_val:
+            return 1
+        else:
+            return 0
+    else:
+        return 0
+
+def predict_next_event_update(edbn_model, log):
+    parents = edbn_model.variables[log.activity].conditional_table.parents
+    result = []
+
+    for row in log.contextdata.iterrows():
+        value = []
+        for parent in parents:
+            value.append(getattr(row[1], parent.attr_name))
+        tuple_val = tuple(value)
+
+        activity_var = edbn_model.variables[log.activity]
+        probs, unknown = get_probabilities(activity_var, tuple_val, parents)
+
+        edbn_model.update(row[1])
+
+        predicted_val = max(probs, key=lambda l: probs[l])
+
+        if getattr(row[1], log.activity) == predicted_val:
+            result.append(1)
+        else:
+            result.append(0)
+
+    return np.average(result)
+
+def predict_next_event_multi(edbn_models, log, bypass_unknown=False):
+    """"
+    Predict next activity for all rows in the logfile
+    """
+    # with mp.Pool(mp.cpu_count()) as p:
+    #     result = p.map(functools.partial(predict_next_event_row, model=edbn_model, activity=log.activity), log.contextdata.iterrows())
+    result = map(functools.partial(predict_next_event_multi_row, models=edbn_models, activity=log.activity,
+                                   bypass_unknown=bypass_unknown), log.contextdata.iterrows())
+
+    result = [r for r in result if r != -1]
+
+    return np.average(result)
 
 def predict_suffix(model, log):
     """

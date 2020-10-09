@@ -23,6 +23,7 @@ class LogFile:
             self.values = {}
         self.numericalAttributes = set()
         self.categoricalAttributes = set()
+        self.ignoreHistoryAttributes = set()
         if self.trace is None:
             self.k = 0
         else:
@@ -138,6 +139,8 @@ class LogFile:
         return self.data.columns
 
     def keep_attributes(self, keep_attrs):
+        if self.time and self.time not in keep_attrs:
+            keep_attrs.append(self.time)
         self.data = self.data[keep_attrs]
 
     def remove_attributes(self, remove_attrs):
@@ -207,6 +210,8 @@ class LogFile:
             self.contextdata = self.data
 
         if self.contextdata is None:
+            # result = map(self.create_k_context_trace, self.data.groupby([self.trace]))
+
             with mp.Pool(mp.cpu_count()) as p:
                 result = p.map(self.create_k_context_trace, self.data.groupby([self.trace]))
             self.contextdata = pd.concat(result, ignore_index=True)
@@ -365,3 +370,22 @@ class LogFile:
 
         return train_logfile, test_logfile
 
+
+    def split_days(self, date_format, num_days=1):
+        from datetime import datetime
+
+        self.contextdata["year_weak"] = self.contextdata[self.time].map(lambda l: str(datetime.strptime(l, date_format).isocalendar()[:2]))
+        weeks = {}
+        for group_name, group in self.contextdata.groupby("year_weak"):
+            new_logfile = LogFile(None, None, None, None, self.time, self.trace, self.activity, self.values, False, False)
+            new_logfile.filename = self.filename
+            new_logfile.values = self.values
+            new_logfile.categoricalAttributes = self.categoricalAttributes
+            new_logfile.numericalAttributes = self.numericalAttributes
+            new_logfile.k = self.k
+            new_logfile.contextdata = group.drop("year_weak", axis=1)
+            new_logfile.data = new_logfile.contextdata[self.attributes()]
+
+            weeks[group_name] = {}
+            weeks[group_name]["data"] = new_logfile
+        return weeks

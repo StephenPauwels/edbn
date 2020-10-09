@@ -13,20 +13,23 @@ for i in range(len(tableau20)):
 DATA = ["Helpdesk.csv", "BPIC12W.csv", "BPIC12.csv", "BPIC15_1_sorted_new.csv", "BPIC15_2_sorted_new.csv",
         "BPIC15_3_sorted_new.csv", "BPIC15_4_sorted_new.csv", "BPIC15_5_sorted_new.csv"]
 # METHODS = ["Tax", "Taymouri", "Camargo random", "Camargo argmax", "Lin", "Di Mauro", "EDBN", "Baseline", "Pasquadibisceglie"]
-METHODS = ["Tax", "Camargo argmax", "Lin", "Di Mauro", "Pasquadibisceglie", "Taymouri", "EDBN", "Baseline", "New"]
+# METHODS = ["Tax", "Camargo argmax", "Lin", "Di Mauro", "Pasquadibisceglie", "Taymouri", "EDBN", "Baseline", "New", "EDBN_update"]
+METHODS = ["Tax", "Camargo argmax", "Lin", "Di Mauro", "Pasquadibisceglie", "Taymouri", "EDBN", "Baseline"]
 SETTINGS = ["Tax", "Camargo", "Lin", "Di Mauro", "Pasquadibisceglie", "Taymouri", "Baseline"]
 
 scores = {}
+scores_detail = {}
 
 for setting in SETTINGS:
     results = pr.read_result_file("paper_%s.txt" % (setting.lower().replace(" ", "")))
     scores[setting] = results[METHODS].mean().sort_values()
+    scores_detail[setting] = results
 
 LATEX_ROW = {}
 
 for setting in SETTINGS:
     score = scores[setting]
-    i = 9
+    i = 8
     for score_item in score.iteritems():
         print(score_item)
         if score_item[0] not in LATEX_ROW:
@@ -37,10 +40,27 @@ for setting in SETTINGS:
             LATEX_ROW[score_item[0]] += "& %i \\emph{(%.2f)} " % (i, score_item[1])
         i -= 1
 
+print("OVERALL AVERAGE")
 for method in METHODS:
     print(method, LATEX_ROW[method], "\\\\")
 
 
+for key in scores_detail:
+    print(key)
+    LATEX_ROW = {}
 
+    cols = ["data"]
+    cols.extend(METHODS)
+    score = scores_detail[key][cols]
+    print("\\begin{table*}")
+    print("\\scriptsize")
+    print("\\begin{tabular}{c | c c c c c c c c}")
+
+    print(" & ".join(cols), end="\\\\\n")
+    print("\hline")
+    for score_item in score.iterrows():
+        print(score_item[1][0].replace("_", "\_"), "&", " & ".join([ "%.2f" % s if s != max(score_item[1][1:]) else "\\textbf{%.2f}" % s for s in list(score_item[1][1:])]), end="\\\\\n")
+    print("\\end{tabular}")
+    print("\\end{table*}")
 
 

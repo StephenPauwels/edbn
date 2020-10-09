@@ -60,5 +60,5 @@ for d in DATA:
     # plt.legend(loc="upper center", bbox_to_anchor=(0.5, -0.05), ncol=3)
 
 figure.legend(labels=METHODS2, loc="lower center", ncol=4, frameon=False, markerscale=2, fontsize="xx-large")
-figure.savefig("splitmethod.png", bbox_inches="tight")
+figure.savefig("splitmethod.eps", format="eps", bbox_inches="tight")
 figure.show()

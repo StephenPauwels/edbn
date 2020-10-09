@@ -8,6 +8,7 @@ class CPT(ConditionalTable):
         self.cpt = {}
         self.cpt_probs = dict()
         self.new_relations = None
+        self.parent_count = dict()
 
     def add_parent(self, parent):
         self.parents.append(parent)
@@ -19,13 +20,20 @@ class CPT(ConditionalTable):
         return self.cpt.keys()
 
     def get_values(self, parent_val):
-        return self.cpt[parent_val]
+        output = {}
+        if len(parent_val) == 1:
+            parent_val = parent_val[0]
+        for val, count in self.cpt[parent_val].items():
+            output[val] = count / self.parent_count[parent_val]
+        return output
+        # return self.cpt[parent_val]
+
 
     def train(self, log):
         self.learn_table(log)
         self.set_new_relation(log)
 
-    def learn_table(self, log):
+    def learn_table2(self, log):
         if len(self.parents) == 0:
             return
 
@@ -45,6 +53,25 @@ class CPT(ConditionalTable):
                 self.cpt[parent][t[0][-1]] = t[1] / div[parent]
                 self.cpt_probs[parent] = div[parent] / total_rows
 
+    def learn_table(self, log):
+        if len(self.parents) == 0:
+            return
+
+        parents = [p.attr_name for p in self.parents]
+        grouped = log.groupby(parents, observed=True)[self.attr_name]
+        val_counts = grouped.value_counts()
+        self.parent_count = grouped.count().to_dict()
+        total_rows = len(log.index)
+        for t in val_counts.items():
+            parent = t[0][:-1]
+            if len(parent) == 1:
+                parent = parent[0]
+            if parent not in self.cpt:
+                self.cpt[parent] = dict()
+
+            self.cpt[parent][t[0][-1]] = t[1]
+            self.cpt_probs[parent] = 0
+
     def set_new_relation(self, log):
         attrs = set()
         if len(self.parents) == 0:
@@ -53,6 +80,22 @@ class CPT(ConditionalTable):
         attrs = {p.attr_name for p in self.parents}
         grouped = log.groupby([a for a in attrs]).size().reset_index(name='counts')
         self.new_relations = len(grouped) / log.shape[0]
+
+    def update(self, row):
+        parent_val = tuple([getattr(row, attr.attr_name) for attr in self.parents])
+        if len(parent_val) == 1:
+            parent_val = parent_val[0]
+        value = getattr(row, self.attr_name)
+        if parent_val in self.parent_count:
+            self.parent_count[parent_val] += 1
+        else:
+            self.parent_count[parent_val] = 1
+            self.cpt[parent_val] = dict()
+
+        if value in self.cpt[parent_val]:
+            self.cpt[parent_val][value] += 1
+        else:
+            self.cpt[parent_val][value] = 0
 
     def test(self, row):
         if len(self.parents) > 0:

@@ -9,16 +9,17 @@ from keras.callbacks import EarlyStopping, ModelCheckpoint
 
 
 def learn_model(log, attributes, epochs, early_stop):
-    num_activities = len(log.values["event"]) + 1
+    num_activities = len(log.values[log.activity]) + 1
     # Input + Embedding layer for every attribute
     input_layers = []
     embedding_layers = []
     for attr in attributes:
-        for k in range(log.k):
-            i = Input(shape=(1,), name=attr.replace(" ", "_").replace("(", "").replace(")","").replace(":","_") + "_Prev%i" % k)
-            input_layers.append(i)
-            e = Embedding(len(log.values[attr]) + 1, 32, embeddings_initializer="zeros")(i)
-            embedding_layers.append(e)
+        if attr not in log.ignoreHistoryAttributes:
+            for k in range(log.k):
+                i = Input(shape=(1,), name=attr.replace(" ", "_").replace("(", "").replace(")","").replace(":","_") + "_Prev%i" % k)
+                input_layers.append(i)
+                e = Embedding(len(log.values[attr]) + 1, 32, embeddings_initializer="zeros")(i)
+                embedding_layers.append(e)
     concat = Concatenate()(embedding_layers)
 
     # dense1 = Dense(32)(concat)
@@ -58,27 +59,28 @@ def learn_model(log, attributes, epochs, early_stop):
 
 
 def transform_data(log, columns):
-    num_activities = len(log.values["event"]) + 1
+    num_activities = len(log.values[log.activity]) + 1
 
     col_num_vals = {}
     for col in columns:
-        if col == "event":
+        if col == log.activity:
             col_num_vals[col] = num_activities
         else:
             col_num_vals[col] = log.contextdata[col].max() + 2
 
     inputs = []
-    for _ in range(len(columns) * log.k):
+    for _ in range(len(columns) * log.k - len(log.ignoreHistoryAttributes) * log.k):
         inputs.append([])
     outputs = []
     for row in log.contextdata.iterrows():
         row = row[1]
         i = 0
         for attr in columns:
-            for k in range(log.k):
-                inputs[i].append(row[attr + "_Prev%i" % k])
-                i += 1
-        outputs.append(row["event"])
+            if attr not in log.ignoreHistoryAttributes:
+                for k in range(log.k):
+                    inputs[i].append(row[attr + "_Prev%i" % k])
+                    i += 1
+        outputs.append(row[log.activity])
 
     outputs = ku.to_categorical(outputs, num_activities)
     for i in range(len(inputs)):
@@ -87,11 +89,11 @@ def transform_data(log, columns):
 
 
 def train(log, epochs, early_stop):
-    return learn_model(log, ["event", "role"], epochs, early_stop)
+    return learn_model(log, log.attributes(), epochs, early_stop)
 
 
 def test(log, model):
-    inputs, expected, _ = transform_data(log, ["event", "role"])
+    inputs, expected, _ = transform_data(log, log.attributes())
     predictions = model.predict(inputs)
     predict_vals = np.argmax(predictions, axis=1)
     expected_vals = np.argmax(expected, axis=1)
