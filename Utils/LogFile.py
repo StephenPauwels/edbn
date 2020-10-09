@@ -374,18 +374,47 @@ class LogFile:
     def split_days(self, date_format, num_days=1):
         from datetime import datetime
 
-        self.contextdata["year_weak"] = self.contextdata[self.time].map(lambda l: str(datetime.strptime(l, date_format).isocalendar()[:2]))
+        self.contextdata["year_week"] = self.contextdata[self.time].map(lambda l: str(datetime.strptime(l, date_format).isocalendar()[:2]))
         weeks = {}
-        for group_name, group in self.contextdata.groupby("year_weak"):
+        for group_name, group in self.contextdata.groupby("year_week"):
             new_logfile = LogFile(None, None, None, None, self.time, self.trace, self.activity, self.values, False, False)
             new_logfile.filename = self.filename
             new_logfile.values = self.values
             new_logfile.categoricalAttributes = self.categoricalAttributes
             new_logfile.numericalAttributes = self.numericalAttributes
             new_logfile.k = self.k
-            new_logfile.contextdata = group.drop("year_weak", axis=1)
+            new_logfile.contextdata = group.drop("year_week", axis=1)
             new_logfile.data = new_logfile.contextdata[self.attributes()]
 
             weeks[group_name] = {}
             weeks[group_name]["data"] = new_logfile
         return weeks
+
+    def split_date(self, date_format, year_week):
+        from datetime import datetime
+
+        self.contextdata["year_week"] = self.contextdata[self.time].map(lambda l: str(datetime.strptime(l, date_format).isocalendar()[:2]))
+
+        train = self.contextdata[self.contextdata["year_week"] < year_week]
+        test = self.contextdata[self.contextdata["year_week"] >= year_week]
+
+        train_logfile = LogFile(None, None, None, None, self.time, self.trace, self.activity, self.values, False, False)
+        train_logfile.filename = self.filename
+        train_logfile.values = self.values
+        train_logfile.contextdata = train
+        train_logfile.categoricalAttributes = self.categoricalAttributes
+        train_logfile.numericalAttributes = self.numericalAttributes
+        train_logfile.data = train[self.attributes()]
+        train_logfile.k = self.k
+
+        test_logfile = LogFile(None, None, None, None, self.time, self.trace, self.activity, self.values, False, False)
+        test_logfile.filename = self.filename
+        test_logfile.values = self.values
+        test_logfile.contextdata = test
+        test_logfile.categoricalAttributes = self.categoricalAttributes
+        test_logfile.numericalAttributes = self.numericalAttributes
+        test_logfile.data = test[self.attributes()]
+        test_logfile.k = self.k
+
+        return train_logfile, test_logfile
+

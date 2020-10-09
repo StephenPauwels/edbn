@@ -36,38 +36,46 @@ if __name__ == "__main__":
 
     weeks = logfile.split_days("%Y-%m-%d %H:%M:%S")
     weeks_sorted = sorted(weeks.keys())
-    num_weeks = len(weeks_sorted)
+    num_weeks = 5# len(weeks_sorted)
 
-    for i in range(num_weeks):
-        weeks[weeks_sorted[i]]["model"] = edbn_train(weeks[weeks_sorted[i]]["data"])
+    # for i in range(num_weeks):
+    #     weeks[weeks_sorted[i]]["model"] = edbn_train(weeks[weeks_sorted[i]]["data"])
+    #
+    # accs1 = []
+    # for i in range(1, num_weeks):
+    #     accs1.append(predict_next_event_multi([weeks[w]["model"] for w in weeks_sorted[:i]], weeks[weeks_sorted[i]]["data"]))
+    #
+    # accs2 = []
+    # for i in range(1, num_weeks):
+    #     accs2.append(predict_next_event(weeks[weeks_sorted[i-1]]["model"], weeks[weeks_sorted[i]]["data"]))
+    #
+    # accs3 = []
+    # for i in range(1, num_weeks):
+    #     accs3.append(predict_next_event_multi([weeks[w]["model"] for w in weeks_sorted[:i]], weeks[weeks_sorted[i]]["data"], True))
 
-    accs1 = []
+    # edbn_model = edbn_train(weeks[weeks_sorted[0]]["data"])
+    # accs4 = []
+    # for i in range(1, num_weeks):
+    #     accs4.append(predict_next_event_update(edbn_model, weeks[weeks_sorted[i]]["data"]))
+
+    import pandas as pd
+    accs5 = []
     for i in range(1, num_weeks):
-        accs1.append(predict_next_event_multi([weeks[w]["model"] for w in weeks_sorted[:i]], weeks[weeks_sorted[i]]["data"]))
+        train, test = logfile.split_date("%Y-%m-%d %H:%M:%S", weeks_sorted[i])
+        accs5.append(predict_next_event(edbn_train(train), test))
 
-    accs2 = []
-    for i in range(1, num_weeks):
-        accs2.append(predict_next_event(weeks[weeks_sorted[i-1]]["model"], weeks[weeks_sorted[i]]["data"]))
-
-    accs3 = []
-    for i in range(1, num_weeks):
-        accs3.append(predict_next_event_multi([weeks[w]["model"] for w in weeks_sorted[:i]], weeks[weeks_sorted[i]]["data"], True))
-
-    edbn_model = edbn_train(weeks[weeks_sorted[0]]["data"])
-    accs4 = []
-    for i in range(1, num_weeks):
-        accs4.append(predict_next_event_update(edbn_model, weeks[weeks_sorted[i]]["data"]))
-
-    plt.plot(weeks_sorted[1:num_weeks], accs1, "o")
-    plt.plot(weeks_sorted[1:num_weeks], accs2, "x")
-    plt.plot(weeks_sorted[1:num_weeks], accs3, "o")
-    plt.plot(weeks_sorted[1:num_weeks], accs4, "+")
+    # plt.plot(weeks_sorted[1:num_weeks], accs1, "o")
+    # plt.plot(weeks_sorted[1:num_weeks], accs2, "x")
+    # plt.plot(weeks_sorted[1:num_weeks], accs3, "o")
+    # plt.plot(weeks_sorted[1:num_weeks], accs4, "+")
+    # plt.plot(weeks_sorted[1:num_weeks], accs5, "+")
 
     plt.show()
 
     import numpy as np
 
-    print("Accs (multi-weeks, no unknown):", np.average(accs1))
-    print("Accs2 (prev-week):", np.average(accs2))
-    print("Accs3 (multi-weeks, unknown):", np.average(accs3))
-    print("Accs4 (update model):", np.average(accs4))
+    # print("Accs (multi-weeks, no unknown):", np.average(accs1))
+    # print("Accs2 (prev-week):", np.average(accs2))
+    # print("Accs3 (multi-weeks, unknown):", np.average(accs3))
+    # print("Accs4 (update model):", np.average(accs4))
+    print("Accs5 (update model, expanding window):", np.average(accs5))
