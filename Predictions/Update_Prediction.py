@@ -36,7 +36,7 @@ if __name__ == "__main__":
 
     weeks = logfile.split_days("%Y-%m-%d %H:%M:%S")
     weeks_sorted = sorted(weeks.keys())
-    num_weeks = 5# len(weeks_sorted)
+    num_weeks = len(weeks_sorted)
 
     # for i in range(num_weeks):
     #     weeks[weeks_sorted[i]]["model"] = edbn_train(weeks[weeks_sorted[i]]["data"])
@@ -60,15 +60,19 @@ if __name__ == "__main__":
 
     import pandas as pd
     accs5 = []
-    for i in range(1, num_weeks):
+    for i in range(10, num_weeks):
+        print("Week %i/%i" % (i, num_weeks))
         train, test = logfile.split_date("%Y-%m-%d %H:%M:%S", weeks_sorted[i])
         accs5.append(predict_next_event(edbn_train(train), test))
+
+    with open("tmp_output.txt", "w") as fout:
+        fout.write("\n".join((str(a) for a in accs5)))
 
     # plt.plot(weeks_sorted[1:num_weeks], accs1, "o")
     # plt.plot(weeks_sorted[1:num_weeks], accs2, "x")
     # plt.plot(weeks_sorted[1:num_weeks], accs3, "o")
     # plt.plot(weeks_sorted[1:num_weeks], accs4, "+")
-    # plt.plot(weeks_sorted[1:num_weeks], accs5, "+")
+    plt.plot(list(range(10, num_weeks)), accs5, "+")
 
     plt.show()
 

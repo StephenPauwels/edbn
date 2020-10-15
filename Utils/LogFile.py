@@ -390,13 +390,16 @@ class LogFile:
             weeks[group_name]["data"] = new_logfile
         return weeks
 
-    def split_date(self, date_format, year_week):
+    def split_date(self, date_format, year_week, from_week=None):
         from datetime import datetime
 
         self.contextdata["year_week"] = self.contextdata[self.time].map(lambda l: str(datetime.strptime(l, date_format).isocalendar()[:2]))
 
-        train = self.contextdata[self.contextdata["year_week"] < year_week]
-        test = self.contextdata[self.contextdata["year_week"] >= year_week]
+        if from_week:
+            train = self.contextdata[(self.contextdata["year_week"] >= from_week) & (self.contextdata["year_week"] < year_week)]
+        else:
+            train = self.contextdata[self.contextdata["year_week"] < year_week]
+        test = self.contextdata[self.contextdata["year_week"] == year_week]
 
         train_logfile = LogFile(None, None, None, None, self.time, self.trace, self.activity, self.values, False, False)
         train_logfile.filename = self.filename
