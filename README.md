@@ -23,6 +23,7 @@ All experiments in the papers can be reproduced using the files in the Anomalies
     - [Tax](https://github.com/StephenPauwels/edbn/tree/master/RelatedMethods/Tax): Adapted implementation used in [11]
     - [Pasquadibisceglie](https://github.com/StephenPauwels/edbn/tree/master/RelatedMethods/Pasquadibisceglie): Adapted implementation used in [12]
     - [Taymouri](https://github.com/StephenPauwels/edbn/tree/master/RelatedMethods/Taymouri): Adapted implementation used in [13]
+    - [Premiere](https://github.com/StephenPauwels/edbn/tree/master/RelatedMethods/Premiere): Adapted implementation used in [14]
 
 ## References
 1. [Pauwels, Stephen, and Toon Calders. "An Anomaly Detection Technique for Business Processes based on Extended Dynamic Bayesian Networks." (2019)](http://adrem.uantwerpen.be/bibrem/pubs/PauwelsSAC19.pdf)
@@ -38,3 +39,4 @@ All experiments in the papers can be reproduced using the files in the Anomalies
 11.  Tax, N., Verenich, I., La Rosa, M., Dumas, M.: Predictive business process mon-itoring with lstm neural networks. In: International Conference on Advanced In-formation Systems Engineering. pp. 477–492. Springer (2017)
 12. Pasquadibisceglie, V., Appice, A., Castellano, G., & Malerba, D. (2019, June). Using convolutional neural networks for predictive process analytics. In 2019 International Conference on Process Mining (ICPM) (pp. 129-136). IEEE.
 13. Taymouri, F., La Rosa, M., Erfani, S., Bozorgi, Z. D., & Verenich, I. (2020). Predictive Business Process Monitoring via Generative Adversarial Nets: The Case of Next Event Prediction. arXiv preprint arXiv:2003.11268.
+14. Pasquadibisceglie V., Appice A., Castellano G., Malerba D. (2020) Predictive Process Mining Meets Computer Vision. In: Fahland D., Ghidini C., Becker J., Dumas M. (eds) Business Process Management Forum. BPM 2020. Lecture Notes in Business Information Processing, vol 392. Springer, Cham.
