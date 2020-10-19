@@ -306,6 +306,8 @@ class LogFile:
         for col in self.data:
             if col == self.trace:
                 record[col] = case_name
+            elif col == self.time:
+                record[col] = new_data[-1][self.time]
             else:
                 record[col] = "end"
         new_data.append(record)
