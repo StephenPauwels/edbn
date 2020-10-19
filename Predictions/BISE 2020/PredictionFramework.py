@@ -173,7 +173,7 @@ def execute_tax(train_log, test_log, filename):
 
 
 def execute_pasquadibisceglie(train_log, test_log, filename):
-    from RelatedMethods.Pasquadibisceglie import adapter as pasquadibisceglie
+    from RelatedMethods.Premiere import adapter as pasquadibisceglie
 
     sys.stdout = open("../log/pasquadibisceglie.out", "a")
     sys.stderr = open("../log/pasquadibisceglie.error", "a")
