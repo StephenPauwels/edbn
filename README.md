@@ -23,13 +23,14 @@ All experiments in the papers can be reproduced using the files in the Anomalies
     - [Tax](https://github.com/StephenPauwels/edbn/tree/master/RelatedMethods/Tax): Adapted implementation used in [11]
     - [Pasquadibisceglie](https://github.com/StephenPauwels/edbn/tree/master/RelatedMethods/Pasquadibisceglie): Adapted implementation used in [12]
     - [Taymouri](https://github.com/StephenPauwels/edbn/tree/master/RelatedMethods/Taymouri): Adapted implementation used in [13]
+    - [Premiere](https://github.com/StephenPauwels/edbn/tree/master/RelatedMethods/Premiere): Adapted implementation used in [14]
 
 ## References
 1. [Pauwels, Stephen, and Toon Calders. "An Anomaly Detection Technique for Business Processes based on Extended Dynamic Bayesian Networks." (2019)](http://adrem.uantwerpen.be/bibrem/pubs/PauwelsSAC19.pdf)
 2. [Pauwels, Stephen, and Toon Calders. "Detecting and Explaining Drifts in Yearly Grant Applications." BPI Challenge 2018 (2018)](http://adrem.uantwerpen.be//bibrem/pubs/pauwels2018BPIC.pdf)
 3. [Pauwels, Stephen, and Toon Calders. "Detecting Anomalies in Hybrid Business Process Logs." Applied Computing Review, Volume 19  Issue 2  Page 18-30 (2019)](http://adrem.uantwerpen.be//bibrem/pubs/AcmAnomaly.pdf)
 4. [Pauwels, Stephen, and Toon Calders. "Bayesian Network based Predictions of Business Processes." Accepted for BPM Forum 2020](https://www.researchgate.net/publication/342918314_Bayesian_Network_based_Predictions_of_Business_Processes)
-5. Pauwels, Stephen, and Toon Calders. "Evaluating Next Event Predictions: What Could go Wrong?" Under review for ICPM2020.
+5. Pauwels, Stephen, and Toon Calders. "Evaluating Next Event Predictions: What Could go Wrong?" Work in Progress.
 6. [Böhmer, Kristof, and Stefanie Rinderle-Ma. "Multi-perspective anomaly detection in business process execution events." OTM Confederated International Conferences" On the Move to Meaningful Internet Systems". Springer, Cham, 2016.](https://eprints.cs.univie.ac.at/4785/1/cr.pdf)
 7. [Nolle, Timo, et al. "BINet: Multi-perspective Business Process Anomaly Classification." arXiv preprint arXiv:1902.03155 (2019).](https://arxiv.org/pdf/1902.03155.pdf)
 8. Camargo, M., Dumas, M., Gonz ́alez-Rojas, O.: Learning accurate lstm models ofbusiness processes. In: International Conference on Business Process Management.pp. 286–302. Springer (2019)
@@ -38,3 +39,4 @@ All experiments in the papers can be reproduced using the files in the Anomalies
 11.  Tax, N., Verenich, I., La Rosa, M., Dumas, M.: Predictive business process mon-itoring with lstm neural networks. In: International Conference on Advanced In-formation Systems Engineering. pp. 477–492. Springer (2017)
 12. Pasquadibisceglie, V., Appice, A., Castellano, G., & Malerba, D. (2019, June). Using convolutional neural networks for predictive process analytics. In 2019 International Conference on Process Mining (ICPM) (pp. 129-136). IEEE.
 13. Taymouri, F., La Rosa, M., Erfani, S., Bozorgi, Z. D., & Verenich, I. (2020). Predictive Business Process Monitoring via Generative Adversarial Nets: The Case of Next Event Prediction. arXiv preprint arXiv:2003.11268.
+14. Pasquadibisceglie V., Appice A., Castellano G., Malerba D. (2020) Predictive Process Mining Meets Computer Vision. In: Fahland D., Ghidini C., Becker J., Dumas M. (eds) Business Process Management Forum. BPM 2020. Lecture Notes in Business Information Processing, vol 392. Springer, Cham.
