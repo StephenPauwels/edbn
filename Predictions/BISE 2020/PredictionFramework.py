@@ -11,6 +11,8 @@ from Utils.LogFile import LogFile
 DATA = ["Helpdesk.csv", "BPIC12W.csv", "BPIC12.csv", "BPIC15_1_sorted_new.csv",
         "BPIC15_2_sorted_new.csv", "BPIC15_3_sorted_new.csv", "BPIC15_4_sorted_new.csv", "BPIC15_5_sorted_new.csv"]
 
+DATA = ["BPIC12W.csv", "BPIC12.csv", "BPIC15_1_sorted_new.csv",
+        "BPIC15_2_sorted_new.csv", "BPIC15_3_sorted_new.csv", "BPIC15_4_sorted_new.csv", "BPIC15_5_sorted_new.csv"]
 
 DATA_FOLDER = "../../Data/"
 
@@ -173,7 +175,7 @@ def execute_tax(train_log, test_log, filename):
 
 
 def execute_pasquadibisceglie(train_log, test_log, filename):
-    from RelatedMethods.Premiere import adapter as pasquadibisceglie
+    from RelatedMethods.Pasquadibisceglie import adapter as pasquadibisceglie
 
     sys.stdout = open("../log/pasquadibisceglie.out", "a")
     sys.stderr = open("../log/pasquadibisceglie.error", "a")
@@ -184,10 +186,10 @@ def execute_pasquadibisceglie(train_log, test_log, filename):
 
 
 def execute_pasquadibisceglie2020(train_log, test_log, filename):
-    from RelatedMethods.Pasquadibisceglie import adapter as pasquadibisceglie
+    from RelatedMethods.Premiere import adapter as pasquadibisceglie
 
-    sys.stdout = open("../log/pasquadibisceglie2020.out", "a")
-    sys.stderr = open("../log/pasquadibisceglie2020.error", "a")
+    # sys.stdout = open("../log/pasquadibisceglie2020.out", "a")
+    # sys.stderr = open("../log/pasquadibisceglie2020.error", "a")
     pasq_acc = pasquadibisceglie.test(test_log, pasquadibisceglie.train(train_log, epochs=100, early_stop=10))
     with open(filename, "a") as fout:
         fout.write("Pasquadibisceglie (2020): " + str(pasq_acc))

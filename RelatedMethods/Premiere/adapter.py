@@ -279,7 +279,7 @@ def create_model(X, y, num_col, epochs, early_stop):
 
 
 if __name__ == "__main__":
-    data = "../../Data/BPIC12.csv"
+    data = "../../Data/BPIC12W.csv"
     case_attr = "case"
     act_attr = "event"
 
