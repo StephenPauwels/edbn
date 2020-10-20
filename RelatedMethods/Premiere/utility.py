@@ -94,6 +94,7 @@ def calc_features(ran, list_sequence_prefix, list_resource_prefix, activity_list
 
 
 def premiere_feature(list_sequence_prefix, list_resource_prefix, flow_act, agg_time_feature, unique_events, unique_resources, target):
+    print(len(list_sequence_prefix), len(agg_time_feature), len(target))
     j = 0
     list_flow_feature = []
     n_resource_list = list(range(1, unique_resources + 1))
@@ -114,7 +115,8 @@ def premiere_feature(list_sequence_prefix, list_resource_prefix, flow_act, agg_t
 
     # print("Combine", len(list_sequence_prefix))
     chunk_size = int(len(list_sequence_prefix) / num_processes)
-    chunks = [range(i, i + chunk_size) for i in range(0, len(list_sequence_prefix), chunk_size)]
+    chunks = [range(i, min(i + chunk_size, len(list_sequence_prefix))) for i in range(0, len(list_sequence_prefix), chunk_size)]
+    print(chunks[-1])
     # list_flow_feature = []
     # result = pool.map(functools.partial(combine, flow=flow_features, activity=activity_features,
     #                                                resource=resource_features, agg_time=agg_time_feature, target=target)

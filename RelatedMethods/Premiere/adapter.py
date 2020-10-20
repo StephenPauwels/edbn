@@ -305,7 +305,7 @@ if __name__ == "__main__":
     act_attr = "event"
 
     logfile = LogFile(data, ",", 0, None, "completeTime", case_attr,
-                      activity_attr=act_attr, convert=False, k=5)
+                      activity_attr=act_attr, convert=False, k=40)
     logfile.convert2int()
 
     logfile.create_k_context()
