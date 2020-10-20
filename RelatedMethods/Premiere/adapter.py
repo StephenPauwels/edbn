@@ -17,7 +17,9 @@ import keras
 
 
 def train(log, epochs=200, early_stop=42):
+    print("Start kometa_feature")
     kometa_feature = pd.DataFrame(generate_kometa_feature(log))
+    print("Done kometa feature")
     X, num_col = generate_image(kometa_feature)
 
     y = []
@@ -108,6 +110,24 @@ def generate_kometa_feature(log):
 
 def dec_to_bin(x):
     return format(int(x), "b")
+
+
+def flat_vec_parallel(df):
+    print("Start flat_vec")
+    import multiprocessing
+
+    num_processes = multiprocessing.cpu_count()
+    chunk_size = int(df.shape[0] / num_processes)
+
+    chunks = [df.iloc[df.index[i:i + chunk_size]] for i in range(0, df.shape[0], chunk_size)]
+
+    pool = multiprocessing.Pool(processes=num_processes)
+    result = pool.map(flat_vec, chunks)
+    list_image_flat = []
+    for r in result:
+        list_image_flat.extend(r)
+    print("flat_vec done")
+    return list_image_flat
 
 
 def flat_vec(df):
@@ -218,7 +238,7 @@ def generate_image(df, test=False):
     if test:
         list_image_flat = flat_vec_test(norm)
     else:
-        list_image_flat = flat_vec(norm)
+        list_image_flat = flat_vec_parallel(norm)
 
     return rgb_img(list_image_flat, num_col), num_col
 
@@ -279,7 +299,8 @@ def create_model(X, y, num_col, epochs, early_stop):
 
 
 if __name__ == "__main__":
-    data = "../../Data/BPIC12W.csv"
+    # data = "../../Data/Helpdesk.csv"
+    data = "../../Data/BPIC15_1_sorted_new.csv"
     case_attr = "case"
     act_attr = "event"
 
