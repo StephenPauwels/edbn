@@ -18,7 +18,10 @@ import keras
 
 def train(log, epochs=200, early_stop=42):
     print("Start kometa_feature")
-    kometa_feature = pd.DataFrame(generate_kometa_feature(log))
+    # TODO: check for improvements (avoid conversion to dataframe by already creating a dataframe?)
+    # kometa_feature = pd.DataFrame(generate_kometa_feature(log))
+    kometa_feature = generate_kometa_feature(log)
+    print(kometa_feature)
     print("Done kometa feature")
     X, num_col = generate_image(kometa_feature)
 

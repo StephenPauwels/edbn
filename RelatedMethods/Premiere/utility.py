@@ -90,7 +90,7 @@ def calc_features(ran, list_sequence_prefix, list_resource_prefix, activity_list
                       act_feature(list_sequence_prefix[i], activity_list) +
                       res_feature(list_resource_prefix[i], resource_list) +
                       agg_time[i] + [target[i]])
-    return output
+    return pd.DataFrame(output)
 
 
 def premiere_feature(list_sequence_prefix, list_resource_prefix, flow_act, agg_time_feature, unique_events, unique_resources, target):
@@ -122,16 +122,16 @@ def premiere_feature(list_sequence_prefix, list_resource_prefix, flow_act, agg_t
     #                                                resource=resource_features, agg_time=agg_time_feature, target=target)
     #                              , chunks)
 
-    for r in pool.map(functools.partial(calc_features, list_sequence_prefix=list_sequence_prefix,
+    result = pool.map(functools.partial(calc_features, list_sequence_prefix=list_sequence_prefix,
                                         list_resource_prefix=list_resource_prefix, activity_list=n_activity_list,
                                         resource_list=n_resource_list, flow_act=flow_act_dict, agg_time=agg_time_feature,
-                                        target=target), chunks):
-        list_flow_feature.extend(r)
+                                        target=target), chunks)
+
     # for j in range(len(list_sequence_prefix)):
     #     list_flow_feature.append(flow_features[j] + activity_features[j] + resource_features[j] + agg_time_feature[j] + [target[j]])
     print("Done Combine")
 
-    return list_flow_feature
+    return pd.concat(result)
 
 
 def output_list(masterList):
