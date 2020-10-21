@@ -84,13 +84,13 @@ def combine(ran, flow, activity, resource, agg_time, target):
 
 
 def calc_features(ran, list_sequence_prefix, list_resource_prefix, activity_list, resource_list, flow_act, agg_time, target):
-    output = []
+    output = pd.DataFrame()
     for i in ran:
-        output.append(flow_feature(list_sequence_prefix[i], flow_act) +
-                      act_feature(list_sequence_prefix[i], activity_list) +
-                      res_feature(list_resource_prefix[i], resource_list) +
-                      agg_time[i] + [target[i]])
-    return pd.DataFrame(output)
+        output = output.append([flow_feature(list_sequence_prefix[i], flow_act) +
+                               act_feature(list_sequence_prefix[i], activity_list) +
+                               res_feature(list_resource_prefix[i], resource_list) +
+                               agg_time[i] + [target[i]]])
+    return output
 
 
 def premiere_feature(list_sequence_prefix, list_resource_prefix, flow_act, agg_time_feature, unique_events, unique_resources, target):

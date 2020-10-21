@@ -302,13 +302,14 @@ def create_model(X, y, num_col, epochs, early_stop):
 
 
 if __name__ == "__main__":
-    # data = "../../Data/Helpdesk.csv"
-    data = "../../Data/BPIC15_1_sorted_new.csv"
+    data = "../../Data/Helpdesk.csv"
+    # data = "../../Data/BPIC15_1_sorted_new.csv"
     case_attr = "case"
     act_attr = "event"
 
     logfile = LogFile(data, ",", 0, None, "completeTime", case_attr,
-                      activity_attr=act_attr, convert=False, k=40)
+                      activity_attr=act_attr, convert=False, k=5)
+    logfile.keep_attributes(["case", "event", "role", "completeTime"])
     logfile.convert2int()
 
     logfile.create_k_context()
