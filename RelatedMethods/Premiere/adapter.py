@@ -20,8 +20,10 @@ def train(log, epochs=200, early_stop=42):
     print("Start kometa_feature")
     # TODO: check for improvements (avoid conversion to dataframe by already creating a dataframe?)
     # kometa_feature = pd.DataFrame(generate_kometa_feature(log))
-    kometa_feature = generate_kometa_feature(log)
-    print(kometa_feature)
+    kometa_feature_files = generate_kometa_feature(log)
+
+    kometa_feature = pd.concat((pd.read_csv(file, header=None, nrows=None, delimiter=",", encoding='latin-1')
+                                for file in kometa_feature_files))
     print("Done kometa feature")
     X, num_col = generate_image(kometa_feature)
 
@@ -302,8 +304,8 @@ def create_model(X, y, num_col, epochs, early_stop):
 
 
 if __name__ == "__main__":
-    data = "../../Data/Helpdesk.csv"
-    # data = "../../Data/BPIC15_1_sorted_new.csv"
+    # data = "../../Data/Helpdesk.csv"
+    data = "../../Data/BPIC15_1_sorted_new.csv"
     case_attr = "case"
     act_attr = "event"
 

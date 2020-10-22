@@ -84,13 +84,15 @@ def combine(ran, flow, activity, resource, agg_time, target):
 
 
 def calc_features(ran, list_sequence_prefix, list_resource_prefix, activity_list, resource_list, flow_act, agg_time, target):
-    output = pd.DataFrame()
-    for i in ran:
-        output = output.append([flow_feature(list_sequence_prefix[i], flow_act) +
-                               act_feature(list_sequence_prefix[i], activity_list) +
-                               res_feature(list_resource_prefix[i], resource_list) +
-                               agg_time[i] + [target[i]]])
-    return output
+    filename = "features/features_%i_%i.csv" % (ran.start, ran.stop)
+    with open(filename, "w") as fout:
+        for i in ran:
+            fout.write(",".join([str(j) for j in flow_feature(list_sequence_prefix[i], flow_act) +
+                                 act_feature(list_sequence_prefix[i], activity_list) +
+                                 res_feature(list_resource_prefix[i], resource_list) +
+                                 agg_time[i] + [target[i]]]))
+            fout.write("\n")
+    return filename
 
 
 def premiere_feature(list_sequence_prefix, list_resource_prefix, flow_act, agg_time_feature, unique_events, unique_resources, target):
@@ -131,7 +133,7 @@ def premiere_feature(list_sequence_prefix, list_resource_prefix, flow_act, agg_t
     #     list_flow_feature.append(flow_features[j] + activity_features[j] + resource_features[j] + agg_time_feature[j] + [target[j]])
     print("Done Combine")
 
-    return pd.concat(result)
+    return result
 
 
 def output_list(masterList):
