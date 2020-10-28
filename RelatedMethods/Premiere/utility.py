@@ -122,6 +122,7 @@ def premiere_feature(list_sequence_prefix, list_resource_prefix, flow_act, agg_t
     #                                                resource=resource_features, agg_time=agg_time_feature, target=target)
     #                              , chunks)
 
+
     result = pool.map(functools.partial(calc_features, list_sequence_prefix=list_sequence_prefix,
                                         list_resource_prefix=list_resource_prefix, activity_list=n_activity_list,
                                         resource_list=n_resource_list, flow_act=flow_act_dict, agg_time=agg_time_feature,
