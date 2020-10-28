@@ -14,6 +14,7 @@ from keras.layers import Input, concatenate
 from keras.models import Model
 from keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint
 import keras
+from tensorflow.keras.utils import Sequence
 
 
 def train(log, epochs=200, early_stop=42):
@@ -22,10 +23,10 @@ def train(log, epochs=200, early_stop=42):
     # kometa_feature = pd.DataFrame(generate_kometa_feature(log))
     kometa_feature_files = generate_kometa_feature(log)
 
-    kometa_feature = pd.concat((pd.read_csv(file, header=None, nrows=None, delimiter=",", encoding='latin-1')
-                                for file in kometa_feature_files))
-    print("Done kometa feature")
-    X, num_col = generate_image(kometa_feature)
+    for file in kometa_feature_files:
+        kometa_feature = pd.read_csv(file, header=None, nrows=None, delimiter=",", encoding='latin-1')
+        X, num_col = generate_image(kometa_feature)
+        print("Generate image")
 
     y = []
     for case_id, case in log.get_cases():
@@ -302,6 +303,22 @@ def create_model(X, y, num_col, epochs, early_stop):
     model.fit(X_a_train, y, epochs=epochs, batch_size=128, verbose=1, callbacks=[early_stopping, lr_reducer], validation_split=0.2)
     return model
 
+
+class DataGenerator(Sequence):
+    def __init__(self, filenames):
+        self.filenames = filenames
+
+    def __len__(self):
+        return len(self.filenames)
+
+    def __getitem__(self, index):
+        'Generate one batch of data'
+        # Generate indexes of the batch
+        file = self.filenames[index]
+
+
+
+        return X, y
 
 if __name__ == "__main__":
     # data = "../../Data/Helpdesk.csv"
