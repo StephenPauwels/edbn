@@ -23,21 +23,22 @@ def train(log, epochs=200, early_stop=42):
     # kometa_feature = pd.DataFrame(generate_kometa_feature(log))
     kometa_feature_files = generate_kometa_feature(log)
 
+    input_files = []
     for file in kometa_feature_files:
         kometa_feature = pd.read_csv(file, header=None, nrows=None, delimiter=",", encoding='latin-1')
-        X, num_col = generate_image(kometa_feature)
-        print("Generate image")
+        X, y, num_col = generate_image(kometa_feature)
 
-    y = []
-    for case_id, case in log.get_cases():
-        activities = list(case[log.activity])
-        y.extend(activities[1:])
+        X = np.asarray(X)
 
-    y = ku.to_categorical(y, num_classes=len(log.values[log.activity]) + 1)
+        y = ku.to_categorical(y, num_classes=len(log.values[log.activity]) + 1)
+        y = np.asarray(y)
 
-    X = np.asarray(X)
+        filename = file.replace(".csv", "")
+        np.save(filename + "_X", X)
+        np.save(filename + "_y", y)
+        input_files.append(filename)
 
-    return create_model(X, y, num_col, epochs, early_stop)
+    return create_model(input_files, len(log.values[log.activity]) + 1, num_col, epochs, early_stop)
 
 
 def test(log, model):
@@ -233,6 +234,7 @@ def rgb_img(list_image_flat_train, num_col):
 def generate_image(df, test=False):
     num_col = len(df.columns) - 1
     X = df[:]
+    y = X.iloc[:, -1]
     X = X.iloc[:, :-1]
 
     scaler = preprocessing.MinMaxScaler(feature_range=(0, 1))
@@ -246,7 +248,7 @@ def generate_image(df, test=False):
     else:
         list_image_flat = flat_vec_parallel(norm)
 
-    return rgb_img(list_image_flat, num_col), num_col
+    return rgb_img(list_image_flat, num_col), y, num_col
 
 
 def inception_module(layer_in, f1, f2, f3):
@@ -263,10 +265,12 @@ def inception_module(layer_in, f1, f2, f3):
     return layer_out
 
 
-def create_model(X, y, num_col, epochs, early_stop):
+def create_model(input_files, num_classes, num_col, epochs, early_stop):
+    train_data = DataGenerator(input_files)
+
     seed = 123
 
-    n_classes = len(y[0])
+    n_classes = num_classes
 
     dense1 = 64
     dense2 = 128
@@ -276,10 +280,6 @@ def create_model(X, y, num_col, epochs, early_stop):
 
     f1, f2, f3 = 64, 128, 32
     img_size, padding = get_image_size(num_col)
-
-    X_a_train = X
-    X_a_train = X_a_train.astype('float32')
-    X_a_train = X_a_train / 255.0
 
     layer_in = Input(shape=(int(img_size), int(img_size), 3))
     layer_out = inception_module(layer_in, f1, f2, f3)
@@ -300,7 +300,8 @@ def create_model(X, y, num_col, epochs, early_stop):
     model_checkpoint = ModelCheckpoint("premiere_models/" + 'model_{epoch:02d}-{val_loss:.2f}.h5', monitor='val_loss', verbose=0, save_best_only=True, save_weights_only=False, mode='auto')
     lr_reducer = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=10, verbose=0, mode='auto', min_delta=0.0001, cooldown=0, min_lr=0)
 
-    model.fit(X_a_train, y, epochs=epochs, batch_size=128, verbose=1, callbacks=[early_stopping, lr_reducer], validation_split=0.2)
+    model.fit_generator(generator=train_data, epochs=epochs, verbose=1, callbacks=[early_stopping, lr_reducer])
+    model.save("premiere_model")
     return model
 
 
@@ -315,14 +316,16 @@ class DataGenerator(Sequence):
         'Generate one batch of data'
         # Generate indexes of the batch
         file = self.filenames[index]
+        X_a_train = np.load(file + "_X.npy")
+        X_a_train = X_a_train.astype('float32')
+        X_a_train = X_a_train / 255.0
 
+        return X_a_train, np.load(file + "_y.npy")
 
-
-        return X, y
 
 if __name__ == "__main__":
-    # data = "../../Data/Helpdesk.csv"
-    data = "../../Data/BPIC15_1_sorted_new.csv"
+    data = "../../Data/Helpdesk.csv"
+    # data = "../../Data/BPIC15_1_sorted_new.csv"
     case_attr = "case"
     act_attr = "event"
 
@@ -334,6 +337,6 @@ if __name__ == "__main__":
     logfile.create_k_context()
     train_log, test_log = logfile.splitTrainTest(70, case=True, method="train-test")
 
-    model = train(train_log,200,20)
+    model = train(train_log,5,20)
     print("Accuracy:", test(test_log, model))
 

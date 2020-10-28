@@ -116,7 +116,8 @@ def premiere_feature(list_sequence_prefix, list_resource_prefix, flow_act, agg_t
     # flow_features = pool.map(functools.partial(flow_feature, flow_act=flow_act_dict), list_sequence_prefix)
 
     # print("Combine", len(list_sequence_prefix))
-    chunk_size = int(len(list_sequence_prefix) / num_processes)
+    # chunk_size = int(len(list_sequence_prefix) / num_processes)
+    chunk_size = 1000
     chunks = [range(i, min(i + chunk_size, len(list_sequence_prefix))) for i in range(0, len(list_sequence_prefix), chunk_size)]
     print(chunks[-1])
     # list_flow_feature = []
