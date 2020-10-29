@@ -1,3 +1,5 @@
+import functools
+
 from Utils.LogFile import LogFile
 import itertools
 from dateutil.parser import parse
@@ -15,6 +17,22 @@ from keras.models import Model
 from keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint
 import keras
 from tensorflow.keras.utils import Sequence
+import multiprocessing
+
+
+def process_file(file, log):
+    kometa_feature = pd.read_csv(file, header=None, nrows=None, delimiter=",", encoding='latin-1')
+    X, y, num_col = generate_image(kometa_feature)
+
+    X = np.asarray(X)
+
+    y = ku.to_categorical(y, num_classes=len(log.values[log.activity]) + 1)
+    y = np.asarray(y)
+
+    filename = file.replace(".csv", "")
+    np.save(filename + "_X", X)
+    np.save(filename + "_y", y)
+    return filename, num_col
 
 
 def train(log, epochs=200, early_stop=42):
@@ -22,20 +40,11 @@ def train(log, epochs=200, early_stop=42):
     # kometa_feature = pd.DataFrame(generate_kometa_feature(log))
     kometa_feature_files = generate_kometa_feature(log)
 
-    input_files = []
-    for file in kometa_feature_files:
-        kometa_feature = pd.read_csv(file, header=None, nrows=None, delimiter=",", encoding='latin-1')
-        X, y, num_col = generate_image(kometa_feature)
-
-        X = np.asarray(X)
-
-        y = ku.to_categorical(y, num_classes=len(log.values[log.activity]) + 1)
-        y = np.asarray(y)
-
-        filename = file.replace(".csv", "")
-        np.save(filename + "_X", X)
-        np.save(filename + "_y", y)
-        input_files.append(filename)
+    num_processes = multiprocessing.cpu_count()
+    pool = multiprocessing.Pool(processes=num_processes)
+    input_files = pool.map(functools.partial(process_file, log=log), kometa_feature_files)
+    num_col = input_files[0][1]
+    input_files = [i[0] for i in input_files]
 
     return create_model(input_files, len(log.values[log.activity]) + 1, num_col, epochs, early_stop)
 
@@ -128,6 +137,8 @@ def flat_vec_parallel(df):
 
     num_processes = multiprocessing.cpu_count()
     chunk_size = int(df.shape[0] / num_processes)
+    if chunk_size == 0:
+        chunk_size = 1
 
     chunks = [df.iloc[df.index[i:i + chunk_size]] for i in range(0, df.shape[0], chunk_size)]
 
@@ -249,7 +260,7 @@ def generate_image(df, test=False):
     if test:
         list_image_flat = flat_vec_test(norm)
     else:
-        list_image_flat = flat_vec_parallel(norm)
+        list_image_flat = flat_vec(norm)
 
     return rgb_img(list_image_flat, num_col), y, num_col
 
