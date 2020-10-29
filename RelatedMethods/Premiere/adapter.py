@@ -19,7 +19,6 @@ from tensorflow.keras.utils import Sequence
 
 def train(log, epochs=200, early_stop=42):
     print("Start kometa_feature")
-    # TODO: check for improvements (avoid conversion to dataframe by already creating a dataframe?)
     # kometa_feature = pd.DataFrame(generate_kometa_feature(log))
     kometa_feature_files = generate_kometa_feature(log)
 
@@ -42,7 +41,11 @@ def train(log, epochs=200, early_stop=42):
 
 
 def test(log, model):
-    kometa_feature = pd.DataFrame(generate_kometa_feature(log))
+    kometa_feature_files = pd.DataFrame(generate_kometa_feature(log))
+
+    for file in kometa_feature_files:
+        pass
+
     X, num_col = generate_image(kometa_feature, True)
 
     y = []

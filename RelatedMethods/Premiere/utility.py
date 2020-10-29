@@ -84,14 +84,15 @@ def combine(ran, flow, activity, resource, agg_time, target):
 
 
 def calc_features(ran, list_sequence_prefix, list_resource_prefix, activity_list, resource_list, flow_act, agg_time, target):
-    filename = "features/features_%i_%i.csv" % (ran.start, ran.stop)
-    with open(filename, "w") as fout:
-        for i in ran:
-            fout.write(",".join([str(j) for j in flow_feature(list_sequence_prefix[i], flow_act) +
-                                 act_feature(list_sequence_prefix[i], activity_list) +
-                                 res_feature(list_resource_prefix[i], resource_list) +
-                                 agg_time[i] + [target[i]]]))
-            fout.write("\n")
+    for k in range(ran.start, ran.stop, 1000):
+        filename = "features/features_%i.csv" % k
+        with open(filename, "w") as fout:
+            for i in range(k, min(k + 1000, ran.stop)):
+                fout.write(",".join([str(j) for j in flow_feature(list_sequence_prefix[i], flow_act) +
+                                     act_feature(list_sequence_prefix[i], activity_list) +
+                                     res_feature(list_resource_prefix[i], resource_list) +
+                                     agg_time[i] + [target[i]]]))
+                fout.write("\n")
     return filename
 
 
@@ -116,8 +117,8 @@ def premiere_feature(list_sequence_prefix, list_resource_prefix, flow_act, agg_t
     # flow_features = pool.map(functools.partial(flow_feature, flow_act=flow_act_dict), list_sequence_prefix)
 
     # print("Combine", len(list_sequence_prefix))
-    # chunk_size = int(len(list_sequence_prefix) / num_processes)
-    chunk_size = 1000
+    chunk_size = int(len(list_sequence_prefix) / num_processes)
+    # chunk_size = 1000
     chunks = [range(i, min(i + chunk_size, len(list_sequence_prefix))) for i in range(0, len(list_sequence_prefix), chunk_size)]
     print(chunks[-1])
     # list_flow_feature = []
