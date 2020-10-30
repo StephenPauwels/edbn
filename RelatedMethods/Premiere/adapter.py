@@ -48,26 +48,29 @@ def train(log, epochs=200, early_stop=42):
 
     return create_model(input_files, len(log.values[log.activity]) + 1, num_col, epochs, early_stop)
 
-
-def test(log, model):
-    kometa_feature_files = pd.DataFrame(generate_kometa_feature(log))
-
-    for file in kometa_feature_files:
-        pass
-
-    X, num_col = generate_image(kometa_feature, True)
-
-    y = []
-    for case_id, case in log.get_cases():
-        activities = list(case[log.activity])
-        y.extend(activities[1:])
-
-    X = np.asarray(X)
+def predict(file, model):
+    X = np.load(file + "_X.npy")
+    y = np.load(file + "_y.npy")
 
     preds_a = model.predict(X)
-
     preds_a = np.argmax(preds_a, axis=1)
-    return sum(preds_a == y) / len(preds_a)
+
+    return sum(preds_a == y), len(preds_a)
+
+def test(log, model):
+    kometa_feature_files = generate_kometa_feature(log)
+
+    num_processes = multiprocessing.cpu_count()
+    pool = multiprocessing.Pool(processes=num_processes)
+    input_files = pool.map(functools.partial(process_file, log=log), kometa_feature_files)
+
+    # input_files = [process_file(file, log) for file in kometa_feature_files]
+    num_col = input_files[0][1]
+    input_files = [i[0] for i in input_files]
+
+    results = pool.map(functools.partial(predict, model=model), input_files)
+
+    return sum([i[0] for i in results]) / sum([i[1] for i in results])
 
 def pairwise(iterable):
     "s -> (s0,s1), (s1,s2), (s2, s3), ..."
@@ -351,6 +354,7 @@ if __name__ == "__main__":
     logfile.create_k_context()
     train_log, test_log = logfile.splitTrainTest(70, case=True, method="train-test")
 
-    model = train(train_log,5,20)
+    #model = train(train_log, 5, 20)
+    model = keras.models.load_model("premiere_model")
     print("Accuracy:", test(test_log, model))
 
