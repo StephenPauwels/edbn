@@ -49,27 +49,33 @@ def train(log, epochs=200, early_stop=42):
     return create_model(input_files, len(log.values[log.activity]) + 1, num_col, epochs, early_stop)
 
 def predict(file, model):
+    print("PREDICT", file)
     X = np.load(file + "_X.npy")
     y = np.load(file + "_y.npy")
 
     preds_a = model.predict(X)
     preds_a = np.argmax(preds_a, axis=1)
+    y = np.argmax(y, axis=1)
 
-    return sum(preds_a == y), len(preds_a)
+    return sum(np.equal(preds_a, y)), len(preds_a)
 
 def test(log, model):
     kometa_feature_files = generate_kometa_feature(log)
 
     num_processes = multiprocessing.cpu_count()
     pool = multiprocessing.Pool(processes=num_processes)
+    print("START PROCESS")
     input_files = pool.map(functools.partial(process_file, log=log), kometa_feature_files)
-
+    print("DONE PROCESSING")
     # input_files = [process_file(file, log) for file in kometa_feature_files]
     num_col = input_files[0][1]
     input_files = [i[0] for i in input_files]
-
-    results = pool.map(functools.partial(predict, model=model), input_files)
-
+    print(input_files)
+    print("PREDICT")
+    # pool = multiprocessing.Pool(processes=num_processes)
+    # results = pool.map(functools.partial(predict, model=model), input_files)
+    results = [predict(file, model) for file in input_files]
+    print("DONE PREDICT")
     return sum([i[0] for i in results]) / sum([i[1] for i in results])
 
 def pairwise(iterable):
