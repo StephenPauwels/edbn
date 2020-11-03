@@ -20,13 +20,13 @@ from tensorflow.keras.utils import Sequence
 import multiprocessing
 
 
-def process_file(file, log):
+def process_file(file, num_activities):
     kometa_feature = pd.read_csv(file, header=None, nrows=None, delimiter=",", encoding='latin-1')
     X, y, num_col = generate_image(kometa_feature)
 
     X = np.asarray(X)
 
-    y = ku.to_categorical(y, num_classes=len(log.values[log.activity]) + 1)
+    y = ku.to_categorical(y, num_classes=num_activities)
     y = np.asarray(y)
 
     filename = file.replace(".csv", "")
@@ -42,7 +42,8 @@ def train(log, epochs=200, early_stop=42):
 
     num_processes = multiprocessing.cpu_count()
     pool = multiprocessing.Pool(processes=num_processes)
-    input_files = pool.map(functools.partial(process_file, log=log), kometa_feature_files)
+    input_files = pool.map(functools.partial(process_file, num_activities=len(log.values[log.activity]) + 1),
+                           kometa_feature_files)
     num_col = input_files[0][1]
     input_files = [i[0] for i in input_files]
 
@@ -65,7 +66,8 @@ def test(log, model):
     num_processes = multiprocessing.cpu_count()
     pool = multiprocessing.Pool(processes=num_processes)
     print("START PROCESS")
-    input_files = pool.map(functools.partial(process_file, log=log), kometa_feature_files)
+    input_files = pool.map(functools.partial(process_file, num_activities=len(log.values[log.activity]) + 1),
+                           kometa_feature_files)
     print("DONE PROCESSING")
     # input_files = [process_file(file, log) for file in kometa_feature_files]
     num_col = input_files[0][1]
