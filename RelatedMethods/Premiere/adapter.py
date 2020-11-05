@@ -32,6 +32,9 @@ def process_file(file, num_activities):
     filename = file.replace(".csv", "")
     np.save(filename + "_X", X)
     np.save(filename + "_y", y)
+    del X
+    del y
+    del kometa_feature
     return filename, num_col
 
 
@@ -42,8 +45,12 @@ def train(log, epochs=200, early_stop=42):
 
     num_processes = multiprocessing.cpu_count()
     pool = multiprocessing.Pool(processes=num_processes)
-    input_files = pool.map(functools.partial(process_file, num_activities=len(log.values[log.activity]) + 1),
-                           kometa_feature_files)
+    # input_files = pool.map(functools.partial(process_file, num_activities=len(log.values[log.activity]) + 1),
+    #                        kometa_feature_files)
+    input_files = []
+    for file in kometa_feature_files:
+        print(file)
+        input_files.append(process_file(file, len(log.values[log.activity]) + 1))
     num_col = input_files[0][1]
     input_files = [i[0] for i in input_files]
 
@@ -66,8 +73,12 @@ def test(log, model):
     num_processes = multiprocessing.cpu_count()
     pool = multiprocessing.Pool(processes=num_processes)
     print("START PROCESS")
-    input_files = pool.map(functools.partial(process_file, num_activities=len(log.values[log.activity]) + 1),
-                           kometa_feature_files)
+    # input_files = pool.map(functools.partial(process_file, num_activities=len(log.values[log.activity]) + 1),
+    #                        kometa_feature_files)
+    input_files = []
+    for file in kometa_feature_files:
+        print(file)
+        input_files.append(process_file(file, len(log.values[log.activity]) + 1))
     print("DONE PROCESSING")
     # input_files = [process_file(file, log) for file in kometa_feature_files]
     num_col = input_files[0][1]
@@ -272,7 +283,7 @@ def generate_image(df, test=False):
         list_image_flat = flat_vec_test(norm)
     else:
         list_image_flat = flat_vec(norm)
-
+    del norm
     return rgb_img(list_image_flat, num_col), y, num_col
 
 
@@ -321,7 +332,7 @@ def create_model(input_files, num_classes, num_col, epochs, early_stop):
     model = Model(inputs=layer_in, outputs=out)
     model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['acc'])
     model.summary()
-    early_stopping = EarlyStopping(monitor='val_loss', patience=early_stop)
+    early_stopping = EarlyStopping(monitor='loss', patience=early_stop)
     model_checkpoint = ModelCheckpoint("premiere_models/" + 'model_{epoch:02d}-{val_loss:.2f}.h5', monitor='val_loss', verbose=0, save_best_only=True, save_weights_only=False, mode='auto')
     lr_reducer = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=10, verbose=0, mode='auto', min_delta=0.0001, cooldown=0, min_lr=0)
 
@@ -349,8 +360,8 @@ class DataGenerator(Sequence):
 
 
 if __name__ == "__main__":
-    data = "../../Data/Helpdesk.csv"
-    # data = "../../Data/BPIC15_1_sorted_new.csv"
+    # data = "../../Data/Helpdesk.csv"
+    data = "../../Data/BPIC15_1_sorted_new.csv"
     case_attr = "case"
     act_attr = "event"
 
@@ -362,7 +373,7 @@ if __name__ == "__main__":
     logfile.create_k_context()
     train_log, test_log = logfile.splitTrainTest(70, case=True, method="train-test")
 
-    #model = train(train_log, 5, 20)
-    model = keras.models.load_model("premiere_model")
+    model = train(train_log, 5, 20)
+    # model = keras.models.load_model("premiere_model")
     print("Accuracy:", test(test_log, model))
 
