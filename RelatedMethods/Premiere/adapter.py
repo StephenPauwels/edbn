@@ -1,4 +1,5 @@
 import functools
+import os
 
 from Utils.LogFile import LogFile
 import itertools
@@ -20,7 +21,7 @@ from tensorflow.keras.utils import Sequence
 import multiprocessing
 
 
-def process_file(file, num_activities):
+def process_file(file, num_activities, folder=None):
     kometa_feature = pd.read_csv(file, header=None, nrows=None, delimiter=",", encoding='latin-1')
     X, y, num_col = generate_image(kometa_feature)
 
@@ -30,6 +31,11 @@ def process_file(file, num_activities):
     y = np.asarray(y)
 
     filename = file.replace(".csv", "")
+
+    if folder is not None:
+        filename = filename.replace("features", folder)
+    if not os.path.exists(folder):
+        os.makedirs(folder)
     np.save(filename + "_X", X)
     np.save(filename + "_y", y)
     del X
@@ -38,7 +44,7 @@ def process_file(file, num_activities):
     return filename, num_col
 
 
-def train(log, epochs=200, early_stop=42):
+def train(log, epochs=200, early_stop=42, folder=None):
     print("Start kometa_feature")
     # kometa_feature = pd.DataFrame(generate_kometa_feature(log))
     kometa_feature_files = generate_kometa_feature(log)
@@ -50,11 +56,11 @@ def train(log, epochs=200, early_stop=42):
     input_files = []
     for file in kometa_feature_files:
         print(file)
-        input_files.append(process_file(file, len(log.values[log.activity]) + 1))
+        input_files.append(process_file(file, len(log.values[log.activity]) + 1, folder))
     num_col = input_files[0][1]
     input_files = [i[0] for i in input_files]
-
-    return create_model(input_files, len(log.values[log.activity]) + 1, num_col, epochs, early_stop)
+    return
+    #TODO return create_model(input_files, len(log.values[log.activity]) + 1, num_col, epochs, early_stop)
 
 def predict(file, model):
     print("PREDICT", file)
@@ -67,7 +73,7 @@ def predict(file, model):
 
     return sum(np.equal(preds_a, y)), len(preds_a)
 
-def test(log, model):
+def test(log, model, folder):
     kometa_feature_files = generate_kometa_feature(log)
 
     num_processes = multiprocessing.cpu_count()
@@ -78,8 +84,10 @@ def test(log, model):
     input_files = []
     for file in kometa_feature_files:
         print(file)
-        input_files.append(process_file(file, len(log.values[log.activity]) + 1))
+        input_files.append(process_file(file, len(log.values[log.activity]) + 1, folder))
     print("DONE PROCESSING")
+    return
+    # TODO
     # input_files = [process_file(file, log) for file in kometa_feature_files]
     num_col = input_files[0][1]
     input_files = [i[0] for i in input_files]

@@ -8,9 +8,10 @@ from multiprocessing import Process
 
 from Utils.LogFile import LogFile
 
-DATA = ["Helpdesk.csv", "BPIC12W.csv", "BPIC12.csv", "BPIC15_1_sorted_new.csv",
+# DATA = ["Helpdesk.csv", "BPIC12W.csv", "BPIC12.csv", "BPIC15_1_sorted_new.csv",
+#         "BPIC15_2_sorted_new.csv", "BPIC15_3_sorted_new.csv", "BPIC15_4_sorted_new.csv", "BPIC15_5_sorted_new.csv"]
+DATA = ["BPIC15_1_sorted_new.csv",
         "BPIC15_2_sorted_new.csv", "BPIC15_3_sorted_new.csv", "BPIC15_4_sorted_new.csv", "BPIC15_5_sorted_new.csv"]
-
 DATA_FOLDER = "../../Data/"
 
 def run_experiment(data, prefix_size, add_end_event, split_method, split_cases, train_percentage, filename="results.txt"):
@@ -42,6 +43,7 @@ def run_experiment(data, prefix_size, add_end_event, split_method, split_cases, 
         fout.write("\nDate: " + time.strftime("%d.%m.%y-%H.%M", time.localtime()))
         fout.write("\n------------------------------------\n")
 
+    data_folder = filename.replace(".txt", "") + "_" + str(DATA.index(data.replace(DATA_FOLDER, "")))
     processes = []
     # processes.append(Process(target=execute_tax, args=(train_log, test_log, filename), name="Tax"))
     # processes.append(Process(target=execute_taymouri, args=(train_log, test_log, filename), name="Taymouri"))
@@ -49,7 +51,8 @@ def run_experiment(data, prefix_size, add_end_event, split_method, split_cases, 
     # processes.append(Process(target=execute_lin, args=(train_log, test_log, filename), name="Lin"))
     # processes.append(Process(target=execute_dimauro, args=(train_log, test_log, filename), name="Di Mauro"))
     # processes.append(Process(target=execute_pasquadibisceglie, args=(train_log, test_log, filename), name="Pasquadibisceglie"))
-    processes.append(Process(target=execute_pasquadibisceglie2020, args=(train_log, test_log, filename), name="Pasquadibisceglie (2020)"))
+    processes.append(Process(target=execute_pasquadibisceglie2020, args=(train_log, test_log, filename, data_folder),
+                             name="Pasquadibisceglie (2020)"))
     # processes.append(Process(target=execute_edbn, args=(train_log, test_log, filename), name="EDBN"))
     # processes.append(Process(target=execute_edbn_update, args=(train_log, test_log, filename), name="EDBN_Update"))
     # processes.append(Process(target=execute_baseline, args=(train_log, test_log, filename), name="Baseline"))
@@ -182,12 +185,13 @@ def execute_pasquadibisceglie(train_log, test_log, filename):
         fout.write("\n")
 
 
-def execute_pasquadibisceglie2020(train_log, test_log, filename):
+def execute_pasquadibisceglie2020(train_log, test_log, filename, data_folder=None):
     from RelatedMethods.Premiere import adapter as pasquadibisceglie
 
     # sys.stdout = open("../log/pasquadibisceglie2020.out", "a")
     # sys.stderr = open("../log/pasquadibisceglie2020.error", "a")
-    pasq_acc = pasquadibisceglie.test(test_log, pasquadibisceglie.train(train_log, epochs=100, early_stop=10))
+    pasq_acc = pasquadibisceglie.test(test_log, pasquadibisceglie.train(train_log, epochs=100, early_stop=10,
+                                                                        folder=data_folder + "_train"), data_folder + "_test")
     with open(filename, "a") as fout:
         fout.write("Pasquadibisceglie (2020): " + str(pasq_acc))
         fout.write("\n")
