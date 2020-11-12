@@ -84,59 +84,67 @@ def combine(ran, flow, activity, resource, agg_time, target):
 
 
 def calc_features(ran, list_sequence_prefix, list_resource_prefix, activity_list, resource_list, flow_act, agg_time, target):
-    for k in range(ran.start, ran.stop, 1000):
-        filename = "features/features_%i.csv" % k
-        with open(filename, "w") as fout:
-            for i in range(k, min(k + 1000, ran.stop)):
-                fout.write(",".join([str(j) for j in flow_feature(list_sequence_prefix[i], flow_act) +
-                                     act_feature(list_sequence_prefix[i], activity_list) +
-                                     res_feature(list_resource_prefix[i], resource_list) +
-                                     agg_time[i] + [target[i]]]))
-                fout.write("\n")
+    filename = "features/features_%i.csv" % ran.start
+    with open(filename, "w") as fout:
+        for i in ran:
+            fout.write(",".join([str(j) for j in flow_feature(list_sequence_prefix[i], flow_act) +
+                                 act_feature(list_sequence_prefix[i], activity_list) +
+                                 res_feature(list_resource_prefix[i], resource_list) +
+                                 agg_time[i] + [target[i]]]))
+            fout.write("\n")
     return filename
 
 
 def premiere_feature(list_sequence_prefix, list_resource_prefix, flow_act, agg_time_feature, unique_events, unique_resources, target):
-    print(len(list_sequence_prefix), len(agg_time_feature), len(target))
     j = 0
     list_flow_feature = []
     n_resource_list = list(range(1, unique_resources + 1))
     n_activity_list = list(range(1, unique_events + 1))
 
-    import multiprocessing
-    import functools
-    num_processes = multiprocessing.cpu_count()
-    pool = multiprocessing.Pool(processes=num_processes)
+    output_file = open("features/features.csv", "w")
 
-    # print("Resource features")
-    # resource_features = pool.map(functools.partial(res_feature, resource_list=n_resource_list), list_resource_prefix)
-    # print("Activity features")
-    # activity_features = pool.map(functools.partial(act_feature, activity_list=n_activity_list), list_sequence_prefix)
-    # print("Flow features")
-    flow_act_dict = {flow: i for i, flow in enumerate(flow_act)}
-    # flow_features = pool.map(functools.partial(flow_feature, flow_act=flow_act_dict), list_sequence_prefix)
+    while j < len(list_sequence_prefix):
+        print(j, "/", len(list_sequence_prefix))
+        activity_features = []
+        resource_features = []
 
-    # print("Combine", len(list_sequence_prefix))
-    chunk_size = int(len(list_sequence_prefix) / num_processes)
-    # chunk_size = 1000
-    chunks = [range(i, min(i + chunk_size, len(list_sequence_prefix))) for i in range(0, len(list_sequence_prefix), chunk_size)]
-    print(chunks[-1])
-    # list_flow_feature = []
-    # result = pool.map(functools.partial(combine, flow=flow_features, activity=activity_features,
-    #                                                resource=resource_features, agg_time=agg_time_feature, target=target)
-    #                              , chunks)
+        # i = 0
+        # while i < len(n_resource_list):
+        tmp = list_resource_prefix[j]
+        for i in n_resource_list:
+            resource_features.append(tmp.count(i))
+            # i = i + 1
 
+        # x = 0
+        # while x < len(n_activity_list):
+        tmp = list_sequence_prefix[j]
+        for x in n_activity_list:
+            activity_features.append(tmp.count(x))
+            # x = x + 1
 
-    result = pool.map(functools.partial(calc_features, list_sequence_prefix=list_sequence_prefix,
-                                        list_resource_prefix=list_resource_prefix, activity_list=n_activity_list,
-                                        resource_list=n_resource_list, flow_act=flow_act_dict, agg_time=agg_time_feature,
-                                        target=target), chunks)
+        k = 0
+        list_gram = list(ngrams(list_sequence_prefix[j], 2))
 
-    # for j in range(len(list_sequence_prefix)):
-    #     list_flow_feature.append(flow_features[j] + activity_features[j] + resource_features[j] + agg_time_feature[j] + [target[j]])
-    print("Done Combine")
+        # for grams in bigrams:
+        #     list_gram.append(grams)
 
-    return result
+        flow_feature = []
+        # while k < len(flow_act):
+        for k in flow_act:
+            # print("Sequence->",a[k]," find n. ", list_gram.count(a[k]))
+            flow_feature.append(list_gram.count(k))
+            # k = k + 1
+
+        list_flow_feature.append(flow_feature + activity_features + resource_features + agg_time_feature[j] + [target[j]])
+        #list_flow_feature.append(activity_features + resource_features + agg_time_feature[j] + [target[j]])
+
+        output_file.write(",".join([str(j) for j in flow_feature + activity_features + resource_features +
+                                    agg_time_feature[j] + [target[j]]]))
+        output_file.write("\n")
+
+        j = j + 1
+    output_file.close()
+    return list_flow_feature
 
 
 def output_list(masterList):

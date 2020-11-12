@@ -22,7 +22,7 @@ import multiprocessing
 
 
 def process_file(file, num_activities, folder=None):
-    kometa_feature = pd.read_csv(file, header=None, nrows=None, delimiter=",", encoding='latin-1')
+    kometa_feature = pd.read_csv(file, header=None, nrows=None, delimiter=",")
     X, y, num_col = generate_image(kometa_feature)
 
     X = np.asarray(X)
@@ -34,8 +34,8 @@ def process_file(file, num_activities, folder=None):
 
     if folder is not None:
         filename = filename.replace("features", folder)
-    if not os.path.exists(folder):
-        os.makedirs(folder)
+        if not os.path.exists(folder):
+            os.makedirs(folder)
     np.save(filename + "_X", X)
     np.save(filename + "_y", y)
     del X
@@ -44,22 +44,34 @@ def process_file(file, num_activities, folder=None):
     return filename, num_col
 
 
+def process(num_activities):
+    df = pd.read_csv("features/features.csv", header=None)
+    X, y, num_col = generate_image(df)
+
+    X = np.asarray(X)
+
+    y = ku.to_categorical(y, num_classes=num_activities)
+    y = np.asarray(y)
+
+    return X, y, num_col
+
 def train(log, epochs=200, early_stop=42, folder=None):
     print("Start kometa_feature")
     # kometa_feature = pd.DataFrame(generate_kometa_feature(log))
-    kometa_feature_files = generate_kometa_feature(log)
-
-    num_processes = multiprocessing.cpu_count()
-    pool = multiprocessing.Pool(processes=num_processes)
+    kometa_feature = generate_kometa_feature(log)
+    input("Kometa features done")
+    X, y, num_col = process(len(log.values[log.activity]) + 1)
+    # num_processes = multiprocessing.cpu_count()
+    # pool = multiprocessing.Pool(processes=num_processes)
     # input_files = pool.map(functools.partial(process_file, num_activities=len(log.values[log.activity]) + 1),
     #                        kometa_feature_files)
-    input_files = []
-    for file in kometa_feature_files:
-        print(file)
-        input_files.append(process_file(file, len(log.values[log.activity]) + 1, folder))
-    num_col = input_files[0][1]
-    input_files = [i[0] for i in input_files]
-    return
+    # input_files = []
+    # for file in kometa_feature_files:
+    #     print(file)
+    #     input_files.append(process_file(file, len(log.values[log.activity]) + 1, folder))
+    # num_col = input_files[0][1]
+    # input_files = [i[0] for i in input_files]
+    # return
     #TODO return create_model(input_files, len(log.values[log.activity]) + 1, num_col, epochs, early_stop)
 
 def predict(file, model):
@@ -73,7 +85,7 @@ def predict(file, model):
 
     return sum(np.equal(preds_a, y)), len(preds_a)
 
-def test(log, model, folder):
+def test(log, model, folder=None):
     kometa_feature_files = generate_kometa_feature(log)
 
     num_processes = multiprocessing.cpu_count()
@@ -278,6 +290,7 @@ def rgb_img(list_image_flat_train, num_col):
 def generate_image(df, test=False):
     num_col = len(df.columns) - 1
     X = df[:]
+    del df
     y = X.iloc[:, -1]
     X = X.iloc[:, :-1]
 
@@ -286,7 +299,7 @@ def generate_image(df, test=False):
 
     norm = scaler.transform(X.values.astype(float))
     norm = pd.DataFrame(norm)
-
+    del scaler
     if test:
         list_image_flat = flat_vec_test(norm)
     else:
@@ -368,8 +381,8 @@ class DataGenerator(Sequence):
 
 
 if __name__ == "__main__":
-    # data = "../../Data/Helpdesk.csv"
-    data = "../../Data/BPIC15_1_sorted_new.csv"
+    data = "../../Data/Helpdesk.csv"
+    # data = "../../Data/BPIC15_1_sorted_new.csv"
     case_attr = "case"
     act_attr = "event"
 
