@@ -111,15 +111,21 @@ def premiere_feature(list_sequence_prefix, list_resource_prefix, flow_act, agg_t
         # i = 0
         # while i < len(n_resource_list):
         tmp = list_resource_prefix[j]
+        cnt = {}
+        for i in tmp:
+            cnt[i] = cnt.get(i, 0) + 1
         for i in n_resource_list:
-            resource_features.append(tmp.count(i))
+            resource_features.append(cnt.get(i,0))
             # i = i + 1
 
         # x = 0
         # while x < len(n_activity_list):
         tmp = list_sequence_prefix[j]
+        cnt = {}
+        for x in tmp:
+            cnt[x] = cnt.get(x, 0) + 1
         for x in n_activity_list:
-            activity_features.append(tmp.count(x))
+            activity_features.append(cnt.get(x,0))
             # x = x + 1
 
         k = 0
@@ -130,21 +136,29 @@ def premiere_feature(list_sequence_prefix, list_resource_prefix, flow_act, agg_t
 
         flow_feature = []
         # while k < len(flow_act):
+        cnt = {}
+        for k in list_gram:
+            cnt[k] = cnt.get(k, 0) + 1
         for k in flow_act:
             # print("Sequence->",a[k]," find n. ", list_gram.count(a[k]))
-            flow_feature.append(list_gram.count(k))
+            flow_feature.append(cnt.get(k, 0))
             # k = k + 1
 
-        list_flow_feature.append(flow_feature + activity_features + resource_features + agg_time_feature[j] + [target[j]])
+        # list_flow_feature.append(flow_feature + activity_features + resource_features + agg_time_feature[j] + [target[j]])
         #list_flow_feature.append(activity_features + resource_features + agg_time_feature[j] + [target[j]])
 
         output_file.write(",".join([str(j) for j in flow_feature + activity_features + resource_features +
                                     agg_time_feature[j] + [target[j]]]))
         output_file.write("\n")
+        if j % 1000 == 0:
+            output_file.flush()
 
+        del activity_features
+        del resource_features
+        del flow_feature
         j = j + 1
     output_file.close()
-    return list_flow_feature
+    # return list_flow_feature
 
 
 def output_list(masterList):

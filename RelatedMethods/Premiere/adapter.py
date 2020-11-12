@@ -8,6 +8,7 @@ from itertools import tee
 import Premiere.utility as ut
 import numpy as np
 import pandas as pd
+import dask.dataframe as dd
 from sklearn import preprocessing
 import keras.utils as ku
 from keras.layers.core import Dense, Dropout, Flatten
@@ -45,7 +46,9 @@ def process_file(file, num_activities, folder=None):
 
 
 def process(num_activities):
-    df = pd.read_csv("features/features.csv", header=None)
+    print("READ CSV")
+    df = dd.read_csv("features/features.csv", header=None)
+    print("DONE CSV")
     X, y, num_col = generate_image(df)
 
     X = np.asarray(X)
@@ -59,8 +62,10 @@ def train(log, epochs=200, early_stop=42, folder=None):
     print("Start kometa_feature")
     # kometa_feature = pd.DataFrame(generate_kometa_feature(log))
     kometa_feature = generate_kometa_feature(log)
-    input("Kometa features done")
+    # input("Kometa features done")
     X, y, num_col = process(len(log.values[log.activity]) + 1)
+    np.save("train_X", X)
+    np.save("train_y", y)
     # num_processes = multiprocessing.cpu_count()
     # pool = multiprocessing.Pool(processes=num_processes)
     # input_files = pool.map(functools.partial(process_file, num_activities=len(log.values[log.activity]) + 1),
@@ -289,22 +294,27 @@ def rgb_img(list_image_flat_train, num_col):
 
 def generate_image(df, test=False):
     num_col = len(df.columns) - 1
+    print("COPY X")
     X = df[:]
-    del df
+    print("iloc Y")
     y = X.iloc[:, -1]
+    print("iloc X")
     X = X.iloc[:, :-1]
 
+    print("SCALER")
     scaler = preprocessing.MinMaxScaler(feature_range=(0, 1))
-    scaler.fit(X.values.astype(float))
+    print("FIT")
+    # scaler.fit(X.values.astype(float))
+    print("TRANSFORM")
+    norm = scaler.fit_transform(X.values.astype(float))
+    norm = dd.DataFrame(norm)
 
-    norm = scaler.transform(X.values.astype(float))
-    norm = pd.DataFrame(norm)
-    del scaler
+    print("START FLAT")
     if test:
         list_image_flat = flat_vec_test(norm)
     else:
         list_image_flat = flat_vec(norm)
-    del norm
+    print("DONE FLAT")
     return rgb_img(list_image_flat, num_col), y, num_col
 
 
@@ -381,8 +391,8 @@ class DataGenerator(Sequence):
 
 
 if __name__ == "__main__":
-    data = "../../Data/Helpdesk.csv"
-    # data = "../../Data/BPIC15_1_sorted_new.csv"
+    # data = "../../Data/Helpdesk.csv"
+    data = "../../Data/BPIC15_1_sorted_new.csv"
     case_attr = "case"
     act_attr = "event"
 
