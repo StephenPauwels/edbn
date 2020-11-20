@@ -22,6 +22,25 @@ from tensorflow.keras.utils import Sequence
 import multiprocessing
 
 
+
+def create_data(train, test, folder=""):
+    generate_kometa_feature(train, file=folder + "train_features.csv")
+    generate_kometa_feature(test, file=folder + "test_features.csv")
+
+    train_features = dd.read_csv(folder + "train_features.csv", header=None)
+    test_features = dd.read_csv(folder + "test_features.csv", header=None)
+
+    generate_image(train_features, test_features)
+
+    # X, y, num_col = process(len(train.values[train.activity]) + 1, file=folder + "train_features.csv")
+    # np.save(folder + "train_X", X)
+    # np.save(folder + "train_y", y)
+    #
+    # X, y, num_col = process(len(test.values[test.activity]) + 1, file=folder + "test_features.csv")
+    # np.save(folder + "test_X", X)
+    # np.save(folder + "test_y", y)
+
+
 def process_file(file, num_activities, folder=None):
     kometa_feature = pd.read_csv(file, header=None, nrows=None, delimiter=",")
     X, y, num_col = generate_image(kometa_feature)
@@ -45,9 +64,9 @@ def process_file(file, num_activities, folder=None):
     return filename, num_col
 
 
-def process(num_activities):
+def process(num_activities, file):
     print("READ CSV")
-    df = dd.read_csv("features/features.csv", header=None)
+    df = dd.read_csv(file, header=None)
     print("DONE CSV")
     X, y, num_col = generate_image(df)
 
@@ -61,7 +80,7 @@ def process(num_activities):
 def train(log, epochs=200, early_stop=42, folder=None):
     print("Start kometa_feature")
     # kometa_feature = pd.DataFrame(generate_kometa_feature(log))
-    kometa_feature = generate_kometa_feature(log)
+    # kometa_feature = generate_kometa_feature(log)
     # input("Kometa features done")
     X, y, num_col = process(len(log.values[log.activity]) + 1)
     np.save("train_X", X)
@@ -77,7 +96,7 @@ def train(log, epochs=200, early_stop=42, folder=None):
     # num_col = input_files[0][1]
     # input_files = [i[0] for i in input_files]
     # return
-    #TODO return create_model(input_files, len(log.values[log.activity]) + 1, num_col, epochs, early_stop)
+    return create_model(["train"], len(log.values[log.activity]) + 1, num_col, epochs, early_stop)
 
 def predict(file, model):
     print("PREDICT", file)
@@ -91,30 +110,36 @@ def predict(file, model):
     return sum(np.equal(preds_a, y)), len(preds_a)
 
 def test(log, model, folder=None):
-    kometa_feature_files = generate_kometa_feature(log)
+    generate_kometa_feature(log)
 
-    num_processes = multiprocessing.cpu_count()
-    pool = multiprocessing.Pool(processes=num_processes)
-    print("START PROCESS")
-    # input_files = pool.map(functools.partial(process_file, num_activities=len(log.values[log.activity]) + 1),
-    #                        kometa_feature_files)
-    input_files = []
-    for file in kometa_feature_files:
-        print(file)
-        input_files.append(process_file(file, len(log.values[log.activity]) + 1, folder))
-    print("DONE PROCESSING")
-    return
-    # TODO
-    # input_files = [process_file(file, log) for file in kometa_feature_files]
-    num_col = input_files[0][1]
-    input_files = [i[0] for i in input_files]
-    print(input_files)
-    print("PREDICT")
+    X, y, num_col = process(len(log.values[log.activity]) + 1)
+    np.save("test_X", X)
+    np.save("test_y", y)
+
+    return predict("test", model)
+
+    # num_processes = multiprocessing.cpu_count()
     # pool = multiprocessing.Pool(processes=num_processes)
-    # results = pool.map(functools.partial(predict, model=model), input_files)
-    results = [predict(file, model) for file in input_files]
-    print("DONE PREDICT")
-    return sum([i[0] for i in results]) / sum([i[1] for i in results])
+    # print("START PROCESS")
+    # # input_files = pool.map(functools.partial(process_file, num_activities=len(log.values[log.activity]) + 1),
+    # #                        kometa_feature_files)
+    # input_files = []
+    # for file in kometa_feature_files:
+    #     print(file)
+    #     input_files.append(process_file(file, len(log.values[log.activity]) + 1, folder))
+    # print("DONE PROCESSING")
+    # return
+    # # TODO
+    # # input_files = [process_file(file, log) for file in kometa_feature_files]
+    # num_col = input_files[0][1]
+    # input_files = [i[0] for i in input_files]
+    # print(input_files)
+    # print("PREDICT")
+    # # pool = multiprocessing.Pool(processes=num_processes)
+    # # results = pool.map(functools.partial(predict, model=model), input_files)
+    # results = [predict(file, model) for file in input_files]
+    # print("DONE PREDICT")
+    # return sum([i[0] for i in results]) / sum([i[1] for i in results])
 
 def pairwise(iterable):
     "s -> (s0,s1), (s1,s2), (s2, s3), ..."
@@ -123,7 +148,7 @@ def pairwise(iterable):
     return zip(a, b)
 
 
-def generate_kometa_feature(log):
+def generate_kometa_feature(log, file=""):
     list_sequence_prefix = []
     list_resource_prefix = []
     list_time_prefix = []
@@ -171,7 +196,7 @@ def generate_kometa_feature(log):
         agg_time_feature.append(time_feature)
         i = i + 1
 
-    return ut.premiere_feature(list_sequence_prefix, list_resource_prefix, flow_act, agg_time_feature, unique_events, unique_resources, target)
+    return ut.premiere_feature(list_sequence_prefix, list_resource_prefix, flow_act, agg_time_feature, unique_events, unique_resources, target, file)
 
 
 def dec_to_bin(x):
@@ -200,7 +225,8 @@ def flat_vec_parallel(df):
 
 def flat_vec(df):
     list_image_flat = []
-    for (index_label, row_series) in df.iterrows():
+    # for (index_label, row_series) in df.iterrows():
+    for row_series in df:
         list_image = []
         j = 0
         while j < len(row_series):
@@ -292,7 +318,30 @@ def rgb_img(list_image_flat_train, num_col):
     return list_rgb
 
 
-def generate_image(df, test=False):
+def generate_image(train, test):
+    num_col = len(train.columns) - 1
+    X_train = train[:]
+    y_train = X_train.iloc[:, -1]
+    X_train = X_train.iloc[:, :-1]
+
+    scaler = preprocessing.MinMaxScaler(feature_range=(0,1))
+    scaler.fit(X_train.values.astype(float))
+
+    norm = scaler.transform(X_train.values.astype(float))
+    list_image_flat = flat_vec(norm)
+    X_train = rgb_img(list_image_flat, num_col)
+
+    X_test = test[:]
+    y_test = X_test.iloc[:, -1]
+    X_test = X_test.iloc[:, :-1]
+
+    norm = scaler.transform(X_test.values.astype(float))
+    list_image_flat = flat_vec(norm)
+    X_test = rgb_img(list_image_flat, num_col)
+
+
+
+def generate_image2(df, test=False):
     num_col = len(df.columns) - 1
     print("COPY X")
     X = df[:]
@@ -307,7 +356,7 @@ def generate_image(df, test=False):
     # scaler.fit(X.values.astype(float))
     print("TRANSFORM")
     norm = scaler.fit_transform(X.values.astype(float))
-    norm = dd.DataFrame(norm)
+    # norm = dd.DataFrame(norm)
 
     print("START FLAT")
     if test:
@@ -391,8 +440,8 @@ class DataGenerator(Sequence):
 
 
 if __name__ == "__main__":
-    # data = "../../Data/Helpdesk.csv"
-    data = "../../Data/BPIC15_1_sorted_new.csv"
+    data = "../../Data/Helpdesk.csv"
+    # data = "../../Data/BPIC15_1_sorted_new.csv"
     case_attr = "case"
     act_attr = "event"
 
@@ -404,7 +453,9 @@ if __name__ == "__main__":
     logfile.create_k_context()
     train_log, test_log = logfile.splitTrainTest(70, case=True, method="train-test")
 
-    model = train(train_log, 5, 20)
+    create_data(train_log, test_log, "helpdesk/")
+
+    # model = train(train_log, 5, 20)
     # model = keras.models.load_model("premiere_model")
-    print("Accuracy:", test(test_log, model))
+    # print("Accuracy:", test(test_log, model))
 

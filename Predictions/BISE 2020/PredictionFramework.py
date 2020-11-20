@@ -8,10 +8,10 @@ from multiprocessing import Process
 
 from Utils.LogFile import LogFile
 
-# DATA = ["Helpdesk.csv", "BPIC12W.csv", "BPIC12.csv", "BPIC15_1_sorted_new.csv",
-#         "BPIC15_2_sorted_new.csv", "BPIC15_3_sorted_new.csv", "BPIC15_4_sorted_new.csv", "BPIC15_5_sorted_new.csv"]
-DATA = ["BPIC15_1_sorted_new.csv",
+DATA = ["Helpdesk.csv", "BPIC12W.csv", "BPIC12.csv", "BPIC15_1_sorted_new.csv",
         "BPIC15_2_sorted_new.csv", "BPIC15_3_sorted_new.csv", "BPIC15_4_sorted_new.csv", "BPIC15_5_sorted_new.csv"]
+# DATA = ["BPIC15_1_sorted_new.csv",
+#         "BPIC15_2_sorted_new.csv", "BPIC15_3_sorted_new.csv", "BPIC15_4_sorted_new.csv", "BPIC15_5_sorted_new.csv"]
 DATA_FOLDER = "../../Data/"
 
 def run_experiment(data, prefix_size, add_end_event, split_method, split_cases, train_percentage, filename="results.txt"):
@@ -45,14 +45,14 @@ def run_experiment(data, prefix_size, add_end_event, split_method, split_cases, 
 
     data_folder = filename.replace(".txt", "") + "_" + str(DATA.index(data.replace(DATA_FOLDER, "")))
     processes = []
-    # processes.append(Process(target=execute_tax, args=(train_log, test_log, filename), name="Tax"))
+    processes.append(Process(target=execute_tax, args=(train_log, test_log, filename), name="Tax"))
     # processes.append(Process(target=execute_taymouri, args=(train_log, test_log, filename), name="Taymouri"))
     # processes.append(Process(target=execute_camargo, args=(train_log, test_log, filename), name="Camargo"))
     # processes.append(Process(target=execute_lin, args=(train_log, test_log, filename), name="Lin"))
     # processes.append(Process(target=execute_dimauro, args=(train_log, test_log, filename), name="Di Mauro"))
     # processes.append(Process(target=execute_pasquadibisceglie, args=(train_log, test_log, filename), name="Pasquadibisceglie"))
-    processes.append(Process(target=execute_pasquadibisceglie2020, args=(train_log, test_log, filename, data_folder),
-                             name="Pasquadibisceglie (2020)"))
+    # processes.append(Process(target=execute_pasquadibisceglie2020, args=(train_log, test_log, filename, data_folder),
+    #                          name="Pasquadibisceglie (2020)"))
     # processes.append(Process(target=execute_edbn, args=(train_log, test_log, filename), name="EDBN"))
     # processes.append(Process(target=execute_edbn_update, args=(train_log, test_log, filename), name="EDBN_Update"))
     # processes.append(Process(target=execute_baseline, args=(train_log, test_log, filename), name="Baseline"))
@@ -166,8 +166,8 @@ def execute_taymouri(train_log, test_log, filename):
 def execute_tax(train_log, test_log, filename):
     from RelatedMethods.Tax import adapter as tax
 
-    sys.stdout = open("../log/tax.out", "a")
-    sys.stderr = open("../log/tax.error", "a")
+    # sys.stdout = open("../log/tax.out", "a")
+    # sys.stderr = open("../log/tax.error", "a")
     tax_acc = tax.test(test_log, tax.train(train_log, epochs=100, early_stop=10))
     with open(filename, "a") as fout:
         fout.write("Tax: " + str(tax_acc))
@@ -291,25 +291,25 @@ def paper_experiments():
     configs = []
     for d in DATA:
         configs.append({"data": d, "prefix_size": None, "add_end_event": True, "split_method": "train-test",
-                        "split_cases": False, "train_percentage": 66, "filename": "paper_tax_extra.txt"})
+                        "split_cases": False, "train_percentage": 66, "filename": "paper_tax_tax.txt"})
 
         configs.append({"data": d, "prefix_size": 5, "add_end_event": True, "split_method": "test-train",
-                        "split_cases": False, "train_percentage": 70, "filename": "paper_camargo_extra.txt"})
+                        "split_cases": False, "train_percentage": 70, "filename": "paper_camargo_tax.txt"})
 
         configs.append({"data": d, "prefix_size": None, "add_end_event": True, "split_method": "train-test",
-                        "split_cases": False, "train_percentage": 70, "filename": "paper_lin_extra.txt"})
+                        "split_cases": False, "train_percentage": 70, "filename": "paper_lin_tax.txt"})
 
         configs.append({"data": d, "prefix_size": None, "add_end_event": True, "split_method": "random",
-                        "split_cases": False, "train_percentage": 80, "filename": "paper_dimauro_extra.txt"})
+                        "split_cases": False, "train_percentage": 80, "filename": "paper_dimauro_tax.txt"})
 
         configs.append({"data": d, "prefix_size": None, "add_end_event": True, "split_method": "train-test",
-                        "split_cases": False, "train_percentage": 66, "filename": "paper_pasquadibisceglie_extra.txt"})
+                        "split_cases": False, "train_percentage": 66, "filename": "paper_pasquadibisceglie_tax.txt"})
 
         configs.append({"data": d, "prefix_size": 5, "add_end_event": True, "split_method": "train-test",
-                        "split_cases": True, "train_percentage": 80, "filename": "paper_taymouri_extra.txt"})
+                        "split_cases": True, "train_percentage": 80, "filename": "paper_taymouri_tax.txt"})
 
         configs.append({"data": d, "prefix_size": 10, "add_end_event": False, "split_method": "train-test",
-                        "split_cases": True, "train_percentage": 70, "filename": "paper_baseline_extra.txt"})
+                        "split_cases": True, "train_percentage": 70, "filename": "paper_baseline_tax.txt"})
 
     for config in configs:
         run_experiment(**config)

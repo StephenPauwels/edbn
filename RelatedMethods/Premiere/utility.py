@@ -95,13 +95,13 @@ def calc_features(ran, list_sequence_prefix, list_resource_prefix, activity_list
     return filename
 
 
-def premiere_feature(list_sequence_prefix, list_resource_prefix, flow_act, agg_time_feature, unique_events, unique_resources, target):
+def premiere_feature(list_sequence_prefix, list_resource_prefix, flow_act, agg_time_feature, unique_events, unique_resources, target, file=""):
     j = 0
     list_flow_feature = []
     n_resource_list = list(range(1, unique_resources + 1))
     n_activity_list = list(range(1, unique_events + 1))
 
-    output_file = open("features/features.csv", "w")
+    output_file = open(file, "w")
 
     while j < len(list_sequence_prefix):
         print(j, "/", len(list_sequence_prefix))

@@ -69,7 +69,7 @@ for d in DATA:
     # plt.title(d)
     # plt.legend(loc="upper center", bbox_to_anchor=(0.5, -0.05), ncol=3)
 
-figure.legend(labels=METHODS2, loc="lower center", ncol=4, frameon=False, markerscale=2, fontsize="xx-large")
+figure.legend(labels=METHODS2, loc="lower center", ncol=3, frameon=False, markerscale=2, fontsize="xx-large")
 figure.savefig("prefixsize.eps", format="eps", bbox_inches="tight")
 figure.show()
     # pr.plot_acc_dots(data_result, "prefix_size", title=d)
