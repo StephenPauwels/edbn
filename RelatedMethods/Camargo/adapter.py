@@ -23,6 +23,9 @@ def train(log, model_type="shared_cat", epochs=200, early_stop=42):
     event_emb = em.reformat_matrix(ac_weights)
     role_emb = em.reformat_matrix(rl_weights)
 
+    model_type = "specialized"
+    # model_type = "concatenated"
+
     args = {"file_name": "data", "model_type": model_type, "norm_method": "lognorm", 'lstm_act': None,
             'l_size': 100, 'imp': 1, 'dense_act': None, 'optim': 'Nadam'}
 
@@ -35,19 +38,22 @@ def test(log, model):
 
 if __name__ == "__main__":
     # data = "../../Data/Helpdesk.csv"
-    data = "../../Data/BPIC15_3_sorted_new.csv"
+    # data = "../../Data/BPIC15_3_sorted_new.csv"
+    data = "../../Data/BPIC12W_completed.csv"
     case_attr = "case"
     act_attr = "event"
 
-    logfile = LogFile(data, ",", 0, None, None, case_attr,
-                      activity_attr=act_attr, convert=False, k=5)
+    logfile = LogFile(data, ",", 0, None, "completeTime", case_attr,
+                      activity_attr=act_attr, convert=False, k=10)
+
     logfile.convert2int()
 
+    logfile.filter_case_length(5)
     logfile.create_k_context()
-    train_log, test_log = logfile.splitTrainTest(70, case=True, method="random")
+    train_log, test_log = logfile.splitTrainTest(70, case=False, method="test-train")
 
-    model = train(train_log, epochs=100, early_stop=5)
-    # model = load_model("tmp\model_rd_100_Nadam_002-4.39.h5")
+    model = train(train_log, epochs=200, early_stop=10)
+    # model = load_model("tmp\model_rd_100 Nadam_014-5.00.h5")
     acc = test(test_log, model)
     print(acc)
 

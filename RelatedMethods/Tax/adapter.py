@@ -159,23 +159,24 @@ def test(log, model):
 
 
 if __name__ == "__main__":
-    data = "../../Data/Helpdesk.csv"
+    data = "../../Data/BPIC12W.csv"
+    # data = "../../Data/Helpdesk.csv"
     # data = "../../Data/Taymouri_bpi_12_w.csv"
     case_attr = "case"
     act_attr = "event"
     k = 15
 
     logfile = LogFile(data, ",", 0, None, None, case_attr,
-                      activity_attr=act_attr, convert=False, k=5)
+                      activity_attr=act_attr, convert=False, k=10)
     logfile.convert2int()
-
-    logfile.k = min(k, max(logfile.data.groupby(logfile.trace).size()))
+    logfile.filter_case_length(5)
+    # logfile.k = min(k, max(logfile.data.groupby(logfile.trace).size()))
 
     logfile.create_k_context()
-    train_log, test_log = logfile.splitTrainTest(66, case=True, method="train-test")
+    train_log, test_log = logfile.splitTrainTest(70, case=False, method="test-train")
 
-    # model = train(train_log, epochs=100, early_stop=10)
+    model = train(train_log, epochs=100, early_stop=10)
     # model.save("tmp.h5")
-    from keras.models import load_model
-    test(test_log, load_model("tmp.h5"))
-
+    # from keras.models import load_model
+    # test(test_log, load_model("tmp.h5"))
+    test(test_log, model)

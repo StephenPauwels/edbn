@@ -14,9 +14,9 @@ DATA = ["Helpdesk.csv", "BPIC12W.csv", "BPIC12.csv", "BPIC15_1_sorted_new.csv",
 #         "BPIC15_2_sorted_new.csv", "BPIC15_3_sorted_new.csv", "BPIC15_4_sorted_new.csv", "BPIC15_5_sorted_new.csv"]
 DATA_FOLDER = "../../Data/"
 
-def run_experiment(data, prefix_size, add_end_event, split_method, split_cases, train_percentage, filename="results.txt"):
+def run_experiment(data, prefix_size, add_end_event, split_method, split_cases, train_percentage, filter=None, filename="results.txt"):
     data = DATA_FOLDER + data
-    logfile = LogFile(data, ",", 0, None, "completeTime", "case",
+    logfile = LogFile(data, ",", 0, None, None, "case",
                       activity_attr="event", convert=False, k=prefix_size)
 
     if prefix_size is None:
@@ -25,10 +25,13 @@ def run_experiment(data, prefix_size, add_end_event, split_method, split_cases, 
             prefix_size = 40
     logfile.k = prefix_size
 
+    if filter:
+        logfile.filter_case_length(filter)
+
     if add_end_event:
         logfile.add_end_events()
-    logfile.keep_attributes(["case", "event", "role", "completeTime"])
-    # logfile.keep_attributes(["case", "event", "role"])
+    # logfile.keep_attributes(["case", "event", "role", "completeTime"])
+    logfile.keep_attributes(["case", "event", "role"])
     logfile.convert2int()
     logfile.create_k_context()
     train_log, test_log = logfile.splitTrainTest(train_percentage, case=split_cases, method=split_method)
@@ -40,12 +43,16 @@ def run_experiment(data, prefix_size, add_end_event, split_method, split_cases, 
         fout.write("\nSplit method: " + split_method)
         fout.write("\nSplit cases: " + str(split_cases))
         fout.write("\nTrain percentage: " + str(train_percentage))
+        if filter:
+            fout.write("\nFilter: " + str(filter))
+        else:
+            fout.write("\nFilter: None")
         fout.write("\nDate: " + time.strftime("%d.%m.%y-%H.%M", time.localtime()))
         fout.write("\n------------------------------------\n")
 
     data_folder = filename.replace(".txt", "") + "_" + str(DATA.index(data.replace(DATA_FOLDER, "")))
     processes = []
-    processes.append(Process(target=execute_tax, args=(train_log, test_log, filename), name="Tax"))
+    # processes.append(Process(target=execute_tax, args=(train_log, test_log, filename), name="Tax"))
     # processes.append(Process(target=execute_taymouri, args=(train_log, test_log, filename), name="Taymouri"))
     # processes.append(Process(target=execute_camargo, args=(train_log, test_log, filename), name="Camargo"))
     # processes.append(Process(target=execute_lin, args=(train_log, test_log, filename), name="Lin"))
@@ -55,7 +62,7 @@ def run_experiment(data, prefix_size, add_end_event, split_method, split_cases, 
     #                          name="Pasquadibisceglie (2020)"))
     # processes.append(Process(target=execute_edbn, args=(train_log, test_log, filename), name="EDBN"))
     # processes.append(Process(target=execute_edbn_update, args=(train_log, test_log, filename), name="EDBN_Update"))
-    # processes.append(Process(target=execute_baseline, args=(train_log, test_log, filename), name="Baseline"))
+    processes.append(Process(target=execute_baseline, args=(train_log, test_log, filename), name="Baseline"))
     # processes.append(Process(target=execute_new_method, args=(train_log, test_log, filename), name="New Method"))
 
     print("Starting Processes")
@@ -78,8 +85,8 @@ def run_experiment(data, prefix_size, add_end_event, split_method, split_cases, 
 def execute_baseline(train_log, test_log, filename):
     from Predictions import base_adapter as baseline
 
-    sys.stdout = open("../log/baseline.out", "a")
-    sys.stderr = open("../log/baseline.error", "a")
+    # sys.stdout = open("../log/baseline.out", "a")
+    # sys.stderr = open("../log/baseline.error", "a")
     baseline_acc = baseline.test(test_log, baseline.train(train_log, epochs=100, early_stop=10))
     with open(filename, "a") as fout:
         fout.write("Baseline: " + str(baseline_acc))
@@ -290,26 +297,35 @@ def all_experiments():
 def paper_experiments():
     configs = []
     for d in DATA:
-        configs.append({"data": d, "prefix_size": None, "add_end_event": True, "split_method": "train-test",
-                        "split_cases": False, "train_percentage": 66, "filename": "paper_tax_tax.txt"})
-
-        configs.append({"data": d, "prefix_size": 5, "add_end_event": True, "split_method": "test-train",
-                        "split_cases": False, "train_percentage": 70, "filename": "paper_camargo_tax.txt"})
-
-        configs.append({"data": d, "prefix_size": None, "add_end_event": True, "split_method": "train-test",
-                        "split_cases": False, "train_percentage": 70, "filename": "paper_lin_tax.txt"})
-
-        configs.append({"data": d, "prefix_size": None, "add_end_event": True, "split_method": "random",
-                        "split_cases": False, "train_percentage": 80, "filename": "paper_dimauro_tax.txt"})
-
-        configs.append({"data": d, "prefix_size": None, "add_end_event": True, "split_method": "train-test",
-                        "split_cases": False, "train_percentage": 66, "filename": "paper_pasquadibisceglie_tax.txt"})
-
-        configs.append({"data": d, "prefix_size": 5, "add_end_event": True, "split_method": "train-test",
-                        "split_cases": True, "train_percentage": 80, "filename": "paper_taymouri_tax.txt"})
+        # configs.append({"data": d, "prefix_size": None, "add_end_event": True, "split_method": "train-test",
+        #                 "split_cases": False, "train_percentage": 66, "filename": "paper_tax_tax.txt"})
+        #
+        # configs.append({"data": d, "prefix_size": 5, "add_end_event": True, "split_method": "test-train",
+        #                 "split_cases": False, "train_percentage": 70, "filename": "paper_camargo_tax.txt"})
+        #
+        # configs.append({"data": d, "prefix_size": None, "add_end_event": True, "split_method": "train-test",
+        #                 "split_cases": False, "train_percentage": 70, "filename": "paper_lin_tax.txt"})
+        #
+        # configs.append({"data": d, "prefix_size": None, "add_end_event": True, "split_method": "random",
+        #                 "split_cases": False, "train_percentage": 80, "filename": "paper_dimauro_tax.txt"})
+        #
+        # configs.append({"data": d, "prefix_size": None, "add_end_event": True, "split_method": "train-test",
+        #                 "split_cases": False, "train_percentage": 66, "filename": "paper_pasquadibisceglie_tax.txt"})
+        #
+        # configs.append({"data": d, "prefix_size": 5, "add_end_event": True, "split_method": "train-test",
+        #                 "split_cases": True, "train_percentage": 80, "filename": "paper_taymouri_tax.txt"})
+        #
+        # configs.append({"data": d, "prefix_size": 10, "add_end_event": False, "split_method": "train-test",
+        #                 "split_cases": True, "train_percentage": 70, "filename": "paper_baseline_tax.txt"})
 
         configs.append({"data": d, "prefix_size": 10, "add_end_event": False, "split_method": "train-test",
-                        "split_cases": True, "train_percentage": 70, "filename": "paper_baseline_tax.txt"})
+                        "split_cases": True, "train_percentage": 70, "filter": None, "filename": "test_filter.txt"})
+
+        configs.append({"data": d, "prefix_size": 10, "add_end_event": False, "split_method": "train-test",
+                        "split_cases": True, "train_percentage": 70, "filter": 3, "filename": "test_filter.txt"})
+
+        configs.append({"data": d, "prefix_size": 10, "add_end_event": False, "split_method": "train-test",
+                        "split_cases": True, "train_percentage": 70, "filter": 5, "filename": "test_filter.txt"})
 
     for config in configs:
         run_experiment(**config)
