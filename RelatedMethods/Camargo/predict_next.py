@@ -122,25 +122,15 @@ def predict_next(log, model):
                     results with other runing experiments (optional)
     """
 
-#   Next event selection method and numbers of repetitions
-    variants = [{'imp': 'Random Choice', 'rep': 1},
-                {'imp': 'Arg Max', 'rep': 1}]
-
-    accs = []
-    for var in variants:
-        for i in range(0, var['rep']):
-
-            prefixes = create_pref_suf(log)
-            prefixes = predict(model, prefixes, var['imp'])
+    prefixes = create_pref_suf(log)
+    return predict(model, prefixes)
             
-            accuracy = (np.sum([x['ac_true'] for x in prefixes])/len(prefixes))
-            accs.append(accuracy)
-    return accs
+
 # =============================================================================
-# Predic traces
+# Predict traces
 # =============================================================================
 
-def predict(model, prefixes, imp):
+def predict(model, prefixes):
     """Generate business process suffixes using a keras trained model.
     Args:
         model (keras model): keras trained model.
@@ -148,6 +138,7 @@ def predict(model, prefixes, imp):
         imp (str): method of next event selection.
     """
     # Generation of predictions
+    results = []
     for prefix in prefixes:
 
         x_ac_ngram = [prefix['ac_pref']]
@@ -155,26 +146,19 @@ def predict(model, prefixes, imp):
 
         predictions = model.predict([x_ac_ngram, x_rl_ngram])
 
-        if imp == 'Random Choice':
-            # Use this to get a random choice following as PDF the predictions
-            pos = np.random.choice(np.arange(0, len(predictions[0][0])), p=predictions[0][0])
-            pos1 = np.random.choice(np.arange(0, len(predictions[1][0])), p=predictions[1][0])
-        elif imp == 'Arg Max':
-            # Use this to get the max prediction
-            pos = np.argmax(predictions[0][0])
-            pos1 = np.argmax(predictions[1][0])
-        # Activities accuracy evaluation
-        if pos == prefix['ac_next']:
-            prefix['ac_true'] = 1
-        else:
-            prefix['ac_true'] = 0
-        # Roles accuracy evaluation
-        if pos1 == prefix['rl_next']:
-            prefix['rl_true'] = 1
-        else:
-            prefix['rl_true'] = 0
-    sup.print_done_task()
-    return prefixes
+        pos = np.argmax(predictions[0][0])
+
+        results.append((prefix["ac_next"], pos, predictions[0][0][pos]))
+
+    return results
+
+    #     # Roles accuracy evaluation
+    #     if pos1 == prefix['rl_next']:
+    #         prefix['rl_true'] = 1
+    #     else:
+    #         prefix['rl_true'] = 0
+    # sup.print_done_task()
+    # return prefixes
 
 
 # =============================================================================

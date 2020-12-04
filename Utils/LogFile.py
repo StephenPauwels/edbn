@@ -141,6 +141,8 @@ class LogFile:
     def keep_attributes(self, keep_attrs):
         if self.time and self.time not in keep_attrs:
             keep_attrs.append(self.time)
+        if self.trace and self.trace not in keep_attrs:
+            keep_attrs.append(self.trace)
         self.data = self.data[keep_attrs]
 
     def remove_attributes(self, remove_attrs):

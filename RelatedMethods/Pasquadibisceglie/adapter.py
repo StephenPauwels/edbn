@@ -208,13 +208,14 @@ def test(log, model):
     X_test = np.asarray(X_test)
     y_test = np.asarray(y_test)
 
-    test_Y_one_hot = np_utils.to_categorical(y_test, len(log.values[log.activity]) + 1)
+    predictions = model.predict(X_test)
 
-    score = model.evaluate(X_test, test_Y_one_hot, verbose=1)
+    predict_vals = np.argmax(predictions, axis=1)
 
-    print('\nAccuracy on test data: ', score[1])
+    predict_probs = predictions[np.arange(predictions.shape[0]), predict_vals]
+    result = zip(y_test, predict_vals, predict_probs)
 
-    return score[1]
+    return result
 
 if __name__ == "__main__":
     data = "../../Data/BPIC15_1_sorted_new.csv"

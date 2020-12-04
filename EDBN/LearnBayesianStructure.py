@@ -89,23 +89,34 @@ class Structure_learner():
                     total_score += count * math.log(count / num_rows)
             qi = 1
         else:
-            # Create dataframe with only parents of node and convert to string
-            str_data = self.data.values[:, [self.data.columns.get_loc(p) for p in parents]].astype('str')
-            # Iterate over all rows and add row number to dict-entry of parent-values
-            for row in range(num_rows):
-                value = '-'.join(str_data[row, 0:len(parents)])
-                if value not in parent_configs:
-                    parent_configs[value] = []
-                parent_configs[value].append(row)
-
-            for parent_config in parent_configs:
-                # Get the occurring values of this node for the current parent configuration
-                filtered_data = self.data.values[parent_configs[parent_config], self.data.columns.get_loc(node)].astype(int)
-                # Get the frequencies of the occurring values
-                freqs = np.bincount(filtered_data)
+            grouped_data = self.data.groupby(parents)
+            for group in grouped_data:
+                parent_val = group[0]
+                parent_configs[parent_val] = list(group[1].index)
+                values = group[1][node]
+                freqs = np.bincount(values)
                 for freq in freqs:
                     if freq > 0:
-                        total_score += freq * math.log(freq / len(parent_configs[parent_config]))
+                        total_score += freq * math.log(freq / len(group[1]))
+
+
+            # # Create dataframe with only parents of node and convert to string
+            # str_data = self.data.values[:, [self.data.columns.get_loc(p) for p in parents]].astype('str')
+            # # Iterate over all rows and add row number to dict-entry of parent-values
+            # for row in range(num_rows):
+            #     value = '-'.join(str_data[row, 0:len(parents)])
+            #     if value not in parent_configs:
+            #         parent_configs[value] = []
+            #     parent_configs[value].append(row)
+
+            # for parent_config in parent_configs:
+            #     # Get the occurring values of this node for the current parent configuration
+            #     filtered_data = self.data.values[parent_configs[parent_config], self.data.columns.get_loc(node)].astype(int)
+            #     # Get the frequencies of the occurring values
+            #     freqs = np.bincount(filtered_data)
+            #     for freq in freqs:
+            #         if freq > 0:
+            #             total_score += freq * math.log(freq / len(parent_configs[parent_config]))
             qi = self.data.drop_duplicates(list(parents)).shape[0]
         return total_score, qi
 

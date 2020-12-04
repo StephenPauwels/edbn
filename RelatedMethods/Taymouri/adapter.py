@@ -93,7 +93,10 @@ def create_input(train_log, test_log, batch_size):
     return train_obj, test_obj
 
 
-def train(train_data, epoch=1):
+def train(train_log, epoch=1, batch_size=5):
+    train_data = adapted_Input()
+    train_data.run(train_log, batch_size, True)
+
     # Initializing a generator
     selected_columns = train_data.unique_event
     print("Selected columns:", selected_columns)
@@ -111,7 +114,10 @@ def train(train_data, epoch=1):
 
     return rnnG
 
-def test(test_data, model):
+def test(test_log, model, batch_size=5):
+    test_data = adapted_Input()
+    test_data.run(test_log, batch_size, False)
+
     rnng_validation = torch.load(test_data.path + "/rnnG(validation).m")
     print("EVAL model")
     acc = ep.model_eval_test(modelG=model, mode='test', obj=test_data)

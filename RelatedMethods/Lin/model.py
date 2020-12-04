@@ -151,12 +151,12 @@ def create_model(log, output_folder, epochs, early_stop):
 
 def predict_next(log, model):
     prefixes = create_pref_next(log)
-    prefixes = _predict_next(model, prefixes)
+    return _predict_next(model, prefixes)
 
-    accuracy = (np.sum([x['ac_true'] for x in prefixes]) / len(prefixes))
-
-    print("Accuracy:", accuracy)
-    return accuracy
+    # accuracy = (np.sum([x['ac_true'] for x in prefixes]) / len(prefixes))
+    #
+    # print("Accuracy:", accuracy)
+    # return accuracy
 
 
 def predict_suffix(model_file, df_test, end):
@@ -292,6 +292,7 @@ def _predict_next(model, prefixes):
         prefixes (list): list of prefixes.
     """
     # Generation of predictions
+    results = []
     for prefix in prefixes:
 
         # Activities and roles input shape(1,5)
@@ -302,13 +303,9 @@ def _predict_next(model, prefixes):
 
         pos = np.argmax(predictions[0][0])
 
-        # Activities accuracy evaluation
-        if pos == prefix['ac_next']:
-            prefix['ac_true'] = 1
-        else:
-            prefix['ac_true'] = 0
+        results.append((prefix["ac_next"], pos, predictions[0][0][pos]))
 
-    return prefixes
+    return results
 
 
 def _predict_suffix(model, prefixes, max_trace_size, end):

@@ -206,6 +206,7 @@ def model_eval_test(modelG, mode, obj):
     predicted = []
     accuracy_record = []
     mistakes = {}
+    results = []
 
     accuracy_record_2most_probable = []
 
@@ -259,6 +260,8 @@ def model_eval_test(modelG, mode, obj):
             accuracy_record_2most_probable.append(correct_prediction_2most_probable)
             predicted.append(y_pred)
 
+            results.append((y_truth[i], y_pred_last_event[i], 0))
+
     rnnG.train()
 
     if (mode == 'test'):
@@ -286,7 +289,10 @@ def model_eval_test(modelG, mode, obj):
     print("total number of predictions:", len(accuracy_record), np.sum(accuracy_record))
     print("The accuracy of the model with the most probable event:", np.mean(accuracy_record))
     print("The accuracy of the model with the 2 most probable events:", np.mean(accuracy_record_2most_probable))
-    return np.mean(accuracy_record)
+    if mode == "test":
+        return results
+    else:
+        return np.mean(accuracy_record)
 ####################################################################################################
 
 def train(rnnG, rnnD, optimizerD, optimizerG, obj, epoch):

@@ -137,7 +137,7 @@ def predict_next_event(edbn_model, log):
 
     result = [r for r in result if r != -1]
 
-    return np.average(result)
+    return result
 
 
 def predict_next_event_row(row, model, activity):
@@ -156,10 +156,12 @@ def predict_next_event_row(row, model, activity):
 
     predicted_val = max(probs, key=lambda l: probs[l])
 
-    if getattr(row[1], activity) == predicted_val:
-        return 1
-    else:
-        return 0
+    return (getattr(row[1], activity), predicted_val, probs[predicted_val])
+
+    # if getattr(row[1], activity) == predicted_val:
+    #     return 1
+    # else:
+    #     return 0
 
 def predict_next_event_multi_row(row, models, activity, bypass_unknown=False):
     """"

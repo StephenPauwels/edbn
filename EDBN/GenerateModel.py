@@ -77,8 +77,8 @@ def generate_model(data, remove_attrs = None):
     print("GENERATE: calculate mappings")
 
     # Calculate Mappings
-    #mappings = uc.calculate_mappings(data, attributes, 0.99)
-    mappings = []
+    mappings = uc.calculate_mappings(data, attributes, 0.99)
+    # mappings = []
 
     # Look for cycles in mappings
     tmp_mappings = mappings[:]

@@ -37,9 +37,9 @@ def test(log, model):
 
 
 if __name__ == "__main__":
-    # data = "../../Data/Helpdesk.csv"
+    data = "../../Data/Helpdesk.csv"
     # data = "../../Data/BPIC15_3_sorted_new.csv"
-    data = "../../Data/BPIC12W_completed.csv"
+    # data = "../../Data/BPIC12W.csv"
     case_attr = "case"
     act_attr = "event"
 
@@ -48,9 +48,9 @@ if __name__ == "__main__":
 
     logfile.convert2int()
 
-    logfile.filter_case_length(5)
+    # logfile.filter_case_length(5)
     logfile.create_k_context()
-    train_log, test_log = logfile.splitTrainTest(70, case=False, method="test-train")
+    train_log, test_log = logfile.splitTrainTest(70, case=True, method="train-test")
 
     model = train(train_log, epochs=200, early_stop=10)
     # model = load_model("tmp\model_rd_100 Nadam_014-5.00.h5")

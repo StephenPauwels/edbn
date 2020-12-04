@@ -1,4 +1,4 @@
-# Extended Dynamic Bayesian Network: Probabilities in Business Processes</h1>
+# Bayesian Networks in Business Processes</h1>
 
 This repository contains all implementation files and experiments conducted for the Extended Dynamic Bayesian Networks introduced in
 [1].
@@ -10,10 +10,11 @@ All experiments in the papers can be reproduced using the files in the Anomalies
 ## Project Structure
 - [Anomalies](https://github.com/StephenPauwels/edbn/tree/master/Anomalies): Contains all files used for the experiments found in [1] and [3]
 - [Concept Drift](https://github.com/StephenPauwels/edbn/tree/master/Concept%20Drift): Contains the files used for the BPI Challenge 2018 [2]
-- [Predictions](https://github.com/StephenPauwels/edbn/tree/master/Predictions): Contains all files used for the Prediction experiments for BPM 2020 [4] and ICPM 2020 [5]
+- [Predictions](https://github.com/StephenPauwels/edbn/tree/master/Predictions): Contains all files used for the Prediction experiments for BPM 2020 [4] and ICPM [5]
 - [EDBN](https://github.com/StephenPauwels/edbn/tree/master/eDBN): Contains our implementation of our Extended Dynamic Bayesian Network model
 - [Utils](https://github.com/StephenPauwels/edbn/tree/master/Utils): Some extra implementations regarding datastructures, preprocessing and data generation
 - [Data](https://github.com/StephenPauwels/edbn/tree/master/Data): Data used for the experiments
+- [Prediction Testbed](https://github.com/StephenPauwels/edbn/tree/master/Prediction%20Testbed): Testbed used for [5]  
 - [RelatedMethods](https://github.com/StephenPauwels/edbn/tree/master/RelatedMethods): Implementations of the other methods used to run the comparison experiments with
     - [Bohmer](https://github.com/StephenPauwels/edbn/tree/master/RelatedMethods/Bohmer): Contains our own implementation of the Likelihood Graphs introduced by Bohmer et al in [6]
     - [Camargo](https://github.com/StephenPauwels/edbn/tree/master/RelatedMethods/Camargo): Contains the slightly adapted implementation used in [8]

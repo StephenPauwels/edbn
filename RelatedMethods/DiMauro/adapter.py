@@ -64,7 +64,6 @@ def load_data(log):
         case_df = case[1]
         for row in case_df.iterrows():
             row = row[1]
-            print(row)
             t_raw = row[log.time + "_Prev%i" % (log.k-1)]
             if t_raw != 0:
                 try:
@@ -104,10 +103,6 @@ def load_data(log):
 
     X_t = np.log(X_t)
 
-    print("X:", X)
-    print("X_t:", X_t)
-    print("y:", y)
-
     return X, X_t, y
 
 
@@ -119,13 +114,14 @@ def test(log, model):
     preds_a = model.predict([X, X_t])
 
     # y_a_test = np.argmax(y_test, axis=1)
-    preds_a = np.argmax(preds_a, axis=1)
+    # preds_a = np.argmax(preds_a, axis=1)
 
-    print(preds_a)
-    print(y)
+    # accuracy = accuracy_score(y, preds_a)
+    predict_vals = np.argmax(preds_a, axis=1)
+    predict_probs = preds_a[np.arange(preds_a.shape[0]), predict_vals]
+    result = zip(y, predict_vals, predict_probs)
 
-    accuracy = accuracy_score(y, preds_a)
-    return accuracy
+    return result
 
 
 if __name__ == "__main__":

@@ -14,7 +14,7 @@ def learn_model(log, attributes, epochs, early_stop):
     input_layers = []
     embedding_layers = []
     for attr in attributes:
-        if attr not in log.ignoreHistoryAttributes:
+        if attr not in log.ignoreHistoryAttributes and attr != log.trace:
             for k in range(log.k):
                 i = Input(shape=(1,), name=attr.replace(" ", "_").replace("(", "").replace(")","").replace(":","_") + "_Prev%i" % k)
                 input_layers.append(i)
@@ -47,7 +47,7 @@ def learn_model(log, attributes, epochs, early_stop):
                                        save_weights_only=False,
                                        mode='auto')
 
-    x, y, vals = transform_data(log, attributes)
+    x, y, vals = transform_data(log, [a for a in attributes if a != log.trace])
 
     model.fit(x=x, y=y,
               validation_split=0.2,
@@ -93,7 +93,7 @@ def train(log, epochs, early_stop):
 
 
 def test(log, model):
-    inputs, expected, _ = transform_data(log, log.attributes())
+    inputs, expected, _ = transform_data(log, [a for a in log.attributes() if a != log.trace])
     predictions = model.predict(inputs)
     predict_vals = np.argmax(predictions, axis=1)
     expected_vals = np.argmax(expected, axis=1)
@@ -126,24 +126,25 @@ def run_experiment(data, prefix_size, add_end_event, split_method, split_cases, 
         fout.write("====================================\n\n")
 
 if __name__ == "__main__":
-    data = []
-    # data.append("../Data/Helpdesk.csv")
-    # data.append("../Data/BPIC15_1_sorted_new.csv")
-    # data.append("../Data/BPIC15_3_sorted_new.csv")
-    data.append("../Data/BPIC15_5_sorted_new.csv")
-    data.append("../Data/BPIC12W.csv")
-    data.append("../Data/BPIC12.csv")
-
-    prefix_size = [1,2,4,5,10,15,20,25,30,35]
-    add_end_event = [True, False]
-    split_method = ["train-test", "test-train", "random"]
-    split_cases = [True, False]
-    train_percentage = [70, 80]
-
-    for d in data:
-        for ps in prefix_size:
-            for aee in add_end_event:
-                for sm in split_method:
-                    for sc in split_cases:
-                        for tp in train_percentage:
-                            run_experiment(d, ps, aee, sm, sc, tp)
+    run_experiment("../Data/BPIC15_1_sorted_new.csv", 10, False, "train-test", True, 70)
+    # data = []
+    # # data.append("../Data/Helpdesk.csv")
+    # # data.append("../Data/BPIC15_1_sorted_new.csv")
+    # # data.append("../Data/BPIC15_3_sorted_new.csv")
+    # data.append("../Data/BPIC15_5_sorted_new.csv")
+    # data.append("../Data/BPIC12W.csv")
+    # data.append("../Data/BPIC12.csv")
+    #
+    # prefix_size = [1,2,4,5,10,15,20,25,30,35]
+    # add_end_event = [True, False]
+    # split_method = ["train-test", "test-train", "random"]
+    # split_cases = [True, False]
+    # train_percentage = [70, 80]
+    #
+    # for d in data:
+    #     for ps in prefix_size:
+    #         for aee in add_end_event:
+    #             for sm in split_method:
+    #                 for sc in split_cases:
+    #                     for tp in train_percentage:
+    #                         run_experiment(d, ps, aee, sm, sc, tp)

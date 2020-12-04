@@ -125,17 +125,6 @@ def test(log, model):
             X[0, t+leftpad, len(chars)] = t+1
         return X
 
-    def getSymbol(predictions):
-        maxPrediction = 0
-        symbol = ''
-        i = 0
-        for prediction in predictions:
-            if(prediction>=maxPrediction):
-                maxPrediction = prediction
-                symbol = target_indices_char[i]
-            i += 1
-        return symbol
-
     results = {}
     all_results = []
     for prefix_size in range(1, maxlen):
@@ -151,11 +140,12 @@ def test(log, model):
 
             enc = encode(cropped_line)
             y = model.predict(enc, verbose=0)
-            prediction = getSymbol(y[0])
-            results[prefix_size].append(prediction == ground_truth)
-            all_results.append(prediction == ground_truth)
-    print("Accuracy:", sum(all_results) / len(all_results))
-    return sum(all_results) / len(all_results)
+
+            predicted_val = np.argmax(y[0])
+            predicted_prob = y[0][predicted_val]
+            all_results.append((ground_truth, target_indices_char[predicted_val], predicted_prob))
+
+    return all_results
 
 
 if __name__ == "__main__":

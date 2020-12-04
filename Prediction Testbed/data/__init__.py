@@ -1,5 +1,19 @@
 from Utils.LogFile import LogFile
 from data.data import Data
 
-HELPDESK = Data("Helpdesk", LogFile("../Data/Helpdesk.csv", ",", 0, None, "completeTime", "case", activity_attr="event", convert=False))
-HELPDESK.logfile.keep_attributes(["event", "case", "completeTime"])
+all_data = {"Helpdesk": "../Data/Helpdesk.csv",
+            "BPIC12": "../Data/BPIC12.csv",
+            "BPIC12W": "../Data/BPIC12W.csv",
+            "BPIC15_1": "../Data/BPIC15_1_sorted_new.csv",
+            "BPIC15_2": "../Data/BPIC15_2_sorted_new.csv",
+            "BPIC15_3": "../Data/BPIC15_3_sorted_new.csv",
+            "BPIC15_4": "../Data/BPIC15_4_sorted_new.csv",
+            "BPIC15_5": "../Data/BPIC15_5_sorted_new.csv"}
+
+
+def get_data(data_name, sep=",", time="completeTime", case="case", activity="event", resource="role"):
+    if data_name in all_data:
+        d = Data(data_name, LogFile(all_data[data_name], sep, 0, None, time, case, activity_attr=activity, convert=False))
+        d.logfile.keep_attributes([activity, resource, time])
+        return d
+    return None

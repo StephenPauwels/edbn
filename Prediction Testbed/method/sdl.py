@@ -13,7 +13,7 @@ def learn_model(log, attributes, epochs, early_stop):
     input_layers = []
     embedding_layers = []
     for attr in attributes:
-        if attr not in log.ignoreHistoryAttributes and attr != log.time:
+        if attr not in log.ignoreHistoryAttributes and attr != log.time and attr != log.trace:
             for k in range(log.k):
                 i = Input(shape=(1,), name=attr.replace(" ", "_").replace("(", "").replace(")","").replace(":","_") + "_Prev%i" % k)
                 input_layers.append(i)
@@ -21,7 +21,6 @@ def learn_model(log, attributes, epochs, early_stop):
                 embedding_layers.append(e)
     concat = Concatenate()(embedding_layers)
 
-    # dense1 = Dense(32)(concat)
     drop = Dropout(0.2)(concat)
     dense2 = Dense(num_activities)(drop)
 
@@ -46,7 +45,7 @@ def learn_model(log, attributes, epochs, early_stop):
                                        save_weights_only=False,
                                        mode='auto')
 
-    x, y, vals = transform_data(log, [a for a in attributes if a != log.time])
+    x, y, vals = transform_data(log, [a for a in attributes if a != log.time and a != log.trace])
 
     model.fit(x=x, y=y,
               validation_split=0.2,
@@ -92,7 +91,7 @@ def train(log, epochs, early_stop):
 
 
 def test(log, model):
-    inputs, expected, _ = transform_data(log, [a for a in log.attributes() if a != log.time])
+    inputs, expected, _ = transform_data(log, [a for a in log.attributes() if a != log.time and a != log.trace])
     predictions = model.predict(inputs)
     predict_vals = np.argmax(predictions, axis=1)
     predict_probs = predictions[np.arange(predictions.shape[0]), predict_vals]
