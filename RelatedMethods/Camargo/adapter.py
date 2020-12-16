@@ -23,7 +23,7 @@ def train(log, model_type="shared_cat", epochs=200, early_stop=42):
     event_emb = em.reformat_matrix(ac_weights)
     role_emb = em.reformat_matrix(rl_weights)
 
-    model_type = "specialized"
+    # model_type = "specialized"
     # model_type = "concatenated"
 
     args = {"file_name": "data", "model_type": model_type, "norm_method": "lognorm", 'lstm_act': None,

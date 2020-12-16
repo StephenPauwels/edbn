@@ -147,6 +147,7 @@ def predict(model, prefixes):
         predictions = model.predict([x_ac_ngram, x_rl_ngram])
 
         pos = np.argmax(predictions[0][0])
+        random.choice(predictions[0][0], )
 
         results.append((prefix["ac_next"], pos, predictions[0][0][pos]))
 
