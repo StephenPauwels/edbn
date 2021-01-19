@@ -6,6 +6,7 @@ class Data:
 
         self.train = None
         self.test = None
+        self.test_orig = None
 
     def __str__(self):
         return "Data: %s" % self.name
@@ -26,4 +27,14 @@ class Data:
         self.logfile.convert2int()
         self.logfile.create_k_context()
 
-        self.train, self.test = self.logfile.splitTrainTest(setting.train_percentage, setting.split_cases, setting.split_data)
+        self.train, self.test_orig = self.logfile.splitTrainTest(setting.train_percentage, setting.split_cases, setting.split_data)
+
+    def create_batch(self, split="normal", timeformat=None):
+        if split == "normal":
+            self.test = {"full": {"data": self.test_orig}}
+        elif split == "day":
+            self.test = self.test_orig.split_days(timeformat)
+        elif split == "week":
+            self.test = self.test_orig.split_weeks(timeformat)
+        elif split == "month":
+            self.test = self.test_orig.split_months(timeformat)

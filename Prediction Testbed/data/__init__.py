@@ -8,7 +8,8 @@ all_data = {"Helpdesk": "../Data/Helpdesk.csv",
             "BPIC15_2": "../Data/BPIC15_2_sorted_new.csv",
             "BPIC15_3": "../Data/BPIC15_3_sorted_new.csv",
             "BPIC15_4": "../Data/BPIC15_4_sorted_new.csv",
-            "BPIC15_5": "../Data/BPIC15_5_sorted_new.csv"}
+            "BPIC15_5": "../Data/BPIC15_5_sorted_new.csv",
+            "BPIC18": "../Data/bpic2018.csv"}
 
 
 def get_data(data_name, sep=",", time="completeTime", case="case", activity="event", resource="role"):
@@ -17,3 +18,11 @@ def get_data(data_name, sep=",", time="completeTime", case="case", activity="eve
         d.logfile.keep_attributes([activity, resource, time])
         return d
     return None
+
+
+def get_all_data():
+    datasets = []
+    for d in all_data:
+        if d != "BPIC18":
+            datasets.append(get_data(d))
+    return datasets

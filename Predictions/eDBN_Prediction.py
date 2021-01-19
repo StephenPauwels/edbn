@@ -76,7 +76,10 @@ def prob_unseen_combination(variable, val_tuple, parents):
         # for combination in product:
             variable_indexes = attr.value_counts[combination[i]]
 
-            parent_prob = cond_prob(variable_indexes, fixed_indexes)
+            if len(fixed_indexes) == 0:
+                parent_prob = 0
+            else:
+                parent_prob = cond_prob(variable_indexes, fixed_indexes)
 
             for value, prob in variable.conditional_table.get_values(combination).items():
                 if value not in predictions:
@@ -206,16 +209,13 @@ def predict_next_event_update(edbn_model, log):
         activity_var = edbn_model.variables[log.activity]
         probs, unknown = get_probabilities(activity_var, tuple_val, parents)
 
-        edbn_model.update(row[1])
-
         predicted_val = max(probs, key=lambda l: probs[l])
 
-        if getattr(row[1], log.activity) == predicted_val:
-            result.append(1)
-        else:
-            result.append(0)
+        result.append((getattr(row[1], log.activity), predicted_val, probs[predicted_val]))
 
-    return np.average(result)
+    edbn_model.update_log(log)
+
+    return result
 
 def predict_next_event_multi(edbn_models, log, bypass_unknown=False):
     """"

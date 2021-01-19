@@ -378,6 +378,25 @@ class LogFile:
     def split_days(self, date_format, num_days=1):
         from datetime import datetime
 
+        self.contextdata["days"] = self.contextdata[self.time].map(lambda l: str(datetime.strptime(l, date_format).isocalendar()[:3]))
+        days = {}
+        for group_name, group in self.contextdata.groupby("days"):
+            new_logfile = LogFile(None, None, None, None, self.time, self.trace, self.activity, self.values, False, False)
+            new_logfile.filename = self.filename
+            new_logfile.values = self.values
+            new_logfile.categoricalAttributes = self.categoricalAttributes
+            new_logfile.numericalAttributes = self.numericalAttributes
+            new_logfile.k = self.k
+            new_logfile.contextdata = group.drop("days", axis=1)
+            new_logfile.data = new_logfile.contextdata[self.attributes()]
+
+            days[group_name] = {}
+            days[group_name]["data"] = new_logfile
+        return days
+
+    def split_weeks(self, date_format, num_days=1):
+        from datetime import datetime
+
         self.contextdata["year_week"] = self.contextdata[self.time].map(lambda l: str(datetime.strptime(l, date_format).isocalendar()[:2]))
         weeks = {}
         for group_name, group in self.contextdata.groupby("year_week"):
@@ -393,6 +412,25 @@ class LogFile:
             weeks[group_name] = {}
             weeks[group_name]["data"] = new_logfile
         return weeks
+
+    def split_months(self, date_format, num_days=1):
+        from datetime import datetime
+
+        self.contextdata["month"] = self.contextdata[self.time].map(lambda l: str(datetime.strptime(l, date_format).strftime("%Y/%m")))
+        months = {}
+        for group_name, group in self.contextdata.groupby("month"):
+            new_logfile = LogFile(None, None, None, None, self.time, self.trace, self.activity, self.values, False, False)
+            new_logfile.filename = self.filename
+            new_logfile.values = self.values
+            new_logfile.categoricalAttributes = self.categoricalAttributes
+            new_logfile.numericalAttributes = self.numericalAttributes
+            new_logfile.k = self.k
+            new_logfile.contextdata = group.drop("month", axis=1)
+            new_logfile.data = new_logfile.contextdata[self.attributes()]
+
+            months[group_name] = {}
+            months[group_name]["data"] = new_logfile
+        return months
 
     def split_date(self, date_format, year_week, from_week=None):
         from datetime import datetime

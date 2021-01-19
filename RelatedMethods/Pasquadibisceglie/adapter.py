@@ -217,6 +217,66 @@ def test(log, model):
 
     return result
 
+
+def test_and_update(logs, model):
+    from keras.utils import np_utils
+
+    results = []
+    i = 0
+    for t in logs:
+        print(i, "/", len(logs))
+        i += 1
+        log = logs[t]["data"]
+        results.extend(test(log, model))
+
+        X_train = get_image_from_log(log)
+        y_train = get_label_from_log(log)
+
+        X_train = np.asarray(X_train)
+        y_train = np.asarray(y_train)
+
+        train_Y_one_hot = np_utils.to_categorical(y_train, len(log.values[log.activity]) + 1)
+        model.fit(X_train, {'act_output': train_Y_one_hot}, validation_split=0.2, verbose=1
+                  , batch_size=128, epochs=1)
+
+    return results
+
+
+def test_and_update_retain(test_logs, model, train_log):
+    from keras.utils import np_utils
+
+    results = []
+    i = 0
+    X_train = get_image_from_log(log)
+    y_train = get_label_from_log(log)
+
+    X_train = np.asarray(X_train)
+    y_train = np.asarray(y_train)
+
+    y_train = np_utils.to_categorical(y_train, len(log.values[log.activity]) + 1)
+
+    for t in test_logs:
+        print(i, "/", len(test_logs))
+        i += 1
+        test_log = test_logs[t]["data"]
+        results.extend(test(test_log, model))
+
+        X = get_image_from_log(test_log)
+        y = get_label_from_log(test_log)
+
+        X = np.asarray(X)
+        y = np.asarray(y)
+
+        Y_one_hot = np_utils.to_categorical(y, len(test_log.values[test_log.activity]) + 1)
+
+        X_train = np.concatenate((X_train, X))
+        y_train = np.concatenate((y_train, Y_one_hot))
+        model.fit(X_train, y_train, epochs=5, verbose=2, validation_split=0.2,
+                  batch_size=train_log.k)
+
+    return results
+
+
 if __name__ == "__main__":
     data = "../../Data/BPIC15_1_sorted_new.csv"
     case_attr = "case"

@@ -99,3 +99,85 @@ def test(log, model):
     result = zip(expected_vals, predict_vals, predict_probs)
     return result
 
+
+def test_and_update(logs, model):
+    results = []
+    i = 0
+    for t in logs:
+        print(i, "/", len(logs))
+        i += 1
+        log = logs[t]["data"]
+        results.extend(test(log, model))
+
+        inputs, expected, _ = transform_data(log, [a for a in log.attributes() if a != log.time and a != log.trace])
+        model.fit(inputs, y=expected,
+                  validation_split=0,
+                  verbose=0,
+                  batch_size=32,
+                  epochs=1)
+    return results
+
+
+def test_and_update_retain(test_logs, model, train_log):
+    train_x, train_y, _ = transform_data(train_log, [a for a in train_log.attributes() if a != train_log.time and a != train_log.trace])
+
+    results = []
+    i = 0
+    for t in test_logs:
+        print(i, "/", len(test_logs))
+        i += 1
+        test_log = test_logs[t]["data"]
+        results.extend(test(test_log, model))
+        test_x, test_y, _ = transform_data(test_log, [a for a in test_log.attributes() if a != test_log.time and a != test_log.trace])
+        for j in range(len(train_x)):
+            train_x[j] = np.hstack([train_x[j], test_x[j]])
+        train_y = np.concatenate((train_y, test_y))
+        model.fit(train_x, y=train_y,
+                  validation_split=0.2,
+                  verbose=0,
+                  batch_size=32,
+                  epochs=1)
+    return results
+
+
+def test_and_update_full(test_log, model, train_logs):
+    results = test(test_log, model)
+
+    train = train_logs[0]
+    train_x, train_y, _ = transform_data(train, [a for a in train.attributes() if a != train.time and a != train.trace])
+    for t_idx in range(1, len(train_logs)):
+        t = train_logs[t_idx]
+        test_x, test_y, _ = transform_data(t, [a for a in t.attributes() if a != t.time and a != t.trace])
+        for j in range(len(train_x)):
+            train_x[j] = np.hstack([train_x[j], test_x[j]])
+        train_y = np.concatenate((train_y, test_y))
+    model.fit(train_x, y=train_y,
+              validation_split=0.2,
+              verbose=1,
+              batch_size=32,
+              epochs=1)
+    return results
+
+
+    # results = []
+    # update_range = 1000
+    # for i in range(0, len(test_x[0]), update_range):
+    #     single_input = [el[i:i+update_range] for el in test_x]
+    #     predictions = model.predict(single_input)
+    #     predict_vals = np.argmax(predictions, axis=1)
+    #     predict_probs = predictions[np.arange(predictions.shape[0]), predict_vals]
+    #     if update_range == 1:
+    #         expected_vals = np.argmax(test_y[i])
+    #         results.append((expected_vals, predict_vals[0], predict_probs[0]))
+    #     else:
+    #         expected_vals = np.argmax(test_y[i:i+update_range], axis=1)
+    #         results.extend(zip(expected_vals, predict_vals, predict_probs))
+    #
+
+    #
+    #     model.fit(x=train_x, y=train_y,
+    #               validation_split=0.2,
+    #               verbose=0,
+    #               batch_size=32,
+    #               epochs=10)
+    # return results

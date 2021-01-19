@@ -21,7 +21,24 @@ def convert_log(log):
     return lines
 
 
-def train(log, epochs=500, early_stop=42):
+def transform_log(log):
+    activities = log.values[log.activity]
+    X = np.zeros((len(log.contextdata), log.k, len(activities) + 1), dtype=np.float32)
+    y_a = np.zeros((len(log.contextdata), len(activities) + 1), dtype=np.float32)
+    j = 0
+    for row in log.contextdata.iterrows():
+        act = getattr(row[1], log.activity)
+        k = 0
+        for i in range(log.k -1, -1, -1):
+            X[j, log.k - i - 1, getattr(row[1], "%s_Prev%i" % (log.activity, i))] = 1
+            X[j, log.k - i - 1, len(activities)] = k
+            k += 1
+        y_a[j, act] = 1
+        j += 1
+    return X, y_a
+
+
+def train(log, epochs=10, early_stop=42):
     from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
     from keras.layers import Input
     from keras.layers.core import Dense
@@ -29,6 +46,9 @@ def train(log, epochs=500, early_stop=42):
     from keras.layers.recurrent import LSTM
     from keras.models import Model
     from keras.optimizers import Nadam
+    """
+    transform_log(log)
+    input("Waiting")
     
     # lines = convert_log(log)
     lines = convert_log(log)
@@ -72,17 +92,19 @@ def train(log, epochs=500, early_stop=42):
             else:
                 y_a[i, target_char_indices[c]] = 0
         #np.set_printoptions(threshold=np.nan)
+    """
+    X, y_a = transform_log(log)
 
     # build the model:
     print('Build model...')
-    main_input = Input(shape=(maxlen, num_features), name='main_input')
+    main_input = Input(shape=(log.k, len(log.values[log.activity])+1), name='main_input')
     # train a 2-layer LSTM with one shared layer
     l1 = LSTM(100, implementation=2, kernel_initializer='glorot_uniform', return_sequences=True, dropout=0.2)(main_input) # the shared layer
     b1 = BatchNormalization()(l1)
     l2_1 = LSTM(100, implementation=2, kernel_initializer='glorot_uniform', return_sequences=False, dropout=0.2)(b1) # the layer specialized in activity prediction
     b2_1 = BatchNormalization()(l2_1)
 
-    act_output = Dense(len(target_chars), activation='softmax', kernel_initializer='glorot_uniform', name='act_output')(b2_1)
+    act_output = Dense(len(log.values[log.activity]) + 1, activation='softmax', kernel_initializer='glorot_uniform', name='act_output')(b2_1)
 
     model = Model(inputs=[main_input], outputs=[act_output])
 
@@ -93,60 +115,104 @@ def train(log, epochs=500, early_stop=42):
     model_checkpoint = ModelCheckpoint(os.path.join("model", 'model_{epoch:03d}-{val_loss:.2f}.h5'), monitor='val_loss', verbose=0, save_best_only=True, save_weights_only=False, mode='auto')
     lr_reducer = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=10, verbose=0, mode='auto', min_delta=0.0001, cooldown=0, min_lr=0)
 
-    model.fit(X, {'act_output':y_a}, validation_split=0.2, verbose=2, callbacks=[early_stopping, lr_reducer], batch_size=maxlen, epochs=epochs)
+    model.fit(X, {'act_output': y_a}, validation_split=0.2, verbose=2, callbacks=[early_stopping, lr_reducer], batch_size=log.k, epochs=epochs)
 
     return model
 
 
 def test(log, model):
-    lines = convert_log(log)
+    X, y = transform_log(log)
+    predictions = model.predict(X)
+    predict_vals = np.argmax(predictions, axis=1)
+    predict_probs = predictions[np.arange(predictions.shape[0]), predict_vals]
+    expected_vals = np.argmax(y, axis=1)
+    result = zip(expected_vals, predict_vals, predict_probs)
+    return result
 
-    maxlen = max(max(map(lambda x: len(x), lines)), model.input_shape[1])
+    # lines = convert_log(log)
+    #
+    # maxlen = max(max(map(lambda x: len(x), lines)), model.input_shape[1])
+    #
+    # chars = [chr(i + ascii_offset) for i in range(len(log.values["event"]) + 1)]
+    # chars.sort()
+    # target_chars = copy.copy(chars)
+    # print('total chars: {}, target chars: {}'.format(len(chars), len(target_chars)))
+    # char_indices = dict((c, i) for i, c in enumerate(chars))
+    # indices_char = dict((i, c) for i, c in enumerate(chars))
+    # target_char_indices = dict((c, i) for i, c in enumerate(target_chars))
+    # target_indices_char = dict((i, c) for i, c in enumerate(target_chars))
+    # print(indices_char)
+    #
+    # # define helper functions
+    # def encode(sentence, maxlen=maxlen):
+    #     num_features = len(chars)+1
+    #     X = np.zeros((1, maxlen, num_features), dtype=np.float32)
+    #     leftpad = maxlen-len(sentence)
+    #     for t, char in enumerate(sentence):
+    #         for c in chars:
+    #             if c == char:
+    #                 X[0, t+leftpad, char_indices[c]] = 1
+    #         X[0, t+leftpad, len(chars)] = t+1
+    #     return X
+    #
+    # results = {}
+    # all_results = []
+    # for prefix_size in range(1, maxlen):
+    #     print(prefix_size)
+    #     results[prefix_size] = []
+    #     for line in lines:
+    #         if prefix_size >= len(line):
+    #             continue
+    #         cropped_line = ''.join(line[:prefix_size])
+    #         ground_truth = ''.join(line[prefix_size:prefix_size + 1])
+    #         if ground_truth == "¡":
+    #             continue
+    #
+    #         enc = encode(cropped_line)
+    #         y = model.predict(enc, verbose=0)
+    #
+    #         predicted_val = np.argmax(y[0])
+    #         predicted_prob = y[0][predicted_val]
+    #         all_results.append((ground_truth, target_indices_char[predicted_val], predicted_prob))
+    #
+    # return all_results
 
-    chars = [chr(i + ascii_offset) for i in range(len(log.values["event"]) + 1)]
-    chars.sort()
-    target_chars = copy.copy(chars)
-    print('total chars: {}, target chars: {}'.format(len(chars), len(target_chars)))
-    char_indices = dict((c, i) for i, c in enumerate(chars))
-    indices_char = dict((i, c) for i, c in enumerate(chars))
-    target_char_indices = dict((c, i) for i, c in enumerate(target_chars))
-    target_indices_char = dict((i, c) for i, c in enumerate(target_chars))
-    print(indices_char)
 
-    # define helper functions
-    def encode(sentence, maxlen=maxlen):
-        num_features = len(chars)+1
-        X = np.zeros((1, maxlen, num_features), dtype=np.float32)
-        leftpad = maxlen-len(sentence)
-        for t, char in enumerate(sentence):
-            for c in chars:
-                if c == char:
-                    X[0, t+leftpad, char_indices[c]] = 1
-            X[0, t+leftpad, len(chars)] = t+1
-        return X
+def test_and_update(logs, model):
+    results = []
+    i = 0
+    for t in logs:
+        print(i, "/", len(logs))
+        i += 1
+        log = logs[t]["data"]
+        results.extend(test(log, model))
 
-    results = {}
-    all_results = []
-    for prefix_size in range(1, maxlen):
-        print(prefix_size)
-        results[prefix_size] = []
-        for line in lines:
-            if prefix_size >= len(line):
-                continue
-            cropped_line = ''.join(line[:prefix_size])
-            ground_truth = ''.join(line[prefix_size:prefix_size + 1])
-            if ground_truth == "¡":
-                continue
+        X, y = transform_log(log)
+        model.fit(X, {'act_output': y}, validation_split=0.2, verbose=0,
+                  batch_size=log.k, epochs=1)
 
-            enc = encode(cropped_line)
-            y = model.predict(enc, verbose=0)
+    return results
 
-            predicted_val = np.argmax(y[0])
-            predicted_prob = y[0][predicted_val]
-            all_results.append((ground_truth, target_indices_char[predicted_val], predicted_prob))
 
-    return all_results
+def test_and_update_retain(test_logs, model, train_log):
+    train_x, train_y = transform_log(train_log)
 
+    results = []
+    i = 0
+    for t in test_logs:
+        print(i, "/", len(test_logs))
+        i += 1
+        test_log = test_logs[t]["data"]
+        results.extend(test(test_log, model))
+        test_x, test_y = transform_log(test_log)
+        train_x = np.concatenate((train_x, test_x))
+        train_y = np.concatenate((train_y, test_y))
+        model.fit(train_x, {'act_output': train_y},
+                  validation_split=0.2,
+                  verbose=0,
+                  batch_size=train_log.k,
+                  epochs=1)
+    return results
 
 if __name__ == "__main__":
     data = "../../Data/BPIC12W.csv"

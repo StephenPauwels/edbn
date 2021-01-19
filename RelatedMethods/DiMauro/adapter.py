@@ -26,7 +26,8 @@ def train(log, epochs=500, early_stop=4, params=None):
                  'embedding_size': emb_size,
                  'n_modules': hp.choice('n_modules', [1, 2, 3]),
                  'batch_size': 5,
-                 'learning_rate': 0.002, 'X': X, 'X_t': X_t, 'y': y}
+                 'learning_rate': 0.002, 'X': X, 'X_t': X_t, 'y': y,
+                 'epochs': epochs}
 
         trials = Trials()
         best = fmin(fit_and_score, space, algo=tpe.suggest, max_evals=n_iter, trials=trials,
@@ -47,7 +48,7 @@ def train(log, epochs=500, early_stop=4, params=None):
                                        save_weights_only=False,
                                        mode='auto')
 
-    model.fit([X, X_t], y, epochs=200, verbose=2, validation_split=0.2, callbacks=[early_stopping, model_checkpoint],
+    model.fit([X, X_t], y, epochs=epochs, verbose=2, validation_split=0.2, callbacks=[early_stopping],
               batch_size=2 ** 5)
     return model
 
@@ -110,7 +111,6 @@ def test(log, model):
     X, X_t, y = load_data(log)
 
     # evaluate
-    print('Evaluating final model...')
     preds_a = model.predict([X, X_t])
 
     # y_a_test = np.argmax(y_test, axis=1)
@@ -122,6 +122,41 @@ def test(log, model):
     result = zip(y, predict_vals, predict_probs)
 
     return result
+
+
+def test_and_update(logs, model):
+    results = []
+    i = 0
+    for t in logs:
+        print(i, "/", len(logs))
+        i += 1
+        log = logs[t]["data"]
+        results.extend(test(log, model))
+
+        X, X_t, y = load_data(log)
+        model.fit([X, X_t], y, epochs=5, verbose=2, validation_split=0.2,
+                  batch_size=log.k)
+
+    return results
+
+def test_and_update_retain(test_logs, model, train_log):
+    results = []
+    i = 0
+    X_train, X_t_train, y_train = load_data(train_log)
+    for t in test_logs:
+        print(i, "/", len(test_logs))
+        i += 1
+        test_log = test_logs[t]["data"]
+        results.extend(test(test_log, model))
+
+        X, X_t, y = load_data(test_log)
+        X_train = np.concatenate((X_train, X))
+        X_t_train = np.concatenate((X_t_train, X_t))
+        y_train = np.concatenate((y_train, y))
+        model.fit([X_train, X_t_train], y_train, epochs=5, verbose=2, validation_split=0.2,
+                  batch_size=train_log.k)
+
+    return results
 
 
 if __name__ == "__main__":

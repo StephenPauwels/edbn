@@ -9,8 +9,11 @@ def test(log, model):
     return predict_next_event(model, log)
 
 
-def test_and_update(log, model):
-    return predict_next_event_update(model, log)
+def test_and_update(logs, model, dummy=None):
+    results = []
+    for t in logs:
+        results.extend(predict_next_event_update(model, logs[t]["data"]))
+    return results
 
 
 if __name__ == "__main__":

@@ -104,6 +104,10 @@ class ExtendedDynamicBayesianNetwork():
         for (_, value) in self.iterate_variables():
             value.update(row)
 
+    def update_log(self, log):
+        for (_, value) in self.iterate_variables():
+            value.update_log(log)
+
     def calculate_scores_per_trace(self, data, accum_attr=None):
         """
         Return the result for all traces in the data
@@ -230,6 +234,9 @@ class Variable:
     def update(self, row):
         pass
 
+    def update_log(self, log):
+        pass
+
 
 class Discrete_Variable(Variable):
     """
@@ -313,6 +320,10 @@ class Discrete_Variable(Variable):
             self.values[atr_value] += 1
             self.total_rows += 1
         self.conditional_table.update(row)
+
+    def update_log(self, log):
+        for row in log.contextdata.iterrows():
+            self.update(row[1])
 
     ###
     # Testing
