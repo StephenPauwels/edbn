@@ -7,7 +7,7 @@ from EDBN.LearnBayesianStructure import Structure_learner
 from Utils import Uncertainty_Coefficient as uc
 
 
-def generate_model(data, remove_attrs = None):
+def generate_model(data, only_activity, remove_attrs = None):
     """
     Generate an EDBN model given the data
 
@@ -113,7 +113,7 @@ def generate_model(data, remove_attrs = None):
     # Create list with allowed edges (only from previous -> current and current -> current)
     restrictions = []
     for attr1 in attributes:
-        if attr1 != data.activity:
+        if only_activity and attr1 != data.activity:
             continue
         for attr2 in attributes:
             if attr2 not in data.ignoreHistoryAttributes:

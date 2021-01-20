@@ -7,8 +7,8 @@ import numpy as np
 import EDBN.GenerateModel as gm
 
 
-def train(data):
-    cbn = gm.generate_model(data)
+def train(data, only_activity=True):
+    cbn = gm.generate_model(data, only_activity)
     cbn.train(data)
     return cbn
 
@@ -27,11 +27,11 @@ def test(test_data, output_file, model, label, normal_val, train_data=None):
     normal_val = test_data.convert_string2int(label, normal_val)
     labels = test_data.get_labels(label)
 
-    attribute_scores = {"Resource": 10, "Activity": 10, "Weekday": 10, "duration_0": 1}
+    # attribute_scores = {"Resource": 10, "Activity": 10, "Weekday": 10, "duration_0": 1}
 
     scores = []
     for anom in anoms:
-        scores.append((test_data.convert_int2string(test_data.trace, anom.id), anom.get_calibrated_score(attribute_scores), labels[anom.id] != normal_val))#, test_data.convert_int2string("anom_types", anom.get_anom_type())))#, attr_scores["duration_0"]))
+        scores.append((test_data.convert_int2string(test_data.trace, anom.id), anom.get_total_score(), labels[anom.id] != normal_val))
 
 
     scores.sort(key=lambda l:l[1])

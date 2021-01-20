@@ -106,11 +106,11 @@ class CPT(ConditionalTable):
                 parent_vals = parent_vals[0]
             else:
                 parent_vals = tuple(parent_vals)
-            if parent_vals not in self.conditional_table:
+            if parent_vals not in self.cpt:
                 return self.new_relations
             val = getattr(row, self.attr_name)
-            if val not in self.conditional_table[parent_vals]:
+            if val not in self.cpt[parent_vals]:
                 return (1 - self.new_relations) * self.new_relations
-            return (1 - self.new_relations) * self.conditional_table[parent_vals][val]
+            return (1 - self.new_relations) * (self.cpt[parent_vals][val] / self.parent_count[parent_vals])
         return 1
 

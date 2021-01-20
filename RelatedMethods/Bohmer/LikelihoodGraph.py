@@ -7,10 +7,10 @@
 """
 import pandas as pd
 
-CASE_ATTR = "case_id"
-ACTIVITY_ATTR = "name"
-RESOURCE_ATTR = "user"
-WEEKDAY_ATTR = "day"
+CASE_ATTR = "Case"
+ACTIVITY_ATTR = "Activity"
+RESOURCE_ATTR = "Resource"
+WEEKDAY_ATTR = "Weekday"
 
 class LikelihoodModel:
 
@@ -105,7 +105,7 @@ class LikelihoodModel:
             D = D.difference(V_next)
             self.dependencies[v] = [x for x in self.dependencies[v] if x == 1] # Reset dependencies for v, only keep dependency to END
             activity_filtered = logs.loc[logs[ACTIVITY_ATTR] == self.dict_to_value[v]]
-            E_r = set(x[self.res_idx] for x in activity_filtered.itertuples(index=False)) # SELECT resources with activity == v
+            E_r = set(getattr(x, RESOURCE_ATTR) for x in activity_filtered.itertuples(index=False)) # SELECT resources with activity == v
             for r in E_r:
                 r_node_id = len(self.dict_to_value)
                 self.dict_to_value[r_node_id] = r
@@ -116,7 +116,7 @@ class LikelihoodModel:
                 self.dependencies[v].append((r_node_id, like_g)) # Add dependency from v to r_node_id (from ACTIVITY -> RESOURCE)
                 self.dependencies[r_node_id] = [] # Init new dependency for resource node
                 activity_resource_filtered = activity_filtered.loc[activity_filtered[RESOURCE_ATTR] == r]
-                E_wd = set(x[self.wk_idx] for x in activity_resource_filtered.itertuples(index=False))
+                E_wd = set(getattr(x, WEEKDAY_ATTR) for x in activity_resource_filtered.itertuples(index=False))
                 for wd in E_wd:
                     wd_node_id = len(self.dict_to_value)
                     self.dict_to_value[len(self.dict_to_value)] = wd
@@ -364,6 +364,5 @@ class LikelihoodModel:
         :param trace: Current trace to score
         :return:
         """
-        print("Testing")
         return self.ongoingLikelihoodDiff(trace)
 

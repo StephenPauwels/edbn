@@ -139,7 +139,7 @@ class LogFile:
         return self.data.columns
 
     def keep_attributes(self, keep_attrs):
-        if self.time and self.time not in keep_attrs:
+        if self.time and self.time not in keep_attrs and self.time in self.data:
             keep_attrs.append(self.time)
         if self.trace and self.trace not in keep_attrs:
             keep_attrs.append(self.trace)

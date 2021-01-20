@@ -26,7 +26,7 @@ def read_raw_file(file):
         fin.readline()
         for line in fin:
             line_split = line.split(",")
-            date = datetime.datetime.strptime(line_split[3], "%m/%d/%y %H:%M:%S")
+            date = datetime.datetime.strptime(line_split[3], "%Y-%m-%d %H:%M:%S")
             line = [str(date), "a_" + line_split[1], "r_" + line_split[2], "wd_" + str(date.weekday())]
             if eval(line_split[0]) not in output:
                 output[eval(line_split[0])] = []
@@ -178,13 +178,13 @@ def preProcessData(path_to_data):
     for i in range(1,6):
         train = path_to_data + "BPIC15_train_" + str(i) + ".csv"
         test = path_to_data + "BPIC15_test_" + str(i) + ".csv"
-        write_to_file(train, test, read_raw_file(path_to_data + "BPIC15_" + str(i) + "_sorted.csv"))
+        write_to_file(train, test, read_raw_file(path_to_data + "BPIC15_" + str(i) + "_sorted_new.csv"))
 
 def preProcessData_total(path_to_data):
     total_log = {}
     test_keys = set()
     for i in range(5,0,-1):
-        log = read_raw_file(path_to_data + "BPIC15_" + str(i) + "_sorted.csv")
+        log = read_raw_file(path_to_data + "BPIC15_" + str(i) + "_sorted_new.csv")
         test_keys = test_keys.union(log.keys())
         total_log.update(log)
 
