@@ -11,11 +11,13 @@ def store_results(file, results):
 
 if __name__ == "__main__":
     DATASETS = data.all_data.keys()
-    METHODS = ["DBN", "DIMAURO", "TAX"]
-    RETAIN = [False, True]
+    METHODS = ["DIMAURO"] #["DBN", "DIMAURO", "TAX"]
+    RETAIN = [False]
     batch = ["day", "week", "month"]
 
     for d in DATASETS:
+        if d == "Helpdesk" or d == "BPIC12" or d == "BPIC15_1":
+            continue
         timeformat = "%Y-%m-%d %H:%M:%S"
         if d == "Helpdesk" or d == "BPIC12":
             timeformat = "%Y/%m/%d %H:%M:%S.%f"
@@ -36,7 +38,7 @@ if __name__ == "__main__":
             for r in RETAIN:
                 for b in batch:
                     d.create_batch(b, timeformat)
-                    res_update = [x for y in m.test_and_update(d, False) for x in y]
+                    res_update = [x for y in m.test_and_update(d, r) for x in y]
                     if r:
                         store_results("results/%s_%s_%s_retain.csv" % (m.name, d.name, b), res_update)
                     else:

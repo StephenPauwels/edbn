@@ -354,9 +354,9 @@ class Structure_learner():
         with mp.Pool(mp.cpu_count()) as p:
             results = p.map(test_func, edges)
 
-        max_result = max(results, key=lambda l: l[0])
-
-        return_queue.put((max_result[2], max_result[0], max_result[1], max_result[3]))
+        if len(results) > 0:
+            max_result = max(results, key=lambda l: l[0])
+            return_queue.put((max_result[2], max_result[0], max_result[1], max_result[3]))
 
 
     def test_arcs(self, edge, cache, bandwidth_cache):
