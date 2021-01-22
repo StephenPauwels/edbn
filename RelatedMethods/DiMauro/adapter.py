@@ -134,7 +134,11 @@ def test_and_update(logs, model):
         results.extend(test(log, model))
 
         X, X_t, y = load_data(log)
-        model.fit([X, X_t], y, epochs=5, verbose=2, validation_split=0.2,
+        if len(X) < 10:
+            split = 0
+        else:
+            split = 0.2
+        model.fit([X, X_t], y, epochs=5, verbose=0, validation_split=split,
                   batch_size=log.k)
 
     return results
@@ -153,7 +157,7 @@ def test_and_update_retain(test_logs, model, train_log):
         X_train = np.concatenate((X_train, X))
         X_t_train = np.concatenate((X_t_train, X_t))
         y_train = np.concatenate((y_train, y))
-        model.fit([X_train, X_t_train], y_train, epochs=5, verbose=2, validation_split=0.2,
+        model.fit([X_train, X_t_train], y_train, epochs=1, verbose=1, validation_split=0.2,
                   batch_size=train_log.k)
 
     return results

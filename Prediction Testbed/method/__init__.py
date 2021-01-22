@@ -7,7 +7,7 @@ def get_method(method_name):
         return Method("SDL", sdl.train, sdl.test, sdl.test_and_update, sdl.test_and_update_retain, {"epochs": 200, "early_stop": 10})
     elif method_name == "DBN":
         from Predictions import edbn_adapter as edbn
-        return Method("DBN", edbn.train, edbn.test, edbn.test_and_update)
+        return Method("DBN", edbn.train, edbn.test, edbn.test_and_update, edbn.test_and_update_retain)
     elif method_name == "CAMARGO":
         from RelatedMethods.Camargo import adapter as camargo
         return Method("Camargo", camargo.train, camargo.test, {"epochs": 200, "early_stop": 10})
@@ -22,7 +22,7 @@ def get_method(method_name):
         return Method("Pasquadibisceglie", pasquadibisceglie.train, pasquadibisceglie.test, {"epochs": 200, "early_stop": 10})
     elif method_name == "TAX":
         from RelatedMethods.Tax import adapter as tax
-        return Method("Tax", tax.train, tax.test, tax.test_and_update, tax.test_and_update_retain, {"epochs": 10, "early_stop": 10})
+        return Method("Tax", tax.train, tax.test, tax.test_and_update, tax.test_and_update_retain, {"epochs": 200, "early_stop": 10})
     elif method_name == "TAYMOURI":
         from RelatedMethods.Taymouri import adapter as taymouri
         return Method("Taymouri", taymouri.train, taymouri.test, {"epoch": 10})

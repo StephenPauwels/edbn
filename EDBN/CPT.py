@@ -30,6 +30,11 @@ class CPT(ConditionalTable):
 
 
     def train(self, log):
+        self.cpt = {}
+        self.cpt_probs = dict()
+        self.new_relations = None
+        self.parent_count = dict()
+
         self.learn_table(log)
         self.set_new_relation(log)
 

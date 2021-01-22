@@ -463,3 +463,15 @@ class LogFile:
 
         return train_logfile, test_logfile
 
+    def extend_data(self, log):
+        train_logfile = LogFile(None, None, None, None, self.time, self.trace, self.activity, self.values, False, False)
+        train_logfile.filename = self.filename
+        train_logfile.values = self.values
+        train_logfile.contextdata = self.contextdata.append(log.contextdata)
+        train_logfile.categoricalAttributes = self.categoricalAttributes
+        train_logfile.numericalAttributes = self.numericalAttributes
+        train_logfile.data = self.data.append(log.data)
+        train_logfile.k = self.k
+        return train_logfile
+
+

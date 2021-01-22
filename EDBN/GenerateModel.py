@@ -126,9 +126,11 @@ def generate_model(data, only_activity, remove_attrs = None):
     print("GENERATE: Learn Bayesian Network")
 
     # Calculate Bayesian Network
-    learner = Structure_learner(data, nodes)
+    learner = Structure_learner()
+    learner.start_empty(data, nodes, whitelist, restrictions)
+
     # relations = learner.learn(restrictions)
-    relations = learner.learn(restrictions, whitelist)
+    relations = learner.learn()
 
     print("GENERATE: Found Conditional Dependencies:")
     for relation in relations:

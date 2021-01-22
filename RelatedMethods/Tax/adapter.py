@@ -5,6 +5,8 @@ import numpy as np
 
 from Utils.LogFile import LogFile
 
+import tensorflow as tf
+
 ascii_offset = 161
 
 def convert_log(log):
@@ -188,13 +190,19 @@ def test_and_update(logs, model):
         results.extend(test(log, model))
 
         X, y = transform_log(log)
-        model.fit(X, {'act_output': y}, validation_split=0.2, verbose=0,
+        if len(X) < 10:
+            split = 0
+        else:
+            split = 0.2
+        model.fit(X, {'act_output': y}, validation_split=split, verbose=0,
                   batch_size=log.k, epochs=1)
 
     return results
 
 
 def test_and_update_retain(test_logs, model, train_log):
+    import gc
+
     train_x, train_y = transform_log(train_log)
 
     results = []
@@ -212,6 +220,7 @@ def test_and_update_retain(test_logs, model, train_log):
                   verbose=0,
                   batch_size=train_log.k,
                   epochs=1)
+        gc.collect() # Avoid that too many batches lead to full memory
     return results
 
 if __name__ == "__main__":

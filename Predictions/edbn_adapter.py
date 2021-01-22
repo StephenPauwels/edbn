@@ -1,5 +1,6 @@
 from Utils.LogFile import LogFile
 from EDBN.Execute import train as edbn_train
+from EDBN.LearnBayesianStructure import Structure_learner
 from Predictions.eDBN_Prediction import predict_next_event, predict_next_event_update
 
 def train(log):
@@ -11,10 +12,51 @@ def test(log, model):
 
 def test_and_update(logs, model, dummy=None):
     results = []
+    i = 0
     for t in logs:
+        print(i, "/", len(logs))
+        i += 1
         results.extend(predict_next_event_update(model, logs[t]["data"]))
     return results
 
+
+def test_and_update_retain(test_logs, model, train_log):
+    # Create the list of allowed edges
+    restrictions = []
+    attributes = list(train_log.attributes())
+    for attr1 in attributes:
+        if attr1 != train_log.activity:
+            continue
+        for attr2 in attributes:
+            if attr2 not in train_log.ignoreHistoryAttributes:
+                for i in range(train_log.k):
+                    restrictions.append((attr2 + "_Prev%i" % i, attr1))
+
+    learner = Structure_learner()
+
+    results = []
+    i = 0
+    for t in test_logs:
+        print(i, "/", len(test_logs))
+        i += 1
+        test_log = test_logs[t]["data"]
+        results.extend(predict_next_event_update(model, test_log))
+
+        train_log = train_log.extend_data(test_log)
+        print("Length train:", train_log.contextdata.shape)
+
+        learner.start_model(train_log, model, restrictions)
+        relations = learner.learn()
+
+        updated = False
+        for relation in relations:
+            if relation[0] not in [p.attr_name for p in model.get_variable(relation[1]).get_conditional_parents()]:
+                model.get_variable(relation[1]).add_parent(model.get_variable(relation[0]))
+                print("   ", relation[0], "->", relation[1])
+                updated = True
+        if updated:
+            model.train(train_log)
+    return results
 
 if __name__ == "__main__":
     # data = "../Data/Helpdesk.csv"

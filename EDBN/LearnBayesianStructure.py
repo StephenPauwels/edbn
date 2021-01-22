@@ -14,12 +14,48 @@ from sklearn.neighbors import KernelDensity
 
 class Structure_learner():
 
-    def __init__(self, log, nodes):
-        self.log = log
-        self.data = self.log.get_data()
-        self.nrow = len(self.data)
+    def __init__(self):
+        pass
 
-        self.nodes = dict([(n,{}) for n in nodes])
+
+    def start_empty(self, log, nodes, whitelist=None, restrictions=None):
+        self.nodes = dict([(n, {}) for n in nodes])
+
+        self.log = log
+        self.data = log.get_data()
+        self.nrows = len(self.data)
+
+        self.c_dict = dict([(n, []) for n in self.nodes])
+        self.p_dict = dict([(n, []) for n in self.nodes])
+
+        if whitelist is None:
+            whitelist = []
+        for (u,v) in whitelist:
+            if u in self.c_dict:
+                self.c_dict[u].append(v)
+            if v in self.p_dict:
+                self.p_dict[v].append(u)
+        self.whitelist = whitelist
+        self.restriction = restrictions
+
+    def start_model(self, log, model, restrictions):
+        self.nodes = dict([(n, {}) for n in [v[0] for v in model.iterate_variables()]])
+
+        self.log = log
+        self.data = log.get_data()
+        self.nrows = len(self.data)
+
+        self.c_dict = dict([(n, []) for n in self.nodes])
+        self.p_dict = dict([(n, []) for n in self.nodes])
+
+        self.whitelist = []
+        for name, variable in model.iterate_variables():
+            parents = variable.get_conditional_parents()
+            for p in parents:
+                self.c_dict[p.attr_name].append(name)
+                self.p_dict[name].append(p.attr_name)
+        self.restriction = restrictions
+
 
     def model_complexity(self):
         """
@@ -203,79 +239,23 @@ class Structure_learner():
         return score
 
 
-    def learn(self, restrictions=None, whitelist=None):
-        # maintain children and parents dict for fast lookups
-        self.c_dict = dict([(n,[]) for n in self.nodes])
-        self.p_dict = dict([(n,[]) for n in self.nodes])
-
-        self.restriction = restrictions
-
-        if whitelist is None:
-            whitelist = []
-        for (u,v) in whitelist:
-            if u in self.c_dict:
-                self.c_dict[u].append(v)
-            if v in self.p_dict:
-                self.p_dict[v].append(u)
-        self.whitelist = whitelist
-
+    def learn(self):
         print("LEARN: Nodes:", self.nodes.keys())
 
         man = Manager()
         cache = man.dict()
         bandwidth_cache = man.dict()
 
-        score = self.model_score(cache, bandwidth_cache) - self.model_complexity()
-        print("LEARN: Initial Model Score:", score)
+        # score = self.model_score(cache, bandwidth_cache) - self.model_complexity()
+        # print("LEARN: Initial Model Score:", score)
 
         _iter = 0
         improvement = True
-
-
         while improvement:
             print("LEARN: Iteration", _iter)
-            improvement = False
-            max_delta = 0
-            max_operation = None
-
-            return_queue = Queue()
-            p_add = Process(target=self.test_arc_additions, args=(cache, bandwidth_cache, return_queue))
-            p_rem = Process(target=self.test_arc_deletions, args=(cache, bandwidth_cache, return_queue))
-
-            p_add.start()
-            p_rem.start()
-
-            p_add.join()
-            p_rem.join()
-
-            while not return_queue.empty():
-                results = return_queue.get()
-                if results[1] > max_delta:
-                    max_arc = results[0]
-                    max_delta = results[1]
-                    max_operation = results[2]
-                    max_qi = results[3]
-
-            ### DETERMINE IF/WHERE IMPROVEMENT WAS MADE ###
-            if max_operation:
-                score += max_delta
-                improvement = True
-                u,v = max_arc
-                str_arc = [e for e in max_arc]
-                if max_operation == 'Addition':
-                    self.p_dict[v].append(u)
-                    self.c_dict[u].append(v)
-                    if max_qi is not None:
-                        self.nodes[v]["qi"] = max_qi
-                    print("LEARN: Add:", u, "->", v)
-                elif max_operation == 'Deletion':
-                    self.p_dict[v].remove(u)
-                    self.c_dict[u].remove(v)
-                    if max_qi is not None:
-                        self.nodes[v]["qi"] = max_qi
-                    print("LEARN: Delete:", u, "->", v)
-                print("LEARN: Delta:", max_delta)
-                print("LEARN: Model score:", score)
+            improvement, delta = self.iterate(bandwidth_cache, cache)
+            # score += delta
+            # print("LEARN: Model score:", score)
             _iter += 1
 
         edges = []
@@ -285,6 +265,49 @@ class Structure_learner():
 
         return edges
 
+
+    def iterate(self, bandwidth_cache=None, cache=None):
+        if not cache:
+            man = Manager()
+            cache = man.dict()
+            bandwidth_cache = man.dict()
+
+        improvement = False
+        max_delta = 0
+        max_operation = None
+        return_queue = Queue()
+        p_add = Process(target=self.test_arc_additions, args=(cache, bandwidth_cache, return_queue))
+        p_rem = Process(target=self.test_arc_deletions, args=(cache, bandwidth_cache, return_queue))
+        p_add.start()
+        p_rem.start()
+        p_add.join()
+        p_rem.join()
+        while not return_queue.empty():
+            results = return_queue.get()
+            if results[1] > max_delta:
+                max_arc = results[0]
+                max_delta = results[1]
+                max_operation = results[2]
+                max_qi = results[3]
+        ### DETERMINE IF/WHERE IMPROVEMENT WAS MADE ###
+        if max_operation:
+            improvement = True
+            u, v = max_arc
+            str_arc = [e for e in max_arc]
+            if max_operation == 'Addition':
+                self.p_dict[v].append(u)
+                self.c_dict[u].append(v)
+                if max_qi is not None:
+                    self.nodes[v]["qi"] = max_qi
+                print("LEARN: Add:", u, "->", v)
+            elif max_operation == 'Deletion':
+                self.p_dict[v].remove(u)
+                self.c_dict[u].remove(v)
+                if max_qi is not None:
+                    self.nodes[v]["qi"] = max_qi
+                print("LEARN: Delete:", u, "->", v)
+            print("LEARN: Delta:", max_delta)
+        return improvement, max_delta
 
     def test_arc_deletions(self, cache, bandwidth_cache, return_queue):
         ### TEST ARC DELETIONS ###
