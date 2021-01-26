@@ -10,14 +10,12 @@ def store_results(file, results):
 
 
 if __name__ == "__main__":
-    DATASETS = data.all_data.keys()
-    METHODS = ["DIMAURO"] #["DBN", "DIMAURO", "TAX"]
-    RETAIN = [False]
+    DATASETS = ["Helpdesk", "BPIC12", "BPIC15_1", "BPIC15_2", "BPIC15_3", "BPIC15_4", "BPIC15_5"]
+    METHODS = ["TAX"] #["DBN", "DIMAURO", "TAX"]
+    RETAIN = [True]
     batch = ["day", "week", "month"]
 
     for d in DATASETS:
-        if d == "Helpdesk" or d == "BPIC12" or d == "BPIC15_1":
-            continue
         timeformat = "%Y-%m-%d %H:%M:%S"
         if d == "Helpdesk" or d == "BPIC12":
             timeformat = "%Y/%m/%d %H:%M:%S.%f"

@@ -3,6 +3,7 @@ from data.data import Data
 
 all_data = {"Helpdesk": "../Data/Helpdesk.csv",
             "BPIC12": "../Data/BPIC12.csv",
+            "BPIC12W": "../Data/BPIC12W.csv",
             "BPIC15_1": "../Data/BPIC15_1_sorted_new.csv",
             "BPIC15_2": "../Data/BPIC15_2_sorted_new.csv",
             "BPIC15_3": "../Data/BPIC15_3_sorted_new.csv",
