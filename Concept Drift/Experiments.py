@@ -10,7 +10,7 @@ from LogFile import LogFile
 
 
 def learn_and_dump_model():
-    train = LogFile("../Data/bpic2018.csv", ",", 0, 30000, "startTime", "case", activity_attr=None, integer_input=False, convert=False)
+    train = LogFile("../Data/BPIC18.csv", ",", 0, 30000, "startTime", "case", activity_attr=None, integer_input=False, convert=False)
     train.remove_attributes(["eventid", "identity_id", "event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
     train.convert2int()
     model = cd.create_model(train, train)
@@ -23,11 +23,11 @@ def experiment_standard():
         model = pickle.load(fin)
 
     print("Get Scores")
-    train = LogFile("../Data/bpic2018.csv", ",", 0, 30000, "startTime", "case", activity_attr=None, integer_input=False, convert=False)
+    train = LogFile("../Data/BPIC18.csv", ",", 0, 30000, "startTime", "case", activity_attr=None, integer_input=False, convert=False)
     train.remove_attributes(["eventid", "identity_id", "event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
     train.convert2int()
 
-    data = LogFile("../Data/bpic2018.csv", ",", 0, None, "startTime", "case", convert=False, values=train.values, integer_input=False)
+    data = LogFile("../Data/BPIC18.csv", ",", 0, None, "startTime", "case", convert=False, values=train.values, integer_input=False)
     data.remove_attributes(["eventid", "identity_id", "event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
     data.convert2int()
 
@@ -39,11 +39,11 @@ def experiment_standard():
 def experiment_attributes_standard():
     with open("model_30000b", "rb") as fin:
         model = pickle.load(fin)
-    train = LogFile("../Data/bpic2018.csv", ",", 0, 30000, "startTime", "case", activity_attr=None, integer_input=False, convert=False)
+    train = LogFile("../Data/BPIC18.csv", ",", 0, 30000, "startTime", "case", activity_attr=None, integer_input=False, convert=False)
     train.remove_attributes(["eventid", "identity_id", "event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
     train.convert2int()
 
-    input = LogFile("../Data/bpic2018.csv", ",", 0, 10000000, "startTime", "case", convert=False, values=train.values)
+    input = LogFile("../Data/BPIC18.csv", ",", 0, 10000000, "startTime", "case", convert=False, values=train.values)
     input.remove_attributes(["eventid", "identity_id", "event_identity_id", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
     input.convert2int()
 
@@ -132,7 +132,7 @@ def experiment_attributes_standard():
     plt.show()
 
 def experiment_department():
-    input = LogFile("../Data/bpic2018.csv", ",", 0, None, "startTime", "case", convert=False)
+    input = LogFile("../Data/BPIC18.csv", ",", 0, None, "startTime", "case", convert=False)
     input.remove_attributes(["eventid", "identity_id", "event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
     input.convert2int()
 
@@ -155,11 +155,11 @@ def experiment_department():
 def experiment_clusters():
     with open("model_30000", "rb") as fin:
         model = pickle.load(fin)
-    train = LogFile("../Data/bpic2018.csv", ",", 0, 30000, "startTime", "case", activity_attr=None, integer_input=False, convert=False)
+    train = LogFile("../Data/BPIC18.csv", ",", 0, 30000, "startTime", "case", activity_attr=None, integer_input=False, convert=False)
     train.remove_attributes(["eventid", "identity_id", "event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
     train.convert2int()
 
-    data = LogFile("../Data/bpic2018.csv", ",", 0, None, "startTime", "case", convert=False, values=train.values)
+    data = LogFile("../Data/BPIC18.csv", ",", 0, None, "startTime", "case", convert=False, values=train.values)
     data.remove_attributes(["event_identity_id", "year", "penalty_", "amount_applied", "payment_actual",
                                     "penalty_amount", "risk_factor", "cross_compliance", "selected_random",
                                     "selected_risk", "selected_manually", "rejected"])
@@ -200,13 +200,13 @@ def experiment_clusters():
 def experiment_outliers():
     with open("model_30000", "rb") as fin:
         model = pickle.load(fin)
-    train = LogFile("../Data/bpic2018.csv", ",", 0, 30000, "startTime", "case", activity_attr=None, integer_input=False, convert=False)
+    train = LogFile("../Data/BPIC18.csv", ",", 0, 30000, "startTime", "case", activity_attr=None, integer_input=False, convert=False)
     train.remove_attributes(["eventid", "identity_id", "event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
     train.convert2int()
 
     attr_dicts = []
 
-    data = LogFile("../Data/bpic2018.csv", ",", 0, None, "startTime", "case", convert=False, values=train.values)
+    data = LogFile("../Data/BPIC18.csv", ",", 0, None, "startTime", "case", convert=False, values=train.values)
     data.filter("self.data.year == 1")
     data.remove_attributes(["event_identity_id", "year", "penalty_", "amount_applied", "payment_actual",
                                     "penalty_amount", "risk_factor", "cross_compliance", "selected_random",
@@ -223,7 +223,7 @@ def experiment_outliers():
 
 
 def analyze():
-    train = LogFile("../Data/bpic2018.csv", ",", 0, None, "startTime", "case", activity_attr=None, integer_input=False, convert=False)
+    train = LogFile("../Data/BPIC18.csv", ",", 0, None, "startTime", "case", activity_attr=None, integer_input=False, convert=False)
     print("Num of attributes:", len(train.data.columns))
     train.remove_attributes(["eventid", "identity_id", "event_identity_id", "year", "penalty_", "amount_applied", "payment_actual", "penalty_amount", "risk_factor", "cross_compliance", "selected_random", "selected_risk", "selected_manually", "rejected"])
     print("Num of attributes:", len(train.data.columns))

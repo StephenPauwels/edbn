@@ -43,16 +43,22 @@ def test_and_update_retain(test_logs, model, train_log):
         results.extend(predict_next_event_update(model, test_log))
 
         train_log = train_log.extend_data(test_log)
-        print("Length train:", train_log.contextdata.shape)
+        # print("Length train:", train_log.contextdata.shape)
 
         learner.start_model(train_log, model, restrictions)
         relations = learner.learn()
 
         updated = False
+        activity_var = model.get_variable(train_log.activity)
         for relation in relations:
-            if relation[0] not in [p.attr_name for p in model.get_variable(relation[1]).get_conditional_parents()]:
-                model.get_variable(relation[1]).add_parent(model.get_variable(relation[0]))
+            if relation[0] not in [p.attr_name for p in activity_var.get_conditional_parents()]:
+                activity_var.add_parent(model.get_variable(relation[0]))
                 print("   ", relation[0], "->", relation[1])
+                updated = True
+        for parent in activity_var.get_conditional_parents():
+            if parent.attr_name not in [r[0] for r in relations]:
+                print("Removing", parent, "->", train_log.activity)
+                activity_var.remove_parent(parent)
                 updated = True
         if updated:
             model.train(train_log)

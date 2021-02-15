@@ -156,7 +156,7 @@ def get_data(dataset, dataset_size, k, add_end, reduce_tasks, resource_pools, re
             logfile.keep_attributes(colTitles)
             logfile.filter_case_length(3)
         elif dataset == BPIC18:
-            logfile = LogFile("../Data/bpic2018.csv", ",", 0, dataset_size, "startTime", "case", activity_attr="event", convert=False, k=k)
+            logfile = LogFile("../Data/BPIC18.csv", ",", 0, dataset_size, "startTime", "case", activity_attr="event", convert=False, k=k)
             colTitles = ["case", "event", "subprocess"]
             logfile.keep_attributes(colTitles)
         else:

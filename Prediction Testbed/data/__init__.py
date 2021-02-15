@@ -9,7 +9,11 @@ all_data = {"Helpdesk": "../Data/Helpdesk.csv",
             "BPIC15_3": "../Data/BPIC15_3_sorted_new.csv",
             "BPIC15_4": "../Data/BPIC15_4_sorted_new.csv",
             "BPIC15_5": "../Data/BPIC15_5_sorted_new.csv",
-            "BPIC18": "../Data/bpic2018.csv"}
+            "BPIC18": "../Data/BPIC18.csv",
+            "BPIC17": "../Data/bpic17_test.csv",
+            "BPIC19": "../Data/BPIC19.csv",
+            "BPIC11": "../Data/BPIC11.csv",
+            "SEPSIS": "../Data/Sepsis.csv"}
 
 
 def get_data(data_name, sep=",", time="completeTime", case="case", activity="event", resource="role"):

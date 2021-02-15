@@ -152,8 +152,12 @@ def fit_and_score(params):
         # h = model.fit(params["X_train"],
         #               params["Y_train"], epochs=200, verbose=2,
         #               validation_split=0.2, callbacks=[early_stopping], batch_size=2**params['batch_size'])
+        if len(params["X"]) < 10:
+            split = 0
+        else:
+            split = 0.2
         h = model.fit([params['X'], params['X_t']], params['y'], epochs=params["epochs"], verbose=2,
-                      validation_split=0.2, callbacks=[early_stopping], batch_size=2**params['batch_size'])
+                      validation_split=split, callbacks=[early_stopping], batch_size=2**params['batch_size'])
 
     scores = [h.history['val_loss'][epoch] for epoch in range(len(h.history['loss']))]
     score = min(scores)

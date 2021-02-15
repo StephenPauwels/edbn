@@ -2,7 +2,6 @@ import setting
 import data
 import method
 
-
 def store_results(file, results):
     with open(file, "w") as fout:
         for r in results:
@@ -10,18 +9,19 @@ def store_results(file, results):
 
 
 if __name__ == "__main__":
-    DATASETS = ["Helpdesk", "BPIC12", "BPIC15_1", "BPIC15_2", "BPIC15_3", "BPIC15_4", "BPIC15_5"]
-    METHODS = ["TAX"] #["DBN", "DIMAURO", "TAX"]
+    DATASETS = ["BPIC11"] #["BPIC17", "BPIC19", "BPIC11", "SEPSIS"] #["Helpdesk", "BPIC12", "BPIC15_1", "BPIC15_2", "BPIC15_3", "BPIC15_4", "BPIC15_5"]
+    METHODS = ["TAX"]
     RETAIN = [True]
     batch = ["day", "week", "month"]
 
-    for d in DATASETS:
+    for data_name in DATASETS:
         timeformat = "%Y-%m-%d %H:%M:%S"
-        if d == "Helpdesk" or d == "BPIC12":
+        if "BPIC15" not in data_name:
             timeformat = "%Y/%m/%d %H:%M:%S.%f"
 
+
         for m in METHODS:
-            d = data.get_data(d)
+            d = data.get_data(data_name)
             m = method.get_method(m)
             s = setting.STANDARD
             s.train_percentage = 50

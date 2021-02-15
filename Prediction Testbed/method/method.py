@@ -27,6 +27,12 @@ class Method:
         return [self.test_func(data.test[t]["data"], self.model) for t in data.test]
 
     def test_and_update(self, data, retain=False):
+        if self.model is None:
+            first_key = sorted(data.test.keys())[0]
+            if self.name == "Di Mauro":
+                self.model = self.train_func(data.test[first_key]["data"], **{"early_stop": 4, "params": {"n_modules": 2}})
+            else:
+                self.model = self.train_func(data.test[first_key]["data"], **self.def_params)
         try:
             model = copy.deepcopy(self.model)
         except:

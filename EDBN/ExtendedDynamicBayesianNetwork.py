@@ -263,6 +263,9 @@ class Discrete_Variable(Variable):
     def add_parent(self, var):
         self.conditional_table.add_parent(var)
 
+    def remove_parent(self, var):
+        self.conditional_table.remove_parent(var)
+
     def add_mapping(self, var):
         self.functional_parents.append(var)
         self.fdt.append({})

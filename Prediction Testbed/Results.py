@@ -10,18 +10,23 @@ for i in range(len(tableau20)):
     r, g, b = tableau20[i]
     tableau20[i] = (r / 255., g / 255., b / 255.)
 
+LINE_STYLE = {"DBN": "-", "SDL": "--", "Tax": "-.", "Di Mauro": ":"}
+
 METHODS = ["DBN", "SDL", "Tax", "Di Mauro"]
-DATASETS = ["Helpdesk", "BPIC12", "BPIC15_1", "BPIC15_2", "BPIC15_3", "BPIC15_4", "BPIC15_5"]
+DATASETS = ["Helpdesk", "BPIC12", "BPIC15_1", "BPIC15_2", "BPIC15_3", "BPIC15_4", "BPIC15_5", "BPIC17", "BPIC19", "BPIC11", "SEPSIS"]
 BATCH = ["day", "week", "month", "normal"]
 RETAIN = [False, True]
 
 
-def get_filename(dataset, method, batch, retain):
+def get_filename(dataset, method, batch, retain, multi=False):
     filename = "%s_%s_%s" % (method, dataset, batch)
     if retain:
         return filename + "_retain"
     else:
-        return filename
+        if method != "DBN" and multi:
+            return filename + "_multi"
+        else:
+            return filename
 
 
 def open_file(filename):
@@ -33,13 +38,18 @@ def open_file(filename):
     return results
 
 
-def load_results():
+def load_results(cold=False):
     all_results = {}
     for m in METHODS:
         for d in DATASETS:
             for b in BATCH:
                 for r in RETAIN:
-                    filename = get_filename(d, m, b, r)
+                    if m == "DBN" and cold:
+                        filename = get_filename(d, m, b, False)
+                    else:
+                        filename = get_filename(d, m, b, r, r)
+                    if cold:
+                        filename = "Cold_" + filename
                     if os.path.isfile("results/" + filename + ".csv"):
                         results = open_file("results/" + filename + ".csv")
 
@@ -60,10 +70,14 @@ def load_results():
 
 def create_latex_full_table(results):
     for d in DATASETS:
-        line = d + " & no-update & "
+        line = d.replace("_", "\_") + " & no-update & "
         for m in METHODS:
-            result = results[get_filename(d, m, "normal", False)][1][-1]
-            line += " & %.2f" % result
+            filename = get_filename(d, m, "normal", False)
+            if filename in results:
+                result = results[filename][1][-1]
+                line += " & %.2f" % result
+            else:
+                line += " & "
         line += "\\\\"
         print(line)
         print("\cline{2-7}")
@@ -84,7 +98,7 @@ def create_latex_full_table(results):
                     if name in results:
                         line += " & %.2f" % results[name][1][-1]
                     else:
-                        line += " & 0.00"
+                        line += " & "
                 line += "\\\\"
                 print(line)
         print("\hline")
@@ -97,7 +111,7 @@ def create_baseline_dataset_plot(results):
     plt.figure(figsize=(15, 12))
     plt.subplots_adjust(wspace=1, hspace=5)
 
-    fig_num = 421
+    fig_num = 1
 
     for d in DATASETS:
         col_idx = 0
@@ -105,10 +119,10 @@ def create_baseline_dataset_plot(results):
             filename = get_filename(d, m, "normal", False)
             if filename in results:
                 x,y = results[filename]
-                plt.subplot(fig_num)
+                plt.subplot(6,2,fig_num)
                 plt.title(d.replace("_", "\_"))
                 plt.ylim(0,1)
-                plt.plot(x, y, label=m, color=tableau20[col_idx])
+                plt.plot(x, y, label=m, color=tableau20[col_idx], ls=LINE_STYLE[m])
                 col_idx += 1
 
         fig_num += 1
@@ -143,7 +157,7 @@ def create_strategy_plot(results):
                     plt.subplot(fig_num)
                     plt.title(d.replace("_","\_"))
                     plt.ylim(0, 1)
-                    plt.plot(x, y, label=("%s (%s)" % (m, strat)), color=tableau20[col_idx])
+                    plt.plot(x, y, label=("%s (%s)" % (m, strat)), color=tableau20[col_idx], ls=LINE_STYLE[m])
                     col_idx += 1
 
         fig_num += 1
@@ -173,7 +187,7 @@ def create_batch_plot(results):
                     plt.subplot(fig_num)
                     plt.title(d.replace("_","\_"))
                     plt.ylim(0, 1)
-                    plt.plot(x, y, label=("%s (%s)" % (m, b)), color=tableau20[col_idx])
+                    plt.plot(x, y, label=("%s (%s)" % (m, b)), color=tableau20[col_idx], ls=LINE_STYLE[m])
                     col_idx += 1
 
         fig_num += 1
@@ -205,11 +219,11 @@ def create_compare_normal_plot(results):
                         plt.title(d.replace("_","\_"))
                         plt.ylim(0, 1)
                         if b == "normal":
-                            plt.plot(x, y, label=("%s (%s)" % (m, "no-update")), color=tableau20[col_idx])
+                            plt.plot(x, y, label=("%s (%s)" % (m, "no-update")), color=tableau20[col_idx], ls=LINE_STYLE[m])
                         elif b == "day" and not r:
-                            plt.plot(x, y, label=("%s (%s)" % (m, "update-only")), color=tableau20[col_idx])
+                            plt.plot(x, y, label=("%s (%s)" % (m, "update-only")), color=tableau20[col_idx], ls=LINE_STYLE[m])
                         elif b == "day" and r:
-                            plt.plot(x, y, label=("%s (%s)" % (m, "update-retain")), color=tableau20[col_idx])
+                            plt.plot(x, y, label=("%s (%s)" % (m, "update-retain")), color=tableau20[col_idx], ls=LINE_STYLE[m])
                         col_idx += 1
 
         fig_num += 1
@@ -219,10 +233,47 @@ def create_compare_normal_plot(results):
     plt.savefig("normal_compare.eps")
     plt.show()
 
+
+def create_cold_plot(results):
+    plt.rcParams["text.usetex"] = True
+    plt.rcParams["text.latex.preamble"] = [r"\usepackage{lmodern}"]
+
+    plt.figure(figsize=(15, 12))
+    plt.subplots_adjust(wspace=1, hspace=5)
+
+    fig_num = 421
+    for d in ["Helpdesk", "BPIC12", "BPIC15_1", "BPIC15_2", "BPIC15_3", "BPIC15_4", "BPIC15_5"]:
+        col_idx = 0
+
+        for m in METHODS:
+            if m == "DBN":
+                filename = get_filename(d, m, "month", True)
+            else:
+                filename = get_filename(d, m, "month", False, False)
+            filename = "Cold_" + filename
+            print(filename)
+            if filename in results:
+                x, y = results[filename]
+                plt.subplot(fig_num)
+                plt.title(d.replace("_","\_"))
+                plt.ylim(0, 1)
+                plt.plot(x, y, label=("%s" % m), color=tableau20[col_idx], ls=LINE_STYLE[m])
+                col_idx += 1
+            else:
+                print("Not found")
+        fig_num += 1
+
+    plt.tight_layout()
+    plt.legend(loc="lower right", bbox_to_anchor=(2, 0.1), ncol=2, fontsize="xx-large")
+    plt.savefig("cold_start.eps")
+    plt.show()
+
+
 if __name__ == "__main__":
     results = load_results()
-    #create_baseline_dataset_plot(results)
-    #create_strategy_plot(results)
-    #create_batch_plot(results)
-    #create_compare_normal_plot(results)
+    # create_baseline_dataset_plot(results)
+    # create_strategy_plot(results)
+    # create_batch_plot(results)
+    # create_compare_normal_plot(results)
     create_latex_full_table(results)
+    # create_cold_plot(results)

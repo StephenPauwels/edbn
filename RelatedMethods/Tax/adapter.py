@@ -116,8 +116,12 @@ def train(log, epochs=10, early_stop=42):
     early_stopping = EarlyStopping(monitor='val_loss', patience=early_stop)
     model_checkpoint = ModelCheckpoint(os.path.join("model", 'model_{epoch:03d}-{val_loss:.2f}.h5'), monitor='val_loss', verbose=0, save_best_only=True, save_weights_only=False, mode='auto')
     lr_reducer = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=10, verbose=0, mode='auto', min_delta=0.0001, cooldown=0, min_lr=0)
+    if len(y_a) > 10:
+        split = 0.2
+    else:
+        split = 0
 
-    model.fit(X, {'act_output': y_a}, validation_split=0.2, verbose=2, callbacks=[early_stopping, lr_reducer], batch_size=log.k, epochs=epochs)
+    model.fit(X, {'act_output': y_a}, validation_split=split, verbose=2, callbacks=[early_stopping, lr_reducer], batch_size=log.k, epochs=epochs)
 
     return model
 
@@ -195,7 +199,7 @@ def test_and_update(logs, model):
         else:
             split = 0.2
         model.fit(X, {'act_output': y}, validation_split=split, verbose=0,
-                  batch_size=log.k, epochs=1)
+                  batch_size=log.k, epochs=10)
 
     return results
 

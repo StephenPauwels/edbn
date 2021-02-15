@@ -48,7 +48,11 @@ def train(log, epochs=500, early_stop=4, params=None):
                                        save_weights_only=False,
                                        mode='auto')
 
-    model.fit([X, X_t], y, epochs=epochs, verbose=2, validation_split=0.2, callbacks=[early_stopping],
+    if len(y) < 10:
+        split = 0
+    else:
+        split = 0.2
+    model.fit([X, X_t], y, epochs=epochs, verbose=2, validation_split=split, callbacks=[early_stopping],
               batch_size=2 ** 5)
     return model
 
@@ -107,6 +111,18 @@ def load_data(log):
     return X, X_t, y
 
 
+def update(log, model, num_epochs=1):
+    X, X_t, y = load_data(log)
+    y = to_categorical(y, num_classes=len(log.values["event"]) + 1)
+
+    if len(X) < 10:
+        split = 0
+    else:
+        split = 0.2
+
+    model.fit([X, X_t], y, epochs=num_epochs, verbose=0, validation_split=split,
+              batch_size=log.k)
+
 def test(log, model):
     X, X_t, y = load_data(log)
 
@@ -133,13 +149,7 @@ def test_and_update(logs, model):
         log = logs[t]["data"]
         results.extend(test(log, model))
 
-        X, X_t, y = load_data(log)
-        if len(X) < 10:
-            split = 0
-        else:
-            split = 0.2
-        model.fit([X, X_t], y, epochs=5, verbose=0, validation_split=split,
-                  batch_size=log.k)
+        update(log, model, 10)
 
     return results
 
@@ -147,6 +157,7 @@ def test_and_update_retain(test_logs, model, train_log):
     results = []
     i = 0
     X_train, X_t_train, y_train = load_data(train_log)
+    y_train = to_categorical(y_train, num_classes=len(train_log.values["event"]) + 1)
     for t in test_logs:
         print(i, "/", len(test_logs))
         i += 1
@@ -154,6 +165,7 @@ def test_and_update_retain(test_logs, model, train_log):
         results.extend(test(test_log, model))
 
         X, X_t, y = load_data(test_log)
+        y = to_categorical(y, num_classes=len(train_log.values["event"]) + 1)
         X_train = np.concatenate((X_train, X))
         X_t_train = np.concatenate((X_t_train, X_t))
         y_train = np.concatenate((y_train, y))

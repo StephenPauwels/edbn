@@ -13,6 +13,9 @@ class CPT(ConditionalTable):
     def add_parent(self, parent):
         self.parents.append(parent)
 
+    def remove_parent(self, parent):
+        self.parents.remove(parent)
+
     def check_parent_combination(self, parent_combination):
         return parent_combination in self.cpt
 

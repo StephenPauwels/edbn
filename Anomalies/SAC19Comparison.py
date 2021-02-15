@@ -25,7 +25,7 @@ def compare_bpics(path):
         train_data.remove_attributes(["Anomaly", "Type", "Time"])
         test_data = LogFile(test, ",", 0, 500000, "Time", "Case", activity_attr="Activity", values=train_data.values, convert=False)
 
-        bohmer_model = bmr.train(train_data)
+        bohmer_model = bmr.train(train_data, 0, 1, 2)
         bmr.test(test_data, output, bohmer_model, label = "Anomaly", normal_val = "0")
 
         train_data.convert2int()

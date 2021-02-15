@@ -349,8 +349,8 @@ class LikelihoodModel:
             for attr in [ACTIVITY_ATTR, RESOURCE_ATTR, WEEKDAY_ATTR]:
                 f = row[attr]
                 lst_v, lst_va, lst_l = self.mapEvents(lst_v, lst_va, f, lst_l, punAct, punOth)
-            #min_lik = self.minLike(lst_va, i)
-            #prob = lst_l - min_lik
+            # min_lik = self.minLike(lst_va, i)
+            # prob = lst_l - min_lik
             prob = lst_l
             if prob < min_prob:
                 min_prob = prob

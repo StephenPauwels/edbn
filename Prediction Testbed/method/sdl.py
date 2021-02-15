@@ -46,11 +46,14 @@ def learn_model(log, attributes, epochs, early_stop):
                                        mode='auto')
 
     x, y, vals = transform_data(log, [a for a in attributes if a != log.time and a != log.trace])
-
+    if len(y) < 10:
+        split = 0
+    else:
+        split = 0.2
     model.fit(x=x, y=y,
-              validation_split=0.2,
+              validation_split=split,
               verbose=2,
-              callbacks=[early_stopping, model_checkpoint],
+              callbacks=[early_stopping],
               batch_size=32,
               epochs=epochs)
     return model
@@ -114,7 +117,7 @@ def test_and_update(logs, model):
                   validation_split=0,
                   verbose=0,
                   batch_size=32,
-                  epochs=1)
+                  epochs=10)
     return results
 
 
