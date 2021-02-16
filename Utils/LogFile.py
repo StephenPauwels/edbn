@@ -34,6 +34,9 @@ class LogFile:
             type = "int"
         if filename is not None:
             self.data = pd.read_csv(self.filename, header=header, nrows=rows, delimiter=delim, encoding='latin-1', dtype="str")
+            print("PREPROCESSING: Sorting on", self.time)
+            # self.data = self.data.sort_values(by=[self.time]).reset_index()
+
 
             # Determine types for all columns - numerical or categorical
             for col_type in self.data.dtypes.iteritems():
@@ -315,11 +318,11 @@ class LogFile:
         new_data.append(record)
         return new_data
 
-    def splitTrainTest(self, train_percentage, case, method="random"):
+    def splitTrainTest(self, train_percentage, split_case, method="random"):
         import random
         train_percentage = train_percentage / 100.0
 
-        if not case:
+        if split_case:
             if method == "random":
                 train_inds = random.sample(range(self.contextdata.shape[0]), k=round(self.contextdata.shape[0] * train_percentage))
                 test_inds = list(set(range(self.contextdata.shape[0])).difference(set(train_inds)))

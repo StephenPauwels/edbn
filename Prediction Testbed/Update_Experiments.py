@@ -10,7 +10,7 @@ def store_results(file, results):
 
 if __name__ == "__main__":
     DATASETS = ["BPIC11"] #["BPIC17", "BPIC19", "BPIC11", "SEPSIS"] #["Helpdesk", "BPIC12", "BPIC15_1", "BPIC15_2", "BPIC15_3", "BPIC15_4", "BPIC15_5"]
-    METHODS = ["TAX"]
+    METHODS = ["SDL", "DBN"]
     RETAIN = [True]
     batch = ["day", "week", "month"]
 
