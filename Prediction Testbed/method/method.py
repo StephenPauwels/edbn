@@ -56,3 +56,21 @@ class Method:
                 return [self.test_and_update_func(data.test, model)]
         return None
 
+    def test_and_full_update(self, data):
+        results = []
+        for t in data.test:
+            self.train(data)
+            results.extend(self.test_func(data.test[t]["data"], self.model))
+            data.train = data.train.extend_data(data.test[t]["data"])
+        return results
+
+    def k_fold_validation(self, data, k):
+        data.create_folds(k)
+
+        results = []
+        for i in range(k):
+            data.get_fold(i)
+            self.train(data, self.def_params)
+            results.extend(self.test(data))
+        return results
+

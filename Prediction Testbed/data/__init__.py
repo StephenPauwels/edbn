@@ -13,7 +13,12 @@ all_data = {"Helpdesk": "../Data/Helpdesk.csv",
             "BPIC17": "../Data/bpic17_test.csv",
             "BPIC19": "../Data/BPIC19.csv",
             "BPIC11": "../Data/BPIC11.csv",
-            "SEPSIS": "../Data/Sepsis.csv"}
+            "SEPSIS": "../Data/Sepsis.csv",
+            "COSELOG_1": "../Data/Coselog_1.csv",
+            "COSELOG_2": "../Data/Coselog_2.csv",
+            "COSELOG_3": "../Data/Coselog_3.csv",
+            "COSELOG_4": "../Data/Coselog_4.csv",
+            "COSELOG_5": "../Data/Coselog_5.csv"}
 
 
 def get_data(data_name, sep=",", time="completeTime", case="case", activity="event", resource="role"):

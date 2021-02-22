@@ -1,19 +1,27 @@
 import matplotlib.pyplot as plt
 import os.path
 
-tableau20 = [(31, 119, 180), (174, 199, 232), (255, 127, 14), (255, 187, 120),
-             (44, 160, 44), (152, 223, 138), (214, 39, 40), (255, 152, 150),
-             (148, 103, 189), (197, 176, 213), (140, 86, 75), (196, 156, 148),
+tableau20 = [(148, 103, 189), (197, 176, 213), (140, 86, 75), (196, 156, 148),
              (227, 119, 194), (247, 182, 210), (127, 127, 127), (199, 199, 199),
              (188, 189, 34), (219, 219, 141), (23, 190, 207), (158, 218, 229)]
+
+colors = {"DBN": [(31, 119, 180), (174, 199, 232)],
+          "SDL": [(255, 127, 14), (255, 187, 120)],
+          "Tax": [(44, 160, 44), (152, 223, 138)],
+          "Di Mauro": [(214, 39, 40), (255, 152, 150)]}
 for i in range(len(tableau20)):
     r, g, b = tableau20[i]
     tableau20[i] = (r / 255., g / 255., b / 255.)
 
+for k in colors:
+    for i in range(len(colors[k])):
+        r, g, b = colors[k][i]
+        colors[k][i] = (r / 255., g / 255., b / 255.)
+
 LINE_STYLE = {"DBN": "-", "SDL": "--", "Tax": "-.", "Di Mauro": ":"}
 
 METHODS = ["DBN", "SDL", "Tax", "Di Mauro"]
-DATASETS = ["Helpdesk", "BPIC12", "BPIC15_1", "BPIC15_2", "BPIC15_3", "BPIC15_4", "BPIC15_5", "BPIC17", "BPIC19", "BPIC11", "SEPSIS"]
+DATASETS = ["Helpdesk", "BPIC11", "BPIC12", "BPIC15_1", "BPIC15_2", "BPIC15_3", "BPIC15_4", "BPIC15_5"]
 BATCH = ["day", "week", "month", "normal"]
 RETAIN = [False, True]
 
@@ -42,6 +50,22 @@ def load_results(cold=False):
     all_results = {}
     for m in METHODS:
         for d in DATASETS:
+            complete_filename = "results/%s_%s_month_complete.csv" % (m, d)
+            if os.path.isfile(complete_filename):
+                results = open_file(complete_filename)
+
+                x = []
+                y = []
+                total = 0
+                correct = 0
+                for res in results:
+                    x.append(total)
+                    if res[0] == res[1]:
+                        correct += 1
+                    total += 1
+                    y.append(correct / total)
+                all_results[complete_filename] = (x, y)
+
             for b in BATCH:
                 for r in RETAIN:
                     if m == "DBN" and cold:
@@ -73,6 +97,17 @@ def create_latex_full_table(results):
         line = d.replace("_", "\_") + " & no-update & "
         for m in METHODS:
             filename = get_filename(d, m, "normal", False)
+            if filename in results:
+                result = results[filename][1][-1]
+                line += " & %.2f" % result
+            else:
+                line += " & "
+        line += "\\\\"
+        print(line)
+        print("\cline{2-7}")
+        line = "& update-full & month"
+        for m in METHODS:
+            filename = "results/%s_%s_month_complete.csv" % (m, d)
             if filename in results:
                 result = results[filename][1][-1]
                 line += " & %.2f" % result
@@ -114,21 +149,19 @@ def create_baseline_dataset_plot(results):
     fig_num = 1
 
     for d in DATASETS:
-        col_idx = 0
         for m in METHODS:
             filename = get_filename(d, m, "normal", False)
             if filename in results:
                 x,y = results[filename]
-                plt.subplot(6,2,fig_num)
+                plt.subplot(5,2,fig_num)
                 plt.title(d.replace("_", "\_"))
                 plt.ylim(0,1)
-                plt.plot(x, y, label=m, color=tableau20[col_idx], ls=LINE_STYLE[m])
-                col_idx += 1
+                plt.plot(x, y, label=m, color=colors[m][0], ls=LINE_STYLE[m])
 
         fig_num += 1
-        
+
     plt.tight_layout()
-    plt.legend(loc="lower right", bbox_to_anchor=(2, 0.5), ncol=4, fontsize="xx-large")
+    plt.legend(loc="lower center", bbox_to_anchor=(0, -0.5), ncol=4, fontsize="xx-large")
     plt.savefig("dataset_overview.eps")
     plt.show()
 

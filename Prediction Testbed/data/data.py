@@ -8,6 +8,8 @@ class Data:
         self.test = None
         self.test_orig = None
 
+        self.folds = None
+
     def __str__(self):
         return "Data: %s" % self.name
 
@@ -45,3 +47,16 @@ class Data:
             self.test = self.test_orig.split_weeks(timeformat)
         elif split == "month":
             self.test = self.test_orig.split_months(timeformat)
+
+    def create_folds(self, k):
+        self.folds = self.logfile.create_folds(k)
+
+    def get_fold(self, i):
+        self.test = {"full": {"data": self.folds[i]}}
+        self.train = None
+        for j in range(len(self.folds)):
+            if i != j:
+                if self.train:
+                    self.train.extend_data(self.folds[j])
+                else:
+                    self.train = self.folds[j]

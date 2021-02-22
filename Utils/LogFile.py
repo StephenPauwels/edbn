@@ -466,6 +466,26 @@ class LogFile:
 
         return train_logfile, test_logfile
 
+
+    def create_folds(self, k):
+        result = []
+        folds = np.array_split(np.arange(0, self.contextdata.shape[0]), k)
+        for f in folds:
+            print(f)
+
+            fold_context = self.contextdata.loc[f]
+
+            logfile = LogFile(None, None, None, None, self.time, self.trace, self.activity, self.values, False, False)
+            logfile.filename = self.filename
+            logfile.values = self.values
+            logfile.contextdata = fold_context
+            logfile.categoricalAttributes = self.categoricalAttributes
+            logfile.numericalAttributes = self.numericalAttributes
+            logfile.data = self.data.loc[f]
+            logfile.k = self.k
+            result.append(logfile)
+        return result
+
     def extend_data(self, log):
         train_logfile = LogFile(None, None, None, None, self.time, self.trace, self.activity, self.values, False, False)
         train_logfile.filename = self.filename

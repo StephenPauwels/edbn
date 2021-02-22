@@ -9,9 +9,10 @@ def store_results(file, results):
 
 
 if __name__ == "__main__":
-    DATASETS = ["BPIC11"] #["BPIC17", "BPIC19", "BPIC11", "SEPSIS"] #["Helpdesk", "BPIC12", "BPIC15_1", "BPIC15_2", "BPIC15_3", "BPIC15_4", "BPIC15_5"]
-    METHODS = ["SDL", "DBN"]
-    RETAIN = [True]
+    DATASETS = ["BPIC15_1", "BPIC15_2", "BPIC15_3", "BPIC15_4", "BPIC15_5"]#["Helpdesk", "BPIC12", "BPIC15_1", "BPIC15_2", "BPIC15_3", "BPIC15_4", "BPIC15_5"]
+    METHODS = ["SDL", "DBN", "TAX", "DIMAURO"]
+    RETAIN = []
+    COMPLETE_RETRAIN = True
     batch = ["day", "week", "month"]
 
     for data_name in DATASETS:
@@ -32,6 +33,11 @@ if __name__ == "__main__":
 
             res = [x for y in m.test(d) for x in y]
             store_results("results/%s_%s_normal.csv" % (m.name, d.name), res)
+
+            if COMPLETE_RETRAIN:
+                d.create_batch("month", timeformat)
+                res_complete = m.test_and_full_update(d)
+                store_results("results/%s_%s_month_complete.csv" % (m.name, d.name), res_complete)
 
             for r in RETAIN:
                 for b in batch:
