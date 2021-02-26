@@ -9,11 +9,11 @@ def store_results(file, results):
 
 
 if __name__ == "__main__":
-    DATASETS = ["BPIC15_1", "BPIC15_2", "BPIC15_3", "BPIC15_4", "BPIC15_5"]#["Helpdesk", "BPIC12", "BPIC15_1", "BPIC15_2", "BPIC15_3", "BPIC15_4", "BPIC15_5"]
-    METHODS = ["SDL", "DBN", "TAX", "DIMAURO"]
-    RETAIN = []
-    COMPLETE_RETRAIN = True
-    batch = ["day", "week", "month"]
+    DATASETS = ["BPIC11", "BPIC12", "BPIC15_1", "BPIC15_2", "BPIC15_3", "BPIC15_4", "BPIC15_5"]
+    METHODS = ["DIMAURO"] #, "DBN", "DIMAURO", "TAX"]
+    RESET = [True]
+    WINDOW = [1]
+    batch = ["month"]
 
     for data_name in DATASETS:
         timeformat = "%Y-%m-%d %H:%M:%S"
@@ -29,23 +29,22 @@ if __name__ == "__main__":
 
             d.prepare(s)
             d.create_batch("normal", timeformat)
-            basic_model = m.train(d)
+            if m.name == "Di Mauro":
+                m.def_params = {"early_stop": 4, "params": {"n_modules": 2}}
+            basic_model = m.train(d.train)
 
-            res = [x for y in m.test(d) for x in y]
+            res = m.test(basic_model, d.test_orig)
+
             store_results("results/%s_%s_normal.csv" % (m.name, d.name), res)
 
-            if COMPLETE_RETRAIN:
-                d.create_batch("month", timeformat)
-                res_complete = m.test_and_full_update(d)
-                store_results("results/%s_%s_month_complete.csv" % (m.name, d.name), res_complete)
-
-            for r in RETAIN:
-                for b in batch:
-                    d.create_batch(b, timeformat)
-                    res_update = [x for y in m.test_and_update(d, r) for x in y]
-                    if r:
-                        store_results("results/%s_%s_%s_retain.csv" % (m.name, d.name, b), res_update)
-                    else:
-                        store_results("results/%s_%s_%s.csv" % (m.name, d.name, b), res_update)
+            for b in batch:
+                for r in RESET:
+                    for w in WINDOW:
+                        d.create_batch(b, timeformat)
+                        results = m.test_and_update(basic_model, d, w, r)
+                        if r:
+                            store_results("results/%s_%s_%i_reset.csv" % (m.name, d.name, w), results)
+                        else:
+                            store_results("results/%s_%s_%i_update.csv" % (m.name, d.name, w), results)
 
 

@@ -199,7 +199,7 @@ def train(log, epochs=500, early_stop=42):
     return model
 
 
-def test(log, model):
+def test(model, log):
     from keras.utils import np_utils
 
     X_test = get_image_from_log(log)

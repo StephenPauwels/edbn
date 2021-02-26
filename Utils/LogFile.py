@@ -8,6 +8,7 @@ import multiprocessing as mp
 import numpy as np
 import pandas as pd
 from dateutil.parser import parse
+import math
 
 
 class LogFile:
@@ -412,6 +413,12 @@ class LogFile:
             new_logfile.contextdata = group.drop("year_week", axis=1)
             new_logfile.data = new_logfile.contextdata[self.attributes()]
 
+            year, week = eval(group_name)
+            group_name = "%i/" % year
+            if week < 10:
+                group_name += "0"
+            group_name += str(week)
+
             weeks[group_name] = {}
             weeks[group_name]["data"] = new_logfile
         return weeks
@@ -497,4 +504,112 @@ class LogFile:
         train_logfile.k = self.k
         return train_logfile
 
+    def get_traces(self):
+        return [list(case[1][self.activity]) for case in self.get_cases()]
+
+    def get_follows_relations(self, window=None):
+        return self.get_traces_follows_relations(self.get_traces(), window)
+
+    def get_traces_follows_relations(self, traces, window):
+        follow_counts = {}
+        counts = {}
+        for trace in traces:
+            for i in range(len(trace)):
+                act = trace[i]
+                if act not in follow_counts:
+                    follow_counts[act] = {}
+                    counts[act] = 0
+                counts[act] += 1
+
+                stop_value = len(trace)
+                if window:
+                    stop_value = min(len(trace), i+window)
+
+                for fol_act in set(trace[i+1:stop_value+1]):
+                    if fol_act not in follow_counts[act]:
+                        follow_counts[act][fol_act] = 0
+                    follow_counts[act][fol_act] += 1
+
+
+        follows = {}
+        for a in range(1, len(self.values[self.activity])+1):
+            always = 0
+            sometimes = 0
+            if a in follow_counts:
+                for b in follow_counts[a]:
+                    if a != b:
+                        if follow_counts[a][b] == counts[a]:
+                            always += 1
+                        else:
+                            sometimes += 1
+            never = len(self.values[self.activity]) - always - sometimes
+            follows[a] = (always, sometimes, never)
+
+        return follows, follow_counts
+
+
+    def get_relation_entropy(self):
+        follows, _ = self.get_follows_relations()
+        full_entropy = []
+        for act in range(1, len(self.values[self.activity])+1):
+            RC = follows[act]
+            p_a = RC[0] / len(self.values[self.activity])
+            p_s = RC[1] / len(self.values[self.activity])
+            p_n = RC[2] / len(self.values[self.activity])
+            entropy = 0
+            if p_a != 0:
+                entropy -= p_a * math.log(p_a)
+            if p_s != 0:
+                entropy -= p_s * math.log(p_s)
+            if p_n != 0:
+                entropy -= p_n * math.log(p_n)
+            full_entropy.append(entropy)
+        return full_entropy
+
+
+    def get_j_measure_trace(self, trace, window):
+        _, follows = self.get_traces_follows_relations([trace], window)
+        j_measure = []
+        value_counts = {}
+        for e in trace:
+            if e not in value_counts:
+                value_counts[e] = 0
+            value_counts[e] += 1
+        for act_1 in range(1, len(self.values[self.activity])+1):
+            for act_2 in range(1, len(self.values[self.activity]) + 1):
+                num_events = len(trace)
+                if act_1 in follows and act_2 in follows[act_1]:
+                    p_aFb = follows[act_1][act_2] / value_counts.get(act_1, 0)
+                else:
+                    p_aFb = 0
+
+                if act_1 not in value_counts:
+                    p_a = 0
+                else:
+                    p_a = value_counts.get(act_1, 0)/ num_events
+
+                if act_2 not in value_counts:
+                    p_b = 0
+                else:
+                    p_b = value_counts.get(act_2, 0) / num_events
+
+                j_value = 0
+                if p_aFb != 0 and p_b != 0:
+                    j_value += p_aFb * math.log(p_aFb / p_b, 2)
+
+                if p_aFb != 1 and p_b != 1:
+                    j_value += (1-p_aFb) * math.log((1-p_aFb) / (1-p_b), 2)
+
+                j_measure.append(p_a * j_value)
+
+        return j_measure
+
+
+    def get_j_measure(self, window=5):
+        traces = self.get_traces()
+        # return [np.mean(self.get_j_measure_trace(trace, window)) for trace in traces]
+        return [self.get_j_measure_trace(trace, window) for trace in traces]
+        # j_measures = np.asarray([self.get_j_measure_trace(trace, window) for trace in traces])
+        # avg_j_measures = [np.mean(j_measures[:,i]) for i in range(len(j_measures[0]))]
+        # return avg_j_measures
 

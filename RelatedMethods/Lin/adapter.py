@@ -9,7 +9,7 @@ def train(log, epochs=200, early_stop=42):
     return create_model(log, "tmp", epochs, early_stop)
 
 
-def test(log, model):
+def test(model, log):
     return predict_next(log, model)
 
 

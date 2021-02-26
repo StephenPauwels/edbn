@@ -32,7 +32,7 @@ def train(log, model_type="shared_cat", epochs=200, early_stop=42):
     return mo.training_model(log, event_emb, role_emb, args, epochs, early_stop)
 
 
-def test(log, model):
+def test(model, log):
     return pn.predict_next(log, model)
 
 

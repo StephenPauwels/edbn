@@ -6,9 +6,11 @@ from Predictions.eDBN_Prediction import predict_next_event, predict_next_event_u
 def train(log):
     return edbn_train(log)
 
-def test(log, model):
+def test(model, log):
     return predict_next_event(model, log)
 
+def update(model, log):
+    model.update_log(log)
 
 def test_and_update(logs, model, dummy=None):
     results = []

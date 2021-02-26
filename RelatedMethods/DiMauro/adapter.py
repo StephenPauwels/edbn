@@ -111,7 +111,7 @@ def load_data(log):
     return X, X_t, y
 
 
-def update(log, model, num_epochs=1):
+def update(model, log):
     X, X_t, y = load_data(log)
     y = to_categorical(y, num_classes=len(log.values["event"]) + 1)
 
@@ -120,10 +120,11 @@ def update(log, model, num_epochs=1):
     else:
         split = 0.2
 
-    model.fit([X, X_t], y, epochs=num_epochs, verbose=0, validation_split=split,
+    model.fit([X, X_t], y, epochs=10, verbose=0, validation_split=split,
               batch_size=log.k)
 
-def test(log, model):
+
+def test(model, log):
     X, X_t, y = load_data(log)
 
     # evaluate

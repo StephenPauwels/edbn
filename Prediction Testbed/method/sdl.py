@@ -93,7 +93,17 @@ def train(log, epochs, early_stop):
     return learn_model(log, log.attributes(), epochs, early_stop)
 
 
-def test(log, model):
+def update(model, log):
+    inputs, expected, _ = transform_data(log, [a for a in log.attributes() if a != log.time and a != log.trace])
+    model.fit(inputs, y=expected,
+              validation_split=0,
+              verbose=0,
+              batch_size=32,
+              epochs=10)
+    return model
+
+
+def test(model, log):
     inputs, expected, _ = transform_data(log, [a for a in log.attributes() if a != log.time and a != log.trace])
     predictions = model.predict(inputs)
     predict_vals = np.argmax(predictions, axis=1)

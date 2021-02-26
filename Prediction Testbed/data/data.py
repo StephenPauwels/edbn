@@ -60,3 +60,9 @@ class Data:
                     self.train.extend_data(self.folds[j])
                 else:
                     self.train = self.folds[j]
+
+    def get_batch_ids(self):
+        return sorted(self.test.keys())
+
+    def get_test_batch(self, idx):
+        return self.test[self.get_batch_ids()[idx]]["data"]

@@ -22,19 +22,17 @@ LINE_STYLE = {"DBN": "-", "SDL": "--", "Tax": "-.", "Di Mauro": ":"}
 
 METHODS = ["DBN", "SDL", "Tax", "Di Mauro"]
 DATASETS = ["Helpdesk", "BPIC11", "BPIC12", "BPIC15_1", "BPIC15_2", "BPIC15_3", "BPIC15_4", "BPIC15_5"]
-BATCH = ["day", "week", "month", "normal"]
-RETAIN = [False, True]
+RESET = [True, False]
+WINDOW = [0,1]
 
 
-def get_filename(dataset, method, batch, retain, multi=False):
-    filename = "%s_%s_%s" % (method, dataset, batch)
-    if retain:
-        return filename + "_retain"
+def get_filename(dataset, method, reset, window):
+    filename = "%s_%s_%i" % (method, dataset, window)
+    if reset:
+        filename += "_reset"
     else:
-        if method != "DBN" and multi:
-            return filename + "_multi"
-        else:
-            return filename
+        filename += "_update"
+    return filename
 
 
 def open_file(filename):
@@ -45,6 +43,37 @@ def open_file(filename):
             results.append((int(splitted[0]), int(splitted[1]), float(splitted[2])))
     return results
 
+
+def load_results_new():
+    all_results = {}
+    for m in METHODS:
+        for d in DATASETS:
+            for w in WINDOW:
+                for r in RESET:
+                    filename = get_filename(d, m, r, w)
+                    if os.path.isfile("results/" + filename + ".csv"):
+                        results = open_file("results/" + filename + ".csv")
+                        all_results[filename] = get_accuracy(results)
+
+            filename = "%s_%s_normal" % (m, d)
+            if os.path.isfile("results/" + filename + ".csv"):
+                results = open_file("results/" + filename + ".csv")
+                all_results[filename] = get_accuracy(results)
+
+    return all_results
+
+def get_accuracy(results):
+    x = []
+    y = []
+    total = 0
+    correct = 0
+    for res in results:
+        x.append(total)
+        if res[0] == res[1]:
+            correct += 1
+        total += 1
+        y.append(correct / total)
+    return y
 
 def load_results(cold=False):
     all_results = {}
@@ -90,6 +119,52 @@ def load_results(cold=False):
 
                         all_results[filename] = (x,y)
     return all_results
+
+
+def result_list():
+    all_results = {}
+    for m in METHODS:
+        for d in DATASETS:
+            filename = get_filename(d, m, "normal", False)
+            if os.path.isfile("results/" + filename + ".csv"):
+                results = open_file("results/" + filename + ".csv")
+                all_results[filename] = [r[0] == r[1] for r in results]
+    return all_results
+
+
+def create_latex_full_table_new(results):
+    for d in DATASETS:
+        line = d.replace("_", "\_") + " & No-update & "
+        for m in METHODS:
+            filename = "%s_%s_normal" % (m, d)
+            if filename in results:
+                result = results[filename][-1]
+                line += " & %.2f" % result
+            else:
+                line += " & "
+        line += "\\\\"
+        print(line)
+        # print("\cline{2-7}")
+        for r in RESET:
+            for w in WINDOW:
+                line = ""
+                if r and w == 0:
+                    line += "& Reset & Full"
+                elif not r and w == 0:
+                    # print("\cline{2-7}")
+                    line += "& Update & Full"
+                else:
+                    line += " & & Window (size %s)" % w
+
+                for m in METHODS:
+                    name = get_filename(d, m, r, w)
+                    if name in results:
+                        line += " & %.2f" % results[name][-1]
+                    else:
+                        line += " & "
+                line += "\\\\"
+                print(line)
+        print("\hline")
 
 
 def create_latex_full_table(results):
@@ -139,7 +214,7 @@ def create_latex_full_table(results):
         print("\hline")
 
 
-def create_baseline_dataset_plot(results):
+def create_baseline_dataset_plot(list_results, windowsize = 500):
     plt.rcParams["text.usetex"] = True
     plt.rcParams["text.latex.preamble"] = [r"\usepackage{lmodern}"]
 
@@ -151,11 +226,19 @@ def create_baseline_dataset_plot(results):
     for d in DATASETS:
         for m in METHODS:
             filename = get_filename(d, m, "normal", False)
-            if filename in results:
-                x,y = results[filename]
+            if filename in list_results:
+                result_list = list_results[filename]
                 plt.subplot(5,2,fig_num)
                 plt.title(d.replace("_", "\_"))
                 plt.ylim(0,1)
+
+                x = []
+                y = []
+                for x_i in range(windowsize, len(result_list), 1):
+                    x.append(len(x))
+                    y.append(sum(result_list[x_i - windowsize:x_i]) / windowsize)
+
+
                 plt.plot(x, y, label=m, color=colors[m][0], ls=LINE_STYLE[m])
 
         fig_num += 1
@@ -303,10 +386,11 @@ def create_cold_plot(results):
 
 
 if __name__ == "__main__":
-    results = load_results()
-    # create_baseline_dataset_plot(results)
+    results = load_results_new()
+    # list_results = result_list()
+    # create_baseline_dataset_plot(list_results)
     # create_strategy_plot(results)
     # create_batch_plot(results)
     # create_compare_normal_plot(results)
-    create_latex_full_table(results)
+    create_latex_full_table_new(results)
     # create_cold_plot(results)

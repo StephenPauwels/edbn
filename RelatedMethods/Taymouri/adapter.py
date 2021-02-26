@@ -114,7 +114,7 @@ def train(train_log, epoch=1, batch_size=5):
 
     return rnnG
 
-def test(test_log, model, batch_size=5):
+def test(model, test_log, batch_size=5):
     test_data = adapted_Input()
     test_data.run(test_log, batch_size, False)
 

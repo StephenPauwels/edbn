@@ -126,7 +126,18 @@ def train(log, epochs=10, early_stop=42):
     return model
 
 
-def test(log, model):
+def update(model, log):
+    X, y = transform_log(log)
+    if len(X) < 10:
+        split = 0
+    else:
+        split = 0.2
+    model.fit(X, {'act_output': y}, validation_split=split, verbose=0,
+              batch_size=log.k, epochs=10)
+    return model
+
+
+def test(model, log):
     X, y = transform_log(log)
     predictions = model.predict(X)
     predict_vals = np.argmax(predictions, axis=1)
