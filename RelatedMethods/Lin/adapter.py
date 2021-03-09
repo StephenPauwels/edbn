@@ -1,12 +1,27 @@
 from keras.models import load_model
 
 from RelatedMethods.Lin.Modulator import Modulator
-from RelatedMethods.Lin.model import create_model, predict_next
+from RelatedMethods.Lin.model import create_model, predict_next, vectorization
 from Utils.LogFile import LogFile
 
 
 def train(log, epochs=200, early_stop=42):
     return create_model(log, "tmp", epochs, early_stop)
+
+
+def update(model, log):
+    vec = vectorization(log)
+
+    model.fit({'act_input':vec['prefixes']['x_ac_inp'],
+               'role_input':vec['prefixes']['x_rl_inp']},
+              {'act_output':vec['next_evt']['y_ac_inp'],
+               'role_output':vec['next_evt']['y_rl_inp']},
+              validation_split=0.2,
+              verbose=2,
+              batch_size=5,
+              epochs=10)
+
+    return model
 
 
 def test(model, log):

@@ -10,16 +10,17 @@ def get_method(method_name):
         return Method("DBN", edbn.train, edbn.test, edbn.update)
     elif method_name == "CAMARGO":
         from RelatedMethods.Camargo import adapter as camargo
-        return Method("Camargo", camargo.train, camargo.test, {"epochs": 200, "early_stop": 10})
+        return Method("Camargo", camargo.train, camargo.test, camargo.update, {"epochs": 200, "early_stop": 10})
     elif method_name == "DIMAURO":
         from RelatedMethods.DiMauro import adapter as dimauro
         return Method("Di Mauro", dimauro.train, dimauro.test, dimauro.update, {"epochs": 200, "early_stop": 10})
     elif method_name == "LIN":
         from RelatedMethods.Lin import adapter as lin
-        return Method("Lin", lin.train, lin.test, {"epochs": 200, "early_stop": 10})
+        return Method("Lin", lin.train, lin.test, lin.update, {"epochs": 200, "early_stop": 10})
     elif method_name == "PASQUADIBISCEGLIE":
         from RelatedMethods.Pasquadibisceglie import adapter as pasquadibisceglie
-        return Method("Pasquadibisceglie", pasquadibisceglie.train, pasquadibisceglie.test, {"epochs": 200, "early_stop": 10})
+        return Method("Pasquadibisceglie", pasquadibisceglie.train, pasquadibisceglie.test,
+                      pasquadibisceglie.update, {"epochs": 200, "early_stop": 10})
     elif method_name == "TAX":
         from RelatedMethods.Tax import adapter as tax
         return Method("Tax", tax.train, tax.test, tax.update, {"epochs": 200, "early_stop": 10})

@@ -9,11 +9,23 @@ def store_results(file, results):
 
 
 if __name__ == "__main__":
-    DATASETS = ["BPIC11", "BPIC12", "BPIC15_1", "BPIC15_2", "BPIC15_3", "BPIC15_4", "BPIC15_5"]
-    METHODS = ["DIMAURO"] #, "DBN", "DIMAURO", "TAX"]
-    RESET = [True]
-    WINDOW = [1]
+    DATASETS = ["BPIC15_1", "BPIC15_2", "BPIC15_3", "BPIC15_4", "BPIC15_5","Helpdesk", "BPIC11", "BPIC12"]
+    METHODS = ["SDL", "DBN", "DIMAURO", "TAX"]
+    DRIFT = False
+    RESET = [False, True]
+    WINDOW = [0]
     batch = ["month"]
+
+    DRIFT_LIST = {
+        "Helpdesk": [9, 26],
+        "BPIC11": [1, 9, 18],
+        "BPIC12": [],
+        "BPIC15_1": [2, 17, 24, 28],
+        "BPIC15_2": [1, 7, 20, 27],
+        "BPIC15_3": [1, 9, 15, 27],
+        "BPIC15_4": [17, 20, 25],
+        "BPIC15_5": [3, 20, 27]
+    }
 
     for data_name in DATASETS:
         timeformat = "%Y-%m-%d %H:%M:%S"
@@ -39,6 +51,14 @@ if __name__ == "__main__":
 
             for b in batch:
                 for r in RESET:
+                    if DRIFT:
+                        d.create_batch(b, timeformat)
+                        results = m.test_and_update_drift(basic_model, d, DRIFT_LIST[data_name], r)
+                        if r:
+                            store_results("results/%s_%s_drift_reset.csv" % (m.name, d.name), results)
+                        else:
+                            store_results("results/%s_%s_drift_update.csv" % (m.name, d.name), results)
+
                     for w in WINDOW:
                         d.create_batch(b, timeformat)
                         results = m.test_and_update(basic_model, d, w, r)

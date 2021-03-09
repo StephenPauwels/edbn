@@ -45,9 +45,17 @@ class Method:
 
             # Prepare new train-data
             if window == 0: # Window == 0 -> Use all available historical events
-                train_data = data.train.extend_data(predict_batch)
-            elif window == 1: # Window == 1 -> Use current tested batch for training
+                train_data = train_data.extend_data(predict_batch)
+            elif window >= 1:
                 train_data = predict_batch
+                for w in range(1,window):
+                    add_time = predict_time - w
+                    if add_time < 0:
+                        train_data = train_data.extend_data(data.train)
+                        break
+                    else:
+                        train_data = train_data.extend_data(data.get_test_batch(add_time))
+
 
             # Update
             if reset:
@@ -56,6 +64,41 @@ class Method:
                 model = self.update(model, train_data)
         return results
 
+    def test_and_update_drift(self, model, data, drifts, reset):
+        try:
+            model = copy.deepcopy(model)
+        except:
+            import tensorflow as tf
+            model.save("tmp_model")
+            model = tf.keras.models.load_model("tmp_model")
+
+        train_data = data.train
+
+        results = []
+        for predict_time in range(len(data.get_batch_ids())):
+            print("%i / %i" % (predict_time, len(data.get_batch_ids())))
+            predict_batch = data.get_test_batch(predict_time)
+            # Test current batch
+            results.extend(self.test(model, predict_batch))
+
+            if reset:
+                if predict_time in drifts:  # New drift detected
+                    print("RESET - Drift Detected")
+                    train_data = predict_batch
+                else:
+                    print("RESET - No drift")
+                    train_data = train_data.extend_data(predict_batch)
+                model = self.train(train_data)
+            else:
+                train_data = predict_batch
+                if predict_time in drifts:
+                    print("UPDATE - Drift Detected")
+                    model = self.train(train_data)
+                else:
+                    print("UPDATE - No drift")
+                    model = self.update(model, train_data)
+
+        return results
 
     def k_fold_validation(self, data, k):
         data.create_folds(k)

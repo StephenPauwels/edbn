@@ -425,8 +425,8 @@ class LogFile:
 
     def split_months(self, date_format, num_days=1):
         from datetime import datetime
-
         self.contextdata["month"] = self.contextdata[self.time].map(lambda l: str(datetime.strptime(l, date_format).strftime("%Y/%m")))
+
         months = {}
         for group_name, group in self.contextdata.groupby("month"):
             new_logfile = LogFile(None, None, None, None, self.time, self.trace, self.activity, self.values, False, False)

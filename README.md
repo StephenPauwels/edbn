@@ -31,7 +31,7 @@ All experiments in the papers can be reproduced using the files in the Anomalies
 2. [Pauwels, Stephen, and Toon Calders. "Detecting and Explaining Drifts in Yearly Grant Applications." BPI Challenge 2018 (2018)](http://adrem.uantwerpen.be//bibrem/pubs/pauwels2018BPIC.pdf)
 3. [Pauwels, Stephen, and Toon Calders. "Detecting Anomalies in Hybrid Business Process Logs." Applied Computing Review, Volume 19  Issue 2  Page 18-30 (2019)](http://adrem.uantwerpen.be//bibrem/pubs/AcmAnomaly.pdf)
 4. [Pauwels, Stephen, and Toon Calders. "Bayesian Network based Predictions of Business Processes." Accepted for BPM Forum 2020](https://www.researchgate.net/publication/342918314_Bayesian_Network_based_Predictions_of_Business_Processes)
-5. Pauwels, Stephen, and Toon Calders. "Evaluating Next Event Predictions: What Could go Wrong?" Work in Progress.
+5. Pauwels, Stephen, and Toon Calders. "Incremental Predictive Process Monitoring: The Next Activity Case" Submitted for BPM 2021.
 6. [Böhmer, Kristof, and Stefanie Rinderle-Ma. "Multi-perspective anomaly detection in business process execution events." OTM Confederated International Conferences" On the Move to Meaningful Internet Systems". Springer, Cham, 2016.](https://eprints.cs.univie.ac.at/4785/1/cr.pdf)
 7. [Nolle, Timo, et al. "BINet: Multi-perspective Business Process Anomaly Classification." arXiv preprint arXiv:1902.03155 (2019).](https://arxiv.org/pdf/1902.03155.pdf)
 8. Camargo, M., Dumas, M., Gonz ́alez-Rojas, O.: Learning accurate lstm models ofbusiness processes. In: International Conference on Business Process Management.pp. 286–302. Springer (2019)

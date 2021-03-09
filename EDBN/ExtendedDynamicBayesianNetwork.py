@@ -11,6 +11,7 @@ from joblib import Parallel, delayed
 from sklearn.model_selection import GridSearchCV
 from sklearn.neighbors import KernelDensity
 
+from CPT_inverted_index import CPT_inverted_index
 from EDBN.CPT import CPT
 # from EDBN.NNTable import NNT
 import Utils.Result as Result
@@ -253,6 +254,7 @@ class Discrete_Variable(Variable):
 
         # self.conditional_table = NNT(self.attr_name)
         self.conditional_table = CPT(self.attr_name)
+        # self.conditional_table = CPT_inverted_index(self.attr_name)
         self.functional_parents = []
         self.fdt = []
         self.fdt_violation = []
@@ -321,6 +323,9 @@ class Discrete_Variable(Variable):
         atr_value = getattr(row, self.attr_name)
         if atr_value in self.values:
             self.values[atr_value] += 1
+            self.total_rows += 1
+        else:
+            self.values[atr_value] = 1
             self.total_rows += 1
         self.conditional_table.update(row)
 

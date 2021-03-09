@@ -66,3 +66,6 @@ class Data:
 
     def get_test_batch(self, idx):
         return self.test[self.get_batch_ids()[idx]]["data"]
+
+    def get_batch_timestamp(self, idx):
+        return self.get_batch_ids()[idx]

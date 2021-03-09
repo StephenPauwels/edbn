@@ -4,13 +4,14 @@ from EDBN.LearnBayesianStructure import Structure_learner
 from Predictions.eDBN_Prediction import predict_next_event, predict_next_event_update
 
 def train(log):
-    return edbn_train(log)
+    return edbn_train(log, False)
 
 def test(model, log):
     return predict_next_event(model, log)
 
 def update(model, log):
     model.update_log(log)
+    return model
 
 def test_and_update(logs, model, dummy=None):
     results = []

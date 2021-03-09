@@ -199,6 +199,21 @@ def train(log, epochs=500, early_stop=42):
     return model
 
 
+def update(model, log):
+    from keras.utils import np_utils
+
+    X_train = get_image_from_log(log)
+    y_train = get_label_from_log(log)
+    train_Y_one_hot = np_utils.to_categorical(y_train, len(log.values[log.activity]) + 1)
+
+    split = 0
+    if len(X_train) > 10:
+        split = 0.2
+
+    model.fit(X_train, {'act_output': train_Y_one_hot}, validation_split=split, verbose=1,
+              batch_size=128, epochs=10)
+    return model
+
 def test(model, log):
     from keras.utils import np_utils
 

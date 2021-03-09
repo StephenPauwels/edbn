@@ -32,6 +32,24 @@ def train(log, model_type="shared_cat", epochs=200, early_stop=42):
     return mo.training_model(log, event_emb, role_emb, args, epochs, early_stop)
 
 
+def update(model, log):
+    vec = mo.vectorization(log)
+
+    split = 0
+    if len(log.contextdata) > 10:
+        split = 0.2
+
+    model.fit({'ac_input':vec['prefixes']['x_ac_inp'],
+               'rl_input':vec['prefixes']['x_rl_inp']},
+              {'act_output':vec['next_evt']['y_ac_inp'],
+               'role_output':vec['next_evt']['y_rl_inp']},
+              validation_split=split,
+              verbose=2,
+              batch_size=vec['prefixes']['x_ac_inp'].shape[1],
+              epochs=10)
+    return model
+
+
 def test(model, log):
     return pn.predict_next(log, model)
 

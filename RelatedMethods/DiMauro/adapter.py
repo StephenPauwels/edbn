@@ -122,7 +122,7 @@ def update(model, log):
 
     model.fit([X, X_t], y, epochs=10, verbose=0, validation_split=split,
               batch_size=log.k)
-
+    return model
 
 def test(model, log):
     X, X_t, y = load_data(log)
