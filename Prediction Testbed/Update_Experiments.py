@@ -3,17 +3,23 @@ import data
 import method
 
 def store_results(file, results):
+    return
     with open(file, "w") as fout:
         for r in results:
             fout.write(",".join([str(r_i) for r_i in r]) + "\n")
 
 
+def store_timings(file, timings):
+    with open(file, "w") as fout:
+        for t in timings:
+            fout.write(str(t) + "\n")
+
 if __name__ == "__main__":
-    DATASETS = ["BPIC15_1", "BPIC15_2", "BPIC15_3", "BPIC15_4", "BPIC15_5","Helpdesk", "BPIC11", "BPIC12"]
-    METHODS = ["SDL", "DBN", "DIMAURO", "TAX"]
-    DRIFT = False
+    DATASETS = ["BPIC15_1"]
+    METHODS = ["TAX"]
+    DRIFT = True
     RESET = [False, True]
-    WINDOW = [0]
+    WINDOW = [0,1,5]
     batch = ["month"]
 
     DRIFT_LIST = {
@@ -43,8 +49,12 @@ if __name__ == "__main__":
             d.create_batch("normal", timeformat)
             if m.name == "Di Mauro":
                 m.def_params = {"early_stop": 4, "params": {"n_modules": 2}}
-            basic_model = m.train(d.train)
 
+            import time
+            start_time = time.time()
+            basic_model = m.train(d.train)
+            print("Runtime %s:" % m, time.time() - start_time)
+            input("Waiting")
             res = m.test(basic_model, d.test_orig)
 
             store_results("results/%s_%s_normal.csv" % (m.name, d.name), res)
@@ -53,18 +63,23 @@ if __name__ == "__main__":
                 for r in RESET:
                     if DRIFT:
                         d.create_batch(b, timeformat)
-                        results = m.test_and_update_drift(basic_model, d, DRIFT_LIST[data_name], r)
+                        results, timings = m.test_and_update_drift(basic_model, d, DRIFT_LIST[data_name], r)
                         if r:
                             store_results("results/%s_%s_drift_reset.csv" % (m.name, d.name), results)
+                            store_timings("results/%s_%s_drift_reset_time.csv" % (m.name, d.name), timings)
                         else:
                             store_results("results/%s_%s_drift_update.csv" % (m.name, d.name), results)
+                            store_timings("results/%s_%s_drift_update_time.csv" % (m.name, d.name), timings)
 
                     for w in WINDOW:
                         d.create_batch(b, timeformat)
-                        results = m.test_and_update(basic_model, d, w, r)
+                        results, timings = m.test_and_update(basic_model, d, w, r)
                         if r:
                             store_results("results/%s_%s_%i_reset.csv" % (m.name, d.name, w), results)
+                            store_timings("results/%s_%s_%i_reset_time.csv" % (m.name, d.name, w), timings)
+
                         else:
                             store_results("results/%s_%s_%i_update.csv" % (m.name, d.name, w), results)
+                            store_timings("results/%s_%s_%i_update_time.csv" % (m.name, d.name, w), timings)
 
 

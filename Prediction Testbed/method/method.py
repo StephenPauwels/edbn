@@ -1,4 +1,5 @@
 import copy
+import time
 
 class Method:
 
@@ -37,12 +38,14 @@ class Method:
         train_data = data.train
 
         results = []
+        timings = []
         for predict_time in range(len(data.get_batch_ids())):
             print("%i / %i" % (predict_time, len(data.get_batch_ids())))
             predict_batch = data.get_test_batch(predict_time)
             # Test current batch
             results.extend(self.test(model, predict_batch))
 
+            start_time = time.time()
             # Prepare new train-data
             if window == 0: # Window == 0 -> Use all available historical events
                 train_data = train_data.extend_data(predict_batch)
@@ -62,7 +65,9 @@ class Method:
                 model = self.train(train_data)
             else:
                 model = self.update(model, train_data)
-        return results
+
+            timings.append(time.time() - start_time)
+        return results, timings
 
     def test_and_update_drift(self, model, data, drifts, reset):
         try:
@@ -75,12 +80,14 @@ class Method:
         train_data = data.train
 
         results = []
+        timings = []
         for predict_time in range(len(data.get_batch_ids())):
             print("%i / %i" % (predict_time, len(data.get_batch_ids())))
             predict_batch = data.get_test_batch(predict_time)
             # Test current batch
             results.extend(self.test(model, predict_batch))
 
+            start_time = time.time()
             if reset:
                 if predict_time in drifts:  # New drift detected
                     print("RESET - Drift Detected")
@@ -97,8 +104,9 @@ class Method:
                 else:
                     print("UPDATE - No drift")
                     model = self.update(model, train_data)
+            timings.append(time.time() - start_time)
 
-        return results
+        return results, timings
 
     def k_fold_validation(self, data, k):
         data.create_folds(k)

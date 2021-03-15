@@ -17,10 +17,11 @@ from EDBN.CPT import CPT
 import Utils.Result as Result
 
 
-def calculate(trace):
+def calculate(trace, model, time_attribute):
     case = trace[0]
     data = trace[1]
-    result = Result.Trace_result(case, data[time_attribute].iloc[0])
+
+    result = Result.Trace_result(case, time=data[time_attribute].iloc[0])
     for row in data.itertuples():
         e_result = model.test_row(row)
         result.add_event(e_result)
@@ -113,21 +114,27 @@ class ExtendedDynamicBayesianNetwork():
         """
         Return the result for all traces in the data
         """
-        def initializer(init_model, time_attr):
-            global model
-            model = init_model
-            global time_attribute
-            time_attribute = time_attr
+        # def initializer(init_model, time_attr):
+        #     global model
+        #     model = init_model
+        #     global time_attribute
+        #     time_attribute = time_attr
 
         data.create_k_context()
 
         print("EVALUATION: Calculate Scores")
         if accum_attr is None:
             accum_attr = self.trace_attr
-        with mp.Pool(mp.cpu_count(), initializer, (self, data.time)) as p:
-            scores = p.map(calculate, data.contextdata.groupby([accum_attr]))
+        scores = []
+
+        for group in data.contextdata.groupby([accum_attr]):
+            scores.append(calculate(group, self, data.time))
+        # Disabled due to pickle error
+        # with mp.Pool(mp.cpu_count(), initializer, (self, data.time)) as p:
+        #     scores = p.map(calculate, data.contextdata.groupby([accum_attr]))
         print("EVALUATION: Scores Calculated")
-        scores.sort(key=lambda l:l.time)
+        print("TIME:", scores[0].time)
+        scores.sort(key=lambda l: l.time)
         return scores
 
     def calculate_scores_per_attribute(self, data, accum_attr = None):

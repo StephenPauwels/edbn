@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import os.path
+import statistics
 
 tableau20 = [(31, 119, 180), (174, 199, 232), (255, 127, 14), (255, 187, 120),
              (44, 160, 44), (152, 223, 138),
@@ -51,30 +52,53 @@ def load_results_new():
     for m in METHODS:
         for d in DATASETS:
             for r in RESET:
-                for drift in [True, False]:
-                    if r:
-                        filename = "%s_%s_drift_reset" % (m, d)
-                    else:
-                        filename = "%s_%s_drift_update" % (m,d)
-                    if os.path.isfile("results/" + filename + ".csv"):
-                        results = open_file("results/" + filename + ".csv")
-                        all_results[filename] = [1 if res[0] == res[1] else 0 for res in results]
-                        # print(filename, len(all_results[filename]))
+                if r:
+                    filename = "%s_%s_drift_reset" % (m, d)
+                else:
+                    filename = "%s_%s_drift_update" % (m,d)
+                if os.path.isfile("results/" + filename + ".csv"):
+                    results = open_file("results/" + filename + ".csv")
+                    all_results[filename] = [1 if res[0] == res[1] else 0 for res in results]
 
                 for w in WINDOW:
                     filename = get_filename(d, m, r, w)
                     if os.path.isfile("results/" + filename + ".csv"):
                         results = open_file("results/" + filename + ".csv")
                         all_results[filename] = [1 if res[0] == res[1] else 0 for res in results]
-                        # print(filename, len(all_results[filename]))
 
             filename = "%s_%s_normal" % (m, d)
             if os.path.isfile("results/" + filename + ".csv"):
                 results = open_file("results/" + filename + ".csv")
                 all_results[filename] = [1 if res[0] == res[1] else 0 for res in results]
-                # print(filename, len(all_results[filename]))
 
     return all_results
+
+
+def load_timings():
+    all_timings = {}
+    for m in METHODS:
+        for d in DATASETS:
+            for r in RESET:
+                if r:
+                    filename = "%s_%s_drift_reset_time" % (m, d)
+                else:
+                    filename = "%s_%s_drift_update_time" % (m, d)
+                if os.path.isfile("results/%s.csv" % filename):
+                    times = []
+                    with open("results/%s.csv" % filename) as finn:
+                        for line in finn:
+                            times.append(float(line))
+                    all_timings[filename] = times
+
+                for w in WINDOW:
+                    filename = "%s_time" % get_filename(d, m, r, w)
+                    if os.path.isfile("results/%s.csv" % filename):
+                        times = []
+                        with open("results/%s.csv" % filename) as finn:
+                            for line in finn:
+                                times.append(float(line))
+                        all_timings[filename] = times
+    return all_timings
 
 
 def load_results(cold=False):
@@ -479,12 +503,32 @@ def create_cold_plot(results):
     plt.show()
 
 
+def create_timing_table(timings, dataset):
+    for m in METHODS:
+        for w in WINDOW:
+            for r in [True, False]:
+                filename = "%s_time" % get_filename(dataset, m, r, w)
+                if filename in timings:
+                    print(m,w,r, statistics.mean(timings[filename]), statistics.stdev(timings[filename]))
+                else:
+                    print(m,w,r, "No results")
+
+        for r in [True, False]:
+            filename = "%s_%s_drift_%s_time" % (m, dataset, "reset" if r else "update")
+            if filename in timings:
+                print(m, "drift", r, statistics.mean(timings[filename]), statistics.stdev(timings[filename]))
+            else:
+                print(m, "drift", r, "No results")
+
+
 if __name__ == "__main__":
-    results = load_results_new()
+    # results = load_results_new()
+    timings = load_timings()
+    create_timing_table(timings, "BPIC15_1")
     # list_results = result_list()
     # create_baseline_dataset_plot(results)
-    create_strategy_plot_new(results, "BPIC15_1")
+    # create_strategy_plot_new(results, "BPIC15_1")
     # create_batch_plot(results)
     # create_compare_normal_plot(results)
-    create_latex_full_table_new(results)
+    # create_latex_full_table_new(results)
     # create_cold_plot(results)
