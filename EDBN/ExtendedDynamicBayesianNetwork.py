@@ -133,7 +133,6 @@ class ExtendedDynamicBayesianNetwork():
         # with mp.Pool(mp.cpu_count(), initializer, (self, data.time)) as p:
         #     scores = p.map(calculate, data.contextdata.groupby([accum_attr]))
         print("EVALUATION: Scores Calculated")
-        print("TIME:", scores[0].time)
         scores.sort(key=lambda l: l.time)
         return scores
 
