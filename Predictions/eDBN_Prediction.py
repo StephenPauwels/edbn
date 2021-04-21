@@ -159,7 +159,7 @@ def predict_next_event_row(row, model, activity):
 
     predicted_val = max(probs, key=lambda l: probs[l])
 
-    return (getattr(row[1], activity), predicted_val, probs[predicted_val])
+    return (getattr(row[1], activity), predicted_val, probs[predicted_val], probs.get(getattr(row[1], activity),0))
 
     # if getattr(row[1], activity) == predicted_val:
     #     return 1

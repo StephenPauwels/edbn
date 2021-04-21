@@ -260,7 +260,8 @@ def model_eval_test(modelG, mode, obj):
             accuracy_record_2most_probable.append(correct_prediction_2most_probable)
             predicted.append(y_pred)
 
-            results.append((y_truth[i], y_pred_last_event[i], 0))
+            # TODO: add probs for predicted value and expected value
+            results.append((int(y_truth[i][0].item()), int(y_pred_last_event[i][0].item()), 0, 0))
 
     rnnG.train()
 

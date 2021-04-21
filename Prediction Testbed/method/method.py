@@ -108,13 +108,11 @@ class Method:
 
         return results, timings
 
-    def k_fold_validation(self, data, k):
-        data.create_folds(k)
-
+    def k_fold_validation(self, data):
         results = []
-        for i in range(k):
+        for i in range(len(data.folds)):
             data.get_fold(i)
-            self.train(data, self.def_params)
-            results.extend(self.test(data))
+            model = self.train(data.train, self.def_params)
+            results.extend(self.test(model, data.test))
         return results
 

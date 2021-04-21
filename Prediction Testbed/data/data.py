@@ -27,6 +27,9 @@ class Data:
         if setting.add_end:
             self.logfile.add_end_events()
 
+        if setting.filter_cases:
+            self.logfile.filter_case_length(setting.filter_cases)
+
         print("CONVERT")
         self.logfile.convert2int()
         print("K-CONTEXT")
@@ -34,9 +37,12 @@ class Data:
         self.logfile.contextdata = self.logfile.contextdata.sort_values(by=[self.logfile.time]).reset_index()
 
         print("SPLIT TRAIN-TEST")
-        self.train, self.test_orig = self.logfile.splitTrainTest(setting.train_percentage, setting.split_cases, setting.split_data)
-        self.train.contextdata = self.train.contextdata.sort_values(by=[self.train.time]).reset_index()
-        self.test_orig.contextdata = self.test_orig.contextdata.sort_values(by=[self.train.time]).reset_index()
+        if setting.train_split != "k-fold":
+            self.train, self.test_orig = self.logfile.splitTrainTest(setting.train_percentage, setting.split_cases, setting.train_split)
+            self.train.contextdata = self.train.contextdata.sort_values(by=[self.train.time]).reset_index()
+            self.test_orig.contextdata = self.test_orig.contextdata.sort_values(by=[self.train.time]).reset_index()
+        else:
+            self.create_folds(setting.train_k)
 
     def create_batch(self, split="normal", timeformat=None):
         if split == "normal":
@@ -52,7 +58,7 @@ class Data:
         self.folds = self.logfile.create_folds(k)
 
     def get_fold(self, i):
-        self.test = {"full": {"data": self.folds[i]}}
+        self.test = self.folds[i]
         self.train = None
         for j in range(len(self.folds)):
             if i != j:

@@ -136,7 +136,8 @@ def test(model, log):
     # accuracy = accuracy_score(y, preds_a)
     predict_vals = np.argmax(preds_a, axis=1)
     predict_probs = preds_a[np.arange(preds_a.shape[0]), predict_vals]
-    result = zip(y, predict_vals, predict_probs)
+    expect_probs = preds_a[np.arange(preds_a.shape[0]), y]
+    result = zip(y, predict_vals, predict_probs, expect_probs)
 
     return result
 

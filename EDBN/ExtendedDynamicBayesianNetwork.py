@@ -11,7 +11,7 @@ from joblib import Parallel, delayed
 from sklearn.model_selection import GridSearchCV
 from sklearn.neighbors import KernelDensity
 
-from CPT_inverted_index import CPT_inverted_index
+# from CPT_inverted_index import CPT_inverted_index
 from EDBN.CPT import CPT
 # from EDBN.NNTable import NNT
 import Utils.Result as Result
@@ -133,7 +133,7 @@ class ExtendedDynamicBayesianNetwork():
         # with mp.Pool(mp.cpu_count(), initializer, (self, data.time)) as p:
         #     scores = p.map(calculate, data.contextdata.groupby([accum_attr]))
         print("EVALUATION: Scores Calculated")
-        scores.sort(key=lambda l: l.time)
+        # scores.sort(key=lambda l: l.time)
         return scores
 
     def calculate_scores_per_attribute(self, data, accum_attr = None):

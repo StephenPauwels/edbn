@@ -11,6 +11,9 @@ import RelatedMethods.Taymouri.event_prediction as ep
 import RelatedMethods.Taymouri.preparation as pr
 from Utils.LogFile import LogFile
 
+device=torch.device('cuda:0')
+
+
 
 class adapted_Input(pr.Input):
     def run(self, log, batch_size, train):

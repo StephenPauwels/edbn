@@ -29,4 +29,4 @@ def get_method(method_name):
         return Method("Taymouri", taymouri.train, taymouri.test, {"epoch": 10})
 
 
-ALL = ["TAX", "LIN", "CAMARGO", "DIMAURO", "PASQUADIBISCEGLIE", "TAYMOURI", "DBN", "SDL"]
+ALL = ["SDL", "DBN", "CAMARGO", "DIMAURO", "LIN", "PASQUADIBISCEGLIE", "TAX", "TAYMOURI"]

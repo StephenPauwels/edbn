@@ -478,8 +478,6 @@ class LogFile:
         result = []
         folds = np.array_split(np.arange(0, self.contextdata.shape[0]), k)
         for f in folds:
-            print(f)
-
             fold_context = self.contextdata.loc[f]
 
             logfile = LogFile(None, None, None, None, self.time, self.trace, self.activity, self.values, False, False)

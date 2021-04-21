@@ -149,7 +149,7 @@ def predict(model, prefixes):
         pos = np.argmax(predictions[0][0])
         random.choice(predictions[0][0], )
 
-        results.append((prefix["ac_next"], pos, predictions[0][0][pos]))
+        results.append((prefix["ac_next"], pos, predictions[0][0][pos], predictions[0][0][prefix["ac_next"]]))
 
     return results
 

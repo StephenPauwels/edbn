@@ -228,7 +228,8 @@ def test(model, log):
     predict_vals = np.argmax(predictions, axis=1)
 
     predict_probs = predictions[np.arange(predictions.shape[0]), predict_vals]
-    result = zip(y_test, predict_vals, predict_probs)
+    expected_probs = predictions[np.arange(predictions.shape[0]), y_test]
+    result = zip(y_test, predict_vals, predict_probs, expected_probs)
 
     return result
 
