@@ -6,6 +6,7 @@ import torch
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import DataLoader, TensorDataset
 from tqdm import tqdm
+import numpy as np
 
 import RelatedMethods.Taymouri.event_prediction as ep
 import RelatedMethods.Taymouri.preparation as pr
@@ -73,16 +74,11 @@ class adapted_Input(pr.Input):
             if row["event_Prev0"] == 0:
                 continue
             for i in range(self.log.k - 1, -1, -1):
-                new_row = {}
-                keys = list(self.unique_event)
-                for k in keys:
-                    if k == row['event_Prev%i' % i]:
-                        new_row[k] = 1
-                    else:
-                        new_row[k] = 0
+                new_row = np.zeros(len(self.unique_event))
+                new_row[row["event_Prev%i" % i]] = 1
                 row_prefix.append(new_row)
 
-            tmp.append(torch.tensor(pd.DataFrame(row_prefix).values, dtype=torch.float, requires_grad=False))
+            tmp.append(torch.tensor(row_prefix, dtype=torch.float, requires_grad=False))
             tmp_y.append(torch.tensor([row["event"]], dtype=torch.float, requires_grad=False))
 
         self.design_matrix_padded = pad_sequence(tmp, batch_first=True)

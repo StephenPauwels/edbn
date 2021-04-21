@@ -293,8 +293,8 @@ if __name__ == "__main__":
     import method
     import data
 
-    for d in ["BPIC12W"]: #["Helpdesk", "BPIC12W", "BPIC12", "BPIC11", "BPIC15_1", "BPIC15_2", "BPIC15_3", "BPIC15_4", "BPIC15_5"]:
-        for m in ["PASQUADIBISCEGLIE"]:
+    for d in ["BPIC15_2"]: #["Helpdesk", "BPIC12W", "BPIC12", "BPIC11", "BPIC15_1", "BPIC15_2", "BPIC15_3", "BPIC15_4", "BPIC15_5"]:
+        for m in ["TAYMOURI"]:
             try:
                 print("TEST Standard")
                 test_standard(d, method.get_method(m))
