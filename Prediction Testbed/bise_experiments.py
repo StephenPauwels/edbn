@@ -183,6 +183,23 @@ def test_standard(dataset, m):
     save_results(r, d.name, m.name, setting.STANDARD)
 
 
+def test_base_comparison():
+    tests = [("LIN", setting.LIN), ("TAX", setting.TAX), ("CAMARGO", setting.CAMARGO), ("DIMAURO", setting.DIMAURO),
+             ("PASQUADIBISCEGLIE", setting.PASQUADIBISCEGLIE), ("SDL", setting.STANDARD), ("DBN", setting.CAMARGO)]
+
+    for test in tests:
+        d = data.get_data("Helpdesk")
+        m = method.get_method(test[0])
+        s = test[1]
+
+        d.prepare(s)
+        if result_exists("Helpdesk", m, s):
+            continue
+
+        r = m.test(m.train(d.train), d.test_orig)
+
+        save_results(r, d.name, m.name, s)
+
 def ranking_experiments(output_file):
     for d in all_data:
         event_data = get_data(d)
@@ -286,27 +303,30 @@ def check_result_files():
                 print("  TEST END EVENT: %s %s" % ("True" if end_event else "False", "OK" if result_exists(d, m, basic_setting) else ""))
 
 
-if __name__ == "__main__":
-    # check_result_files()
-    # ranking_experiments("ranking_results.txt")
 
+if __name__ == "__main__":
     import method
     import data
 
-    for d in ["BPIC12W"]: #["Helpdesk", "BPIC12W", "BPIC12", "BPIC11", "BPIC15_1", "BPIC15_2", "BPIC15_3", "BPIC15_4", "BPIC15_5"]:
-        for m in ["PASQUADIBISCEGLIE"]:
-            try:
-                print("TEST Standard")
-                test_standard(d, method.get_method(m))
-                print("TEST k")
-                test_k(d, method.get_method(m))
-                test_split(d, method.get_method(m))
-                test_filter(d, method.get_method(m))
-                test_percentage(d, method.get_method(m))
-                test_split_cases(d, method.get_method(m))
-                test_end_event(d, method.get_method(m))
-            except:
-                traceback.print_exc()
+    test_base_comparison()
+    # check_result_files()
+    # ranking_experiments("ranking_results.txt")
+
+    #
+    # for d in ["BPIC11"]: #["Helpdesk", "BPIC12W", "BPIC12", "BPIC11", "BPIC15_1", "BPIC15_2", "BPIC15_3", "BPIC15_4", "BPIC15_5"]:
+    #     for m in ["TAYMOURI"]:
+    #         try:
+    #             print("TEST Standard")
+    #             test_standard(d, method.get_method(m))
+    #             print("TEST k")
+    #             test_k(d, method.get_method(m))
+    #             test_split(d, method.get_method(m))
+    #             test_filter(d, method.get_method(m))
+    #             test_percentage(d, method.get_method(m))
+    #             test_split_cases(d, method.get_method(m))
+    #             test_end_event(d, method.get_method(m))
+    #         except:
+    #             traceback.print_exc()
 
     # s = setting.STANDARD
     # s.train_split = "k-fold"

@@ -218,8 +218,11 @@ class LogFile:
         if self.contextdata is None:
             # result = map(self.create_k_context_trace, self.data.groupby([self.trace]))
 
-            with mp.Pool(mp.cpu_count()) as p:
-                result = p.map(self.create_k_context_trace, self.data.groupby([self.trace]))
+            # with mp.Pool(mp.cpu_count()) as p:
+            #     result = p.map(self.create_k_context_trace, self.data.groupby([self.trace]))
+
+            result = map(self.create_k_context_trace, self.data.groupby([self.trace]))
+
             self.contextdata = pd.concat(result, ignore_index=True)
 
     def create_k_context_trace(self, trace):

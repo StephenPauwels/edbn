@@ -6,6 +6,7 @@ import torch
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import DataLoader, TensorDataset
 from tqdm import tqdm
+import numpy as np
 
 import RelatedMethods.Taymouri.event_prediction as ep
 import RelatedMethods.Taymouri.preparation as pr
@@ -73,16 +74,12 @@ class adapted_Input(pr.Input):
             if row["event_Prev0"] == 0:
                 continue
             for i in range(self.log.k - 1, -1, -1):
-                new_row = {}
-                keys = list(self.unique_event)
-                for k in keys:
-                    if k == row['event_Prev%i' % i]:
-                        new_row[k] = 1
-                    else:
-                        new_row[k] = 0
+                new_row = np.zeros(len(self.unique_event))
+                new_row[row["event_Prev%i" % i]] = 1
                 row_prefix.append(new_row)
 
-            tmp.append(torch.tensor(pd.DataFrame(row_prefix).values, dtype=torch.float, requires_grad=False))
+
+            tmp.append(torch.tensor(row_prefix, dtype=torch.float, requires_grad=False))
             tmp_y.append(torch.tensor([row["event"]], dtype=torch.float, requires_grad=False))
 
         self.design_matrix_padded = pad_sequence(tmp, batch_first=True)
@@ -129,21 +126,13 @@ def test(model, test_log, batch_size=5):
     return acc
 
 if __name__ == "__main__":
-    # data = "../../Data/Helpdesk.csv"
-    data = "../../Data/Taymouri_bpi_12_w.csv"
-    case_attr = "case"
-    act_attr = "event"
+    from data import Data
+    import setting
+    from metric import ACCURACY
 
-    logfile = LogFile(data, ",", 0, None, None, case_attr,
-                      activity_attr=act_attr, convert=False, k=35)
-    logfile.add_end_events()
-    logfile.convert2int()
+    d = Data("Helpdesk", LogFile("../../Data/Helpdesk.csv", ",", 0, None, "completeTime", "case", activity_attr="event", convert=False))
+    d.logfile.keep_attributes(["event", "role", "completeTime"])
+    d.prepare(setting.STANDARD)
 
-    logfile.create_k_context()
-    train_log, test_log = logfile.splitTrainTest(80, case=True, method="train-test")
-
-    train_data, test_data = create_input(train_log, test_log, 5)
-    model = train(train_data)
-
-    test(test_data, model)
-
+    r = test(train(d.train), d.test_orig)
+    print("Accuracy:", ACCURACY.calculate(r))

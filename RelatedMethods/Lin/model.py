@@ -9,12 +9,12 @@ import os
 from functools import partial
 
 import jellyfish as jf
-import keras.utils as ku
+import tensorflow.keras.utils as ku
 import numpy as np
-from keras.callbacks import EarlyStopping, ModelCheckpoint
-from keras.layers import Input, Embedding, Dropout, Concatenate, LSTM, Dense, BatchNormalization
-from keras.models import Model, load_model
-from keras.optimizers import Nadam
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
+from tensorflow.keras.layers import Input, Embedding, Dropout, Concatenate, LSTM, Dense, BatchNormalization
+from tensorflow.keras.models import Model, load_model
+from tensorflow.keras.optimizers import Nadam
 
 from RelatedMethods.Lin.Modulator import Modulator
 

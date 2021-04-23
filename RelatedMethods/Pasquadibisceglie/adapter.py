@@ -184,6 +184,7 @@ def train(log, epochs=500, early_stop=42):
         model.add(Conv2D(128, (8, 8), padding='same', kernel_regularizer=regularizers.l2(reg), ))
         model.add(BatchNormalization())
         model.add(Activation('relu'))
+
         model.add(MaxPooling2D(pool_size=(2, 2)))
 
     model.add(Flatten())

@@ -5,7 +5,7 @@
 """
 
 import tensorflow as tf
-from keras.layers import Layer
+from tensorflow.keras.layers import Layer
 
 REPR_DIM = 100
 
