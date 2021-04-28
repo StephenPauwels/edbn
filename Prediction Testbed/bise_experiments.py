@@ -1,6 +1,7 @@
 import traceback
 from copy import copy
 
+import metric
 from data import all_data, get_data
 from method import ALL as ALL_METHODS
 from setting import ALL as ALL_SETTINGS
@@ -63,11 +64,12 @@ def test_split(dataset, m):
     for split in splits:
         d = data.get_data(dataset)
         basic_setting.train_split = split
-        d.prepare(basic_setting)
 
         print(get_full_filename(dataset, m, basic_setting))
         if result_exists(dataset, m, basic_setting):
             continue
+
+        d.prepare(basic_setting)
 
         if split == "k-fold":
             r = m.k_fold_validation(d)
@@ -85,11 +87,12 @@ def test_k(dataset, m):
     for k in ks:
         d = data.get_data(dataset)
         basic_setting.train_k = k
-        d.prepare(basic_setting)
 
         print(get_full_filename(dataset, m, basic_setting))
         if result_exists(dataset, m, basic_setting):
             continue
+
+        d.prepare(basic_setting)
 
         r = m.k_fold_validation(d)
 
@@ -121,11 +124,12 @@ def test_end_event(dataset, m):
     for end_event in end_events:
         d = data.get_data(dataset)
         basic_setting.add_end = end_event
-        d.prepare(basic_setting)
 
         print(get_full_filename(dataset,m, basic_setting))
         if result_exists(dataset, m, basic_setting):
             continue
+
+        d.prepare(basic_setting)
 
         r = m.test(m.train(d.train), d.test_orig)
 
@@ -139,11 +143,12 @@ def test_split_cases(dataset, m):
     for split_case in split_cases:
         d = data.get_data(dataset)
         basic_setting.split_cases = split_case
-        d.prepare(basic_setting)
 
         print(get_full_filename(dataset,m, basic_setting))
         if result_exists(dataset, m, basic_setting):
             continue
+
+        d.prepare(basic_setting)
 
         r = m.test(m.train(d.train), d.test_orig)
 
@@ -159,11 +164,12 @@ def test_filter(dataset, m):
         basic_setting.filter_cases = filter
         if filter == 5 and dataset == "Helpdesk":
             basic_setting.filter_cases = 3
-        d.prepare(basic_setting)
 
         print(get_full_filename(dataset,m, basic_setting))
         if result_exists(dataset, m, basic_setting):
             continue
+
+        d.prepare(basic_setting)
 
         r = m.test(m.train(d.train), d.test_orig)
 
@@ -192,13 +198,29 @@ def test_base_comparison():
         m = method.get_method(test[0])
         s = test[1]
 
-        d.prepare(s)
         if result_exists("Helpdesk", m, s):
             continue
+
+        d.prepare(s)
 
         r = m.test(m.train(d.train), d.test_orig)
 
         save_results(r, d.name, m.name, s)
+
+
+def test_stability():
+    results = {}
+    d = data.get_data("Helpdesk")
+    d.prepare(setting.STANDARD)
+    for method_name in method.ALL:
+        results[method_name] = []
+        m = method.get_method(method_name)
+        for _ in range(10):
+            r = m.test(m.train(d.train), d.test_orig)
+            results[method_name].append(metric.ACCURACY.calculate(r))
+
+    for m in results:
+        print("\t".join([str(a) for a in results[m]]))
 
 def ranking_experiments(output_file):
     for d in all_data:
@@ -230,16 +252,16 @@ def get_scores(d, m, s):
                 results.append(tuple(line.replace("\n", "").split(",")))
 
         import metric
-        print("/".join(path) + "/" + filename)
-        acc = metric.ACCURACY.calculate(results)
-        print("ACC:", acc)
-        brier = metric.BRIER.calculate(results)
-        print("Brier:", brier)
-        prec = metric.PRECISION.calculate(results)
-        print("Precision:", prec)
-        recall = metric.RECALL.calculate(results)
-        print("Recall:", recall)
-
+        # print("/".join(path) + "/" + filename)
+        # acc = metric.ACCURACY.calculate(results)
+        # print("ACC:", acc)
+        # brier = metric.BRIER.calculate(results)
+        # print("Brier:", brier)
+        # prec = metric.PRECISION.calculate(results)
+        # print("Precision:", prec)
+        # recall = metric.RECALL.calculate(results)
+        # print("Recall:", recall)
+        return results
 
 def check_result_files():
     import method
@@ -308,25 +330,25 @@ if __name__ == "__main__":
     import method
     import data
 
-    test_base_comparison()
+    # test_base_comparison()
     # check_result_files()
     # ranking_experiments("ranking_results.txt")
-
+    test_stability()
     #
-    # for d in ["BPIC11"]: #["Helpdesk", "BPIC12W", "BPIC12", "BPIC11", "BPIC15_1", "BPIC15_2", "BPIC15_3", "BPIC15_4", "BPIC15_5"]:
-    #     for m in ["TAYMOURI"]:
-    #         try:
-    #             print("TEST Standard")
-    #             test_standard(d, method.get_method(m))
-    #             print("TEST k")
-    #             test_k(d, method.get_method(m))
-    #             test_split(d, method.get_method(m))
-    #             test_filter(d, method.get_method(m))
-    #             test_percentage(d, method.get_method(m))
-    #             test_split_cases(d, method.get_method(m))
-    #             test_end_event(d, method.get_method(m))
-    #         except:
-    #             traceback.print_exc()
+    # for d in ["BPIC15_3", "BPIC15_4", "BPIC15_5"]: #["Helpdesk", "BPIC12W", "BPIC12", "BPIC11", "BPIC15_1", "BPIC15_2", "BPIC15_3", "BPIC15_4", "BPIC15_5"]:
+        # for m in ["TAYMOURI"]:
+        #     try:
+        #         print("TEST Standard")
+        #         test_standard(d, method.get_method(m))
+        #         print("TEST k")
+        #         test_k(d, method.get_method(m))
+        #         test_split(d, method.get_method(m))
+        #         test_filter(d, method.get_method(m))
+        #         test_percentage(d, method.get_method(m))
+        #         test_split_cases(d, method.get_method(m))
+        #         test_end_event(d, method.get_method(m))
+        #     except:
+        #         traceback.print_exc()
 
     # s = setting.STANDARD
     # s.train_split = "k-fold"
