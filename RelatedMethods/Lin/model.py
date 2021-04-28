@@ -294,10 +294,9 @@ def _predict_next(model, prefixes):
     # Generation of predictions
     results = []
     for prefix in prefixes:
-
         # Activities and roles input shape(1,5)
-        x_ac_ngram = [prefix['ac_pref']]
-        x_rl_ngram = [prefix['rl_pref']]
+        x_ac_ngram = np.array([prefix['ac_pref']])
+        x_rl_ngram = np.array([prefix['rl_pref']])
 
         predictions = model.predict([x_ac_ngram, x_rl_ngram])
 

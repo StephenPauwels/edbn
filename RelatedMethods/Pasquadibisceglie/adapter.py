@@ -99,7 +99,7 @@ def get_image_from_log(log):
                     t = datetime.strptime(t_raw, "%Y/%m/%d %H:%M:%S.%f")
                 if starttime is None:
                     starttime = t
-                diffs[event] = (t - starttime).total_seconds()
+                diffs[event] = (t - starttime).total_seconds() / (60*60*24)
             image[log.k - 1 - i] = np.array(list(zip(conts[1:], diffs[1:])))
         list_image.append(image)
     return list_image

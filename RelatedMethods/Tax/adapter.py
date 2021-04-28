@@ -41,13 +41,11 @@ def transform_log(log):
 
 
 def train(log, epochs=10, early_stop=42):
-    from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
-    from keras.layers import Input
-    from keras.layers.core import Dense
-    from keras.layers.normalization import BatchNormalization
-    from keras.layers.recurrent import LSTM
-    from keras.models import Model
-    from keras.optimizers import Nadam
+    from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
+    from tensorflow.keras.layers import Input
+    from tensorflow.keras.layers import Dense, BatchNormalization, LSTM
+    from tensorflow.keras.models import Model
+    from tensorflow.keras.optimizers import Nadam
     """
     transform_log(log)
     input("Waiting")

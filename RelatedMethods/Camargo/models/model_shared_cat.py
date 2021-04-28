@@ -134,7 +134,7 @@ def training_model(vec, ac_weights, rl_weights, output_folder, args, epochs, ear
                'role_output':vec['next_evt']['y_rl_inp']},
               validation_split=0.2,
               verbose=2,
-              callbacks=[early_stopping, model_checkpoint, lr_reducer],
+              callbacks=[early_stopping, model_checkpoint],#, lr_reducer],
               batch_size=vec['prefixes']['x_ac_inp'].shape[1],
               epochs=epochs)
 

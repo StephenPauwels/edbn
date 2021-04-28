@@ -35,9 +35,6 @@ class LogFile:
             type = "int"
         if filename is not None:
             self.data = pd.read_csv(self.filename, header=header, nrows=rows, delimiter=delim, encoding='latin-1', dtype="str")
-            print("PREPROCESSING: Sorting on", self.time)
-            # self.data = self.data.sort_values(by=[self.time]).reset_index()
-
 
             # Determine types for all columns - numerical or categorical
             for col_type in self.data.dtypes.iteritems():
@@ -218,10 +215,10 @@ class LogFile:
         if self.contextdata is None:
             # result = map(self.create_k_context_trace, self.data.groupby([self.trace]))
 
-            # with mp.Pool(mp.cpu_count()) as p:
-            #     result = p.map(self.create_k_context_trace, self.data.groupby([self.trace]))
+            with mp.Pool(mp.cpu_count()) as p:
+                result = p.map(self.create_k_context_trace, self.data.groupby([self.trace]))
 
-            result = map(self.create_k_context_trace, self.data.groupby([self.trace]))
+            # result = map(self.create_k_context_trace, self.data.groupby([self.trace]))
 
             self.contextdata = pd.concat(result, ignore_index=True)
 

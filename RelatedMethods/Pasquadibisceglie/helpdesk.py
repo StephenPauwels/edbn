@@ -33,13 +33,13 @@ def get_label(act):
 
 def dataset_summary(dataset):
     df = pd.read_csv(dataset, sep=",")
-    print("Activity Distribution\n", df['Activity'].value_counts())
-    n_caseid = df['CaseID'].nunique()
-    n_activity = df['Activity'].nunique()
+    print("Activity Distribution\n", df['event'].value_counts())
+    n_caseid = df['case'].nunique()
+    n_activity = df['event'].nunique()
     print("Number of CaseID", n_caseid)
     print("Number of Unique Activities", n_activity)
-    print("Number of Activities", df['Activity'].count())
-    cont_trace = df['CaseID'].value_counts(dropna=False)
+    print("Number of Activities", df['event'].count())
+    cont_trace = df['case'].value_counts(dropna=False)
     max_trace = max(cont_trace)
     print("Max lenght trace", max_trace)
     print("Mean lenght trace", np.mean(cont_trace))
@@ -85,8 +85,8 @@ def get_image(act_val, time_val, max_trace, n_activity):
 df, max_trace, n_caseid, n_activity = dataset_summary("dataset/helpdesk.csv")
 
 #group by activity and timestamp by caseid
-act = df.groupby('CaseID').agg({'Activity': lambda x: list(x)})
-temp = df.groupby('CaseID').agg({'Timestamp': lambda x: list(x)})
+act = df.groupby('case').agg({'event': lambda x: list(x)})
+temp = df.groupby('case').agg({'completeTime': lambda x: list(x)})
 
 #split dataset first 2/3 - 1/3
 size = int((n_caseid/3)*2)
@@ -100,9 +100,6 @@ test_temp = temp[size:]
 #generate training and test set
 X_train = get_image(train_act, train_temp, max_trace, n_activity)
 X_test = get_image(test_act, test_temp, max_trace, n_activity)
-
-print(X_train[0])
-input("Wait")
 
 l_train = get_label(train_act)
 l_test = get_label(test_act)
