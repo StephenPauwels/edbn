@@ -184,21 +184,40 @@ def test_standard(dataset, m):
 
 
 def test_base_comparison():
-    tests = [("LIN", setting.LIN), ("TAX", setting.TAX), ("CAMARGO", setting.CAMARGO), ("DIMAURO", setting.DIMAURO),
-             ("PASQUADIBISCEGLIE", setting.PASQUADIBISCEGLIE), ("SDL", setting.STANDARD), ("DBN", setting.CAMARGO)]
+    tests = [("LIN", setting.LIN), ("TAX", setting.TAX), ("CAMARGO", setting.CAMARGO),
+             ("PASQUADIBISCEGLIE", setting.PASQUADIBISCEGLIE), ("SDL", setting.STANDARD), ("DBN", setting.CAMARGO),
+             ("TAYMOURI", setting.TAYMOURI)]
 
     for test in tests:
-        d = data.get_data("Helpdesk")
+        print("Test", test[0])
+        d = data.get_data("Helpdesk2")
         m = method.get_method(test[0])
         s = test[1]
+        if test[0] == "LIN":
+            s.filter_cases = 3
+
+        if result_exists("Helpdesk2", m, s):
+            continue
 
         d.prepare(s)
-        if result_exists("Helpdesk", m, s):
-            continue
 
         r = m.test(m.train(d.train), d.test_orig)
 
         save_results(r, d.name, m.name, s)
+
+    # Di Mauro k-fold test
+    d = data.get_data("Helpdesk2")
+    m = method.get_method("DIMAURO")
+    s = setting.DIMAURO
+
+    if result_exists("Helpdesk2", m, s):
+        return
+
+    d.prepare(s)
+
+    r = m.k_fold_validation(d)
+    save_results(r, d.name, m.name, s)
+
 
 def ranking_experiments(output_file):
     for d in all_data:
@@ -229,16 +248,17 @@ def get_scores(d, m, s):
             for line in finn:
                 results.append(tuple(line.replace("\n", "").split(",")))
 
-        import metric
-        print("/".join(path) + "/" + filename)
-        acc = metric.ACCURACY.calculate(results)
-        print("ACC:", acc)
-        brier = metric.BRIER.calculate(results)
-        print("Brier:", brier)
-        prec = metric.PRECISION.calculate(results)
-        print("Precision:", prec)
-        recall = metric.RECALL.calculate(results)
-        print("Recall:", recall)
+        # import metric
+        # print("/".join(path) + "/" + filename)
+        # acc = metric.ACCURACY.calculate(results)
+        # print("ACC:", acc)
+        # brier = metric.BRIER.calculate(results)
+        # print("Brier:", brier)
+        # prec = metric.PRECISION.calculate(results)
+        # print("Precision:", prec)
+        # recall = metric.RECALL.calculate(results)
+        # print("Recall:", recall)
+        return results
 
 
 def check_result_files():
@@ -313,20 +333,20 @@ if __name__ == "__main__":
     # ranking_experiments("ranking_results.txt")
 
     #
-    # for d in ["BPIC11"]: #["Helpdesk", "BPIC12W", "BPIC12", "BPIC11", "BPIC15_1", "BPIC15_2", "BPIC15_3", "BPIC15_4", "BPIC15_5"]:
+    # for d in ["Helpdesk"]: #["Helpdesk", "BPIC12W", "BPIC12", "BPIC11", "BPIC15_1", "BPIC15_2", "BPIC15_3", "BPIC15_4", "BPIC15_5"]:
     #     for m in ["TAYMOURI"]:
     #         try:
     #             print("TEST Standard")
     #             test_standard(d, method.get_method(m))
-    #             print("TEST k")
-    #             test_k(d, method.get_method(m))
-    #             test_split(d, method.get_method(m))
-    #             test_filter(d, method.get_method(m))
-    #             test_percentage(d, method.get_method(m))
-    #             test_split_cases(d, method.get_method(m))
-    #             test_end_event(d, method.get_method(m))
-    #         except:
-    #             traceback.print_exc()
+                # print("TEST k")
+                # test_k(d, method.get_method(m))
+                # test_split(d, method.get_method(m))
+                # test_filter(d, method.get_method(m))
+                # test_percentage(d, method.get_method(m))
+                # test_split_cases(d, method.get_method(m))
+                # test_end_event(d, method.get_method(m))
+            # except:
+            #     traceback.print_exc()
 
     # s = setting.STANDARD
     # s.train_split = "k-fold"
