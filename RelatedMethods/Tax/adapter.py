@@ -1,5 +1,7 @@
 import copy
 import os
+import time
+from datetime import datetime
 
 import numpy as np
 
@@ -25,18 +27,58 @@ def convert_log(log):
 
 def transform_log(log):
     activities = log.values[log.activity]
-    X = np.zeros((len(log.contextdata), log.k, len(activities) + 1), dtype=np.float32)
+    X = np.zeros((len(log.contextdata), log.k, len(activities) + 5), dtype=np.float32)
     y_a = np.zeros((len(log.contextdata), len(activities) + 1), dtype=np.float32)
     j = 0
+    sum_duration = 0
+    count_duration = 0
     for row in log.contextdata.iterrows():
-        act = getattr(row[1], log.activity)
-        k = 0
-        for i in range(log.k -1, -1, -1):
-            X[j, log.k - i - 1, getattr(row[1], "%s_Prev%i" % (log.activity, i))] = 1
-            X[j, log.k - i - 1, len(activities)] = k
-            k += 1
-        y_a[j, act] = 1
-        j += 1
+        # if getattr(row[1], "%s_Prev1" % log.activity) != 0: #TODO: ignore events with prefix size of 1
+            act = getattr(row[1], log.activity)
+            k = 0
+            for i in range(log.k -1, -1, -1):
+                X[j, log.k - i - 1, getattr(row[1], "%s_Prev%i" % (log.activity, i))] = 1
+                X[j, log.k - i - 1, len(activities)] = k
+
+                str_time = getattr(row[1], "%s_Prev%i" % (log.time, i))
+                if i == log.k - 1:
+                    prev_str = str_time
+                else:
+                    prev_str = getattr(row[1], "%s_Prev%i" % (log.time, i+1))
+
+                if str_time != 0: #No event
+                    event_time = time.strptime(str_time, "%Y-%m-%d %H:%M:%S")
+
+                    X[j, log.k - i - 1, getattr(row[1], "%s_Prev%i" % (log.activity, i))] = 1
+                    X[j, log.k - i - 1, len(activities)] = k
+
+                    if prev_str != 0:
+                        prev_time = time.strptime(prev_str, "%Y-%m-%d %H:%M:%S")
+                        diff_prev_event = datetime.fromtimestamp(time.mktime(event_time)) \
+                                          - datetime.fromtimestamp(time.mktime(prev_time))
+                        diff = 86400 * diff_prev_event.days + diff_prev_event.seconds
+                        sum_duration += diff
+                        count_duration += 1
+                        X[j, log.k - i - 1, len(activities) + 1] = diff
+                        X[j, log.k - i - 1, len(activities) + 2] = 0
+
+                    X[j, log.k - i - 1, len(activities) + 3] = (event_time.tm_hour * 3600 + event_time.tm_min * 60 + event_time.tm_sec) / 86400
+                    X[j, log.k - i - 1, len(activities) + 4] = event_time.tm_wday / 7
+
+                    #TODO add Time since previous event / Average time since previous event
+                    #TODO add Time since start case / Average time since start case
+                    #TODO second in day (starting from midnight) / 86400
+                    #TODO day of week / 7
+                k += 1
+            y_a[j, act] = 1
+            j += 1
+
+    #Calculate mean value for all durations
+    # avg_duration = sum_duration / count_duration
+    # for j in range(j):
+    #     for i in range(log.k - 1, -1, -1):
+    #         X[j, i, len(activities) + 1] = X[j, i, len(activities) + 1] / avg_duration
+
     return X, y_a
 
 
@@ -97,7 +139,7 @@ def train(log, epochs=10, early_stop=42):
 
     # build the model:
     print('Build model...')
-    main_input = Input(shape=(log.k, len(log.values[log.activity])+1), name='main_input')
+    main_input = Input(shape=(log.k, len(log.values[log.activity])+5), name='main_input')
     # train a 2-layer LSTM with one shared layer
     l1 = LSTM(100, implementation=2, kernel_initializer='glorot_uniform', return_sequences=True, dropout=0.2)(main_input) # the shared layer
     b1 = BatchNormalization()(l1)
