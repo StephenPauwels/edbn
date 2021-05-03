@@ -118,7 +118,7 @@ def process_split_cases():
 if __name__ == "__main__":
     RESULT_FOLDER = "bise_results"
 
-    # check_result_files()
+    check_result_files()
     # process_standard()
     # process_k()
     # process_split()

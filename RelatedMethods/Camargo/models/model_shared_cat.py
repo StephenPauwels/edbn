@@ -7,13 +7,10 @@ Created on Thu Feb 28 10:15:12 2019
 
 import os
 
-from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
-from keras.layers import Input, Embedding, Concatenate
-from keras.layers.core import Dense
-from keras.layers.normalization import BatchNormalization
-from keras.layers.recurrent import LSTM
-from keras.models import Model
-from keras.optimizers import Nadam, Adam, SGD, Adagrad
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
+from tensorflow.keras.layers import Input, Embedding, Concatenate, Dense, BatchNormalization, LSTM
+from tensorflow.keras.models import Model
+from tensorflow.keras.optimizers import Nadam, Adam, SGD, Adagrad
 
 
 def training_model(vec, ac_weights, rl_weights, output_folder, args, epochs, early_stop):

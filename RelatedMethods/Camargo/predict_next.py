@@ -12,7 +12,7 @@ import random
 import jellyfish as jf
 import numpy as np
 import pandas as pd
-from keras.models import load_model
+from tensorflow.keras.models import load_model
 
 from RelatedMethods.Camargo.support_modules import support as sup
 

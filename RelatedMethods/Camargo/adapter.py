@@ -1,8 +1,6 @@
 import itertools
 import math
 
-from keras.models import load_model
-
 import RelatedMethods.Camargo.embedding_training as em
 import RelatedMethods.Camargo.model_training as mo
 import RelatedMethods.Camargo.predict_next as pn

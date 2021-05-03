@@ -178,11 +178,12 @@ def test_filter(dataset, m):
 
 def test_standard(dataset, m):
     d = data.get_data(dataset)
-    d.prepare(setting.STANDARD)
 
     print(get_full_filename(dataset, m, setting.STANDARD))
     if result_exists(dataset, m, setting.STANDARD):
         return
+
+    d.prepare(setting.STANDARD)
 
     r = m.test(m.train(d.train), d.test_orig)
 
@@ -196,13 +197,13 @@ def test_base_comparison():
 
     for test in tests:
         print("Test", test[0])
-        d = data.get_data("Helpdesk2")
+        d = data.get_data("Helpdesk")
         m = method.get_method(test[0])
         s = test[1]
         if test[0] == "LIN":
             s.filter_cases = 3
 
-        if result_exists("Helpdesk2", m, s):
+        if result_exists("Helpdesk", m, s):
             continue
 
         d.prepare(s)
@@ -212,11 +213,11 @@ def test_base_comparison():
         save_results(r, d.name, m.name, s)
 
     # Di Mauro k-fold test
-    d = data.get_data("Helpdesk2")
+    d = data.get_data("Helpdesk")
     m = method.get_method("DIMAURO")
     s = setting.DIMAURO
 
-    if result_exists("Helpdesk2", m, s):
+    if result_exists("Helpdesk", m, s):
         return
 
     d.prepare(s)
@@ -230,7 +231,7 @@ def test_stability():
     results = {}
     d = data.get_data("Helpdesk")
     d.prepare(setting.STANDARD)
-    for method_name in method.ALL:
+    for method_name in ["SDL", "CAMARGO", "DIMAURO", "LIN", "PASQUADIBISCEGLIE", "TAX", "TAYMOURI"]:
         results[method_name] = []
         m = method.get_method(method_name)
         for _ in range(10):
@@ -238,7 +239,7 @@ def test_stability():
             results[method_name].append(metric.ACCURACY.calculate(r))
 
     for m in results:
-        print("\t".join([str(a) for a in results[m]]))
+        print(m, "\t".join([str(a) for a in results[m]]))
 
 def ranking_experiments(output_file):
     for d in all_data:
@@ -287,7 +288,7 @@ def check_result_files():
 
     for d in ["Helpdesk", "BPIC12W", "BPIC12", "BPIC11", "BPIC15_1", "BPIC15_2", "BPIC15_3", "BPIC15_4", "BPIC15_5"]:
         print("DATASET: %s" % d)
-        for m in method.ALL:
+        for m in ["PASQUADIBISCEGLIE"]:
             if m == "DIMAURO":
                 m = "Di Mauro"
             print(" METHOD: %s" % m)
@@ -352,22 +353,23 @@ if __name__ == "__main__":
     # test_base_comparison()
     # check_result_files()
     # ranking_experiments("ranking_results.txt")
-    test_stability()
+    # test_stability()
+
     #
-    # for d in ["BPIC11"]: #["Helpdesk", "BPIC12W", "BPIC12", "BPIC11", "BPIC15_1", "BPIC15_2", "BPIC15_3", "BPIC15_4", "BPIC15_5"]:
-    #     for m in ["TAYMOURI"]:
-    #         try:
-    #             print("TEST Standard")
-    #             test_standard(d, method.get_method(m))
-    #             print("TEST k")
-    #             test_k(d, method.get_method(m))
-    #             test_split(d, method.get_method(m))
-    #             test_filter(d, method.get_method(m))
-    #             test_percentage(d, method.get_method(m))
-    #             test_split_cases(d, method.get_method(m))
-    #             test_end_event(d, method.get_method(m))
-    #         except:
-    #             traceback.print_exc()
+    for d in ["Helpdesk", "BPIC12W", "BPIC12", "BPIC11", "BPIC15_1", "BPIC15_2", "BPIC15_3", "BPIC15_4", "BPIC15_5"]:
+        for m in ["PASQUADIBISCEGLIE"]:
+            try:
+                print("TEST Standard")
+                test_standard(d, method.get_method(m))
+                print("TEST k")
+                test_k(d, method.get_method(m))
+                test_split(d, method.get_method(m))
+                test_filter(d, method.get_method(m))
+                test_percentage(d, method.get_method(m))
+                test_split_cases(d, method.get_method(m))
+                test_end_event(d, method.get_method(m))
+            except:
+                traceback.print_exc()
 
     # s = setting.STANDARD
     # s.train_split = "k-fold"
