@@ -12,6 +12,13 @@ def train(data, only_activity=True):
     cbn.train(data)
     return cbn
 
+
+def update(model, data, only_activity=True):
+    cbn = gm.update_model(data, only_activity, model)
+    cbn.train(data)
+    return cbn
+
+
 def test(test_data, output_file, model, label, normal_val, train_data=None):
 
     if train_data:

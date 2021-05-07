@@ -611,3 +611,12 @@ class LogFile:
         # avg_j_measures = [np.mean(j_measures[:,i]) for i in range(len(j_measures[0]))]
         # return avg_j_measures
 
+
+def combine(logfiles):
+    if len(logfiles) == 0:
+        return None
+
+    log = copy.deepcopy(logfiles[0])
+    for i in range(1, len(logfiles)):
+        log = log.extend_data(logfiles[i])
+    return log
