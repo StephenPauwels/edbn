@@ -106,11 +106,12 @@ def test_percentage(dataset, m):
     for percentage in train_percentages:
         d = data.get_data(dataset)
         basic_setting.train_percentage = percentage
-        d.prepare(basic_setting)
 
         print(get_full_filename(dataset,m, basic_setting))
         if result_exists(dataset, m, basic_setting):
             continue
+
+        d.prepare(basic_setting)
 
         r = m.test(m.train(d.train), d.test_orig)
 
@@ -357,11 +358,9 @@ if __name__ == "__main__":
 
     #
     for d in ["Helpdesk", "BPIC12W", "BPIC12", "BPIC11", "BPIC15_1", "BPIC15_2", "BPIC15_3", "BPIC15_4", "BPIC15_5"]:
-        for m in ["PASQUADIBISCEGLIE"]:
+        for m in ["SDL", "CAMARGO", "DIMAURO", "LIN", "PASQUADIBISCEGLIE", "TAX", "TAYMOURI"]:
             try:
-                print("TEST Standard")
                 test_standard(d, method.get_method(m))
-                print("TEST k")
                 test_k(d, method.get_method(m))
                 test_split(d, method.get_method(m))
                 test_filter(d, method.get_method(m))

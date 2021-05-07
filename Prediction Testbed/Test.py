@@ -9,14 +9,14 @@ from copy import copy
 
 def process_standard():
     for dataset in ["Helpdesk", "BPIC12W", "BPIC12", "BPIC11", "BPIC15_1", "BPIC15_2", "BPIC15_3", "BPIC15_4", "BPIC15_5"]:
-        print("DATASET:", dataset)
+        print()
         for m in ["SDL", "DBN", "CAMARGO", "Di Mauro", "LIN", "PASQUADIBISCEGLIE", "TAX", "TAYMOURI"]:
             results = get_scores(dataset, m, setting.STANDARD)
             if results:
                 acc = metric.ACCURACY.calculate(results)
             else:
                 acc = 0
-            print(m, acc, sep="\t")
+            print(acc, sep="\t")
         print()
 
 def process_k():
@@ -49,6 +49,8 @@ def process_split():
             accs = []
             for split in splits:
                 basic_setting.train_split = split
+                if split == "k-fold":
+                    basic_setting.train_k = 3
                 results = get_scores(dataset, m, basic_setting)
                 if results:
                     accs.append(metric.ACCURACY.calculate(results))
@@ -115,13 +117,52 @@ def process_split_cases():
         print()
 
 
+def process_filter_cases():
+    filters = [None, 5]
+    basic_setting = copy(setting.STANDARD)
+
+    for dataset in ["Helpdesk", "BPIC12W", "BPIC12", "BPIC11", "BPIC15_1", "BPIC15_2", "BPIC15_3", "BPIC15_4", "BPIC15_5"]:
+        print()
+        for m in ["SDL", "DBN", "CAMARGO", "Di Mauro", "LIN", "PASQUADIBISCEGLIE", "TAX", "TAYMOURI"]:
+            accs = []
+            for filter in filters:
+                if filter == 5 and dataset == "Helpdesk":
+                    filter = 3
+                basic_setting.filter_cases = filter
+                results = get_scores(dataset, m, basic_setting)
+                if results:
+                    accs.append(metric.ACCURACY.calculate(results))
+                else:
+                    accs.append(0)
+            print("\t\t".join([str(a) for a in accs]))
+        print()
+
+
+def check_variance_k_folds(k_fold=3):
+    check_setting = copy(setting.STANDARD)
+    check_setting.train_split = "k-fold"
+    check_setting.train_k = k_fold
+
+    for m in ["SDL", "DBN", "CAMARGO", "Di Mauro", "LIN", "PASQUADIBISCEGLIE", "TAX", "TAYMOURI"]:
+        results = get_scores("BPIC15_1", m, check_setting)
+        length_folds = len(results) // k_fold
+        accs = []
+        for i in range(k_fold-1):
+            accs.append(metric.ACCURACY.calculate(results[length_folds*i:length_folds*(i+1)]))
+        accs.append(metric.ACCURACY.calculate(results[length_folds*(k_fold-1):]))
+        accs.append(metric.ACCURACY.calculate(results))
+        print("\t\t".join([str(a) for a in accs]))
+
+
 if __name__ == "__main__":
     RESULT_FOLDER = "bise_results"
 
-    check_result_files()
+    # check_result_files()
     # process_standard()
     # process_k()
     # process_split()
     # process_percentage()
     # process_end_event()
     # process_split_cases()
+    # process_filter_cases()
+    check_variance_k_folds(3)

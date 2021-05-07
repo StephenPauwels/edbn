@@ -47,13 +47,21 @@ def transform_log(log):
                     prev_str = getattr(row[1], "%s_Prev%i" % (log.time, i+1))
 
                 if str_time != 0: #No event
-                    event_time = time.strptime(str_time, "%Y-%m-%d %H:%M:%S")
+                    try:
+                        event_time = time.strptime(str_time, "%Y-%m-%d %H:%M:%S")
+                    except ValueError:
+                        event_time = time.strptime(str_time, "%Y/%m/%d %H:%M:%S.%f")
+
 
                     X[j, log.k - i - 1, getattr(row[1], "%s_Prev%i" % (log.activity, i))] = 1
                     X[j, log.k - i - 1, len(activities)] = k
 
                     if prev_str != 0:
-                        prev_time = time.strptime(prev_str, "%Y-%m-%d %H:%M:%S")
+                        try:
+                            prev_time = time.strptime(prev_str, "%Y-%m-%d %H:%M:%S")
+                        except ValueError:
+                            prev_time = time.strptime(prev_str, "%Y/%m/%d %H:%M:%S.%f")
+
                         diff_prev_event = datetime.fromtimestamp(time.mktime(event_time)) \
                                           - datetime.fromtimestamp(time.mktime(prev_time))
                         diff = 86400 * diff_prev_event.days + diff_prev_event.seconds

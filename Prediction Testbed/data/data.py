@@ -1,3 +1,5 @@
+import copy
+
 
 class Data:
     def __init__(self, name, logfile):
@@ -62,10 +64,12 @@ class Data:
         self.train = None
         for j in range(len(self.folds)):
             if i != j:
-                if self.train:
-                    self.train.extend_data(self.folds[j])
+                if self.train is not None:
+                    self.train = self.train.extend_data(self.folds[j])
                 else:
                     self.train = self.folds[j]
+                    # self.train = copy.deepcopy(self.folds[j])
+
 
     def get_batch_ids(self):
         return sorted(self.test.keys())

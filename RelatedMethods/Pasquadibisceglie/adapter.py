@@ -178,7 +178,7 @@ def train(log, epochs=500, early_stop=42):
     model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
 
-    if trace_size >= 8:
+    if trace_size >= 8 and log.filename != "../Data/BPIC12W.csv":
         model.add(Conv2D(128, (8, 8), padding='same', kernel_regularizer=regularizers.l2(reg), ))
         model.add(BatchNormalization())
         model.add(Activation('relu'))
@@ -188,7 +188,7 @@ def train(log, epochs=500, early_stop=42):
     model.add(Flatten())
     model.add(Dense(len(log.values[log.activity]) + 1, activation='softmax', name='act_output'))
 
-    print(model.summary())
+    model.summary()
 
     opt = Nadam(lr=0.0002, beta_1=0.9, beta_2=0.999, epsilon=1e-08, schedule_decay=0.004, clipvalue=3)
     model.compile(loss={'act_output': 'categorical_crossentropy'}, optimizer=opt, metrics=['accuracy'])
