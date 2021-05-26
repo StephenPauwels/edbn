@@ -319,7 +319,7 @@ class LogFile:
         new_data.append(record)
         return new_data
 
-    def splitTrainTest(self, train_percentage, split_case, method="random"):
+    def splitTrainTest(self, train_percentage, split_case=True, method="train-test"):
         import random
         train_percentage = train_percentage / 100.0
 

@@ -60,17 +60,17 @@ def dbn_adaptive_window(dataset):
 
         avg_p = np.mean(p_vals)
         for j in range(len(p_vals)):
-            if p_vals[j] > avg_p - 1:
+            if p_vals[j] >= avg_p:
                 updated_data.append(train_data[j])
 
+        train_data.append(predict_data)
         updated_data.append(predict_data)
 
-        print("SELECT:", max_j, "/", len(train_data))
+        print("SELECTED:", len(updated_data))
         ###
         # UPDATE MODEL
         ###
-        train_data = updated_data
-        model = dbn.update(model, logfile.combine(train_data))
+        model = dbn.update(model, logfile.combine(updated_data))
 
         print("Accuracy:", metric.ACCURACY.calculate(results))
 
