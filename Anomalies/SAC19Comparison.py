@@ -64,8 +64,8 @@ def compare_bpic_total(path):
 if __name__  == "__main__":
     path = "../Data/"
 
-    # preprocess.preProcessData(path)
-    # preprocess.preProcessData_total(path)
+    preprocess.preProcessData(path)
+    preprocess.preProcessData_total(path)
 
     compare_bpics(path)
     compare_bpic_total(path)
