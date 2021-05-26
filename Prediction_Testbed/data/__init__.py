@@ -18,13 +18,17 @@ all_data = {"Helpdesk": "../Data/Helpdesk.csv",
             "COSELOG_2": "../Data/Coselog_2.csv",
             "COSELOG_3": "../Data/Coselog_3.csv",
             "COSELOG_4": "../Data/Coselog_4.csv",
-            "COSELOG_5": "../Data/Coselog_5.csv"}
+            "COSELOG_5": "../Data/Coselog_5.csv",
+            "Helpdesk2": "../Data/helpdesk2.csv"}
 
 
 def get_data(data_name, sep=",", time="completeTime", case="case", activity="event", resource="role"):
     if data_name in all_data:
         d = Data(data_name, LogFile(all_data[data_name], sep, 0, None, time, case, activity_attr=activity, convert=False))
-        d.logfile.keep_attributes([activity, resource, time])
+        if resource:
+            d.logfile.keep_attributes([activity, resource, time])
+        else:
+            d.logfile.keep_attributes([activity, time])
         return d
     return None
 

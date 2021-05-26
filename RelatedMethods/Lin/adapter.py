@@ -1,4 +1,4 @@
-from keras.models import load_model
+from tensorflow.keras.models import load_model
 
 from RelatedMethods.Lin.Modulator import Modulator
 from RelatedMethods.Lin.model import create_model, predict_next, vectorization

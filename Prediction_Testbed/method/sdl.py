@@ -1,10 +1,10 @@
 import numpy as np
 
-from keras import utils as ku
-from keras.layers import Embedding, Dense, Input, Concatenate, Softmax, Dropout, Flatten
-from keras.models import Model
-from keras.optimizers import Nadam
-from keras.callbacks import EarlyStopping, ModelCheckpoint
+from tensorflow.keras import utils as ku
+from tensorflow.keras.layers import Embedding, Dense, Input, Concatenate, Softmax, Dropout, Flatten
+from tensorflow.keras.models import Model
+from tensorflow.keras.optimizers import Nadam
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 
 
 def learn_model(log, attributes, epochs, early_stop):

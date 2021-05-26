@@ -99,7 +99,7 @@ def get_image_from_log(log):
                     t = datetime.strptime(t_raw, "%Y/%m/%d %H:%M:%S.%f")
                 if starttime is None:
                     starttime = t
-                diffs[event] = (t - starttime).total_seconds()
+                diffs[event] = (t - starttime).total_seconds() / (60*60*24)
             image[log.k - 1 - i] = np.array(list(zip(conts[1:], diffs[1:])))
         list_image.append(image)
     return list_image
@@ -144,15 +144,13 @@ def get_label_from_log(log):
 
 
 def train(log, epochs=500, early_stop=42):
-    from keras.models import Sequential
-    from keras.layers.core import Flatten, Dense
-    from keras.layers.convolutional import MaxPooling2D
-    from keras.optimizers import Nadam
-    from keras.callbacks import EarlyStopping
-    from keras.layers.normalization import BatchNormalization
-    from keras.layers import Conv2D, Activation
-    from keras import regularizers
-    from keras.utils import np_utils
+    from tensorflow.keras.models import Sequential
+    from tensorflow.keras.layers import Flatten, Dense, MaxPooling2D, BatchNormalization
+    from tensorflow.keras.optimizers import Nadam
+    from tensorflow.keras.callbacks import EarlyStopping
+    from tensorflow.keras.layers import Conv2D, Activation
+    from tensorflow.keras import regularizers
+    from tensorflow.keras import utils
 
     X_train = get_image_from_log(log)
     y_train = get_label_from_log(log)
@@ -160,7 +158,7 @@ def train(log, epochs=500, early_stop=42):
     X_train = np.asarray(X_train)
     y_train = np.asarray(y_train)
 
-    train_Y_one_hot = np_utils.to_categorical(y_train, len(log.values[log.activity]) + 1)
+    train_Y_one_hot = utils.to_categorical(y_train, len(log.values[log.activity]) + 1)
 
     trace_size = log.k
     n_activity = len(log.values[log.activity])
@@ -180,16 +178,17 @@ def train(log, epochs=500, early_stop=42):
     model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
 
-    if trace_size >= 8:
+    if trace_size >= 8 and log.filename != "../Data/BPIC12W.csv":
         model.add(Conv2D(128, (8, 8), padding='same', kernel_regularizer=regularizers.l2(reg), ))
         model.add(BatchNormalization())
         model.add(Activation('relu'))
+
         model.add(MaxPooling2D(pool_size=(2, 2)))
 
     model.add(Flatten())
     model.add(Dense(len(log.values[log.activity]) + 1, activation='softmax', name='act_output'))
 
-    print(model.summary())
+    model.summary()
 
     opt = Nadam(lr=0.0002, beta_1=0.9, beta_2=0.999, epsilon=1e-08, schedule_decay=0.004, clipvalue=3)
     model.compile(loss={'act_output': 'categorical_crossentropy'}, optimizer=opt, metrics=['accuracy'])
@@ -259,17 +258,17 @@ def test_and_update(logs, model):
 
 
 def test_and_update_retain(test_logs, model, train_log):
-    from keras.utils import np_utils
+    from tensorflow.keras import utils
 
     results = []
     i = 0
-    X_train = get_image_from_log(log)
-    y_train = get_label_from_log(log)
+    X_train = get_image_from_log(train_log)
+    y_train = get_label_from_log(train_log)
 
     X_train = np.asarray(X_train)
     y_train = np.asarray(y_train)
 
-    y_train = np_utils.to_categorical(y_train, len(log.values[log.activity]) + 1)
+    y_train = utils.to_categorical(y_train, len(train_log.values[train_log.activity]) + 1)
 
     for t in test_logs:
         print(i, "/", len(test_logs))
@@ -283,7 +282,7 @@ def test_and_update_retain(test_logs, model, train_log):
         X = np.asarray(X)
         y = np.asarray(y)
 
-        Y_one_hot = np_utils.to_categorical(y, len(test_log.values[test_log.activity]) + 1)
+        Y_one_hot = utils.to_categorical(y, len(test_log.values[test_log.activity]) + 1)
 
         X_train = np.concatenate((X_train, X))
         y_train = np.concatenate((y_train, Y_one_hot))
@@ -292,18 +291,3 @@ def test_and_update_retain(test_logs, model, train_log):
 
     return results
 
-
-if __name__ == "__main__":
-    data = "../../Data/BPIC15_1_sorted_new.csv"
-    case_attr = "case"
-    act_attr = "event"
-
-    logfile = LogFile(data, ",", 0, None, "completeTime", case_attr,
-                      activity_attr=act_attr, convert=False, k=10)
-    logfile.convert2int()
-
-    logfile.create_k_context()
-    train_log, test_log = logfile.splitTrainTest(80, case=True, method="train-test")
-
-    model = train(train_log, epochs=100, early_stop=10)
-    notest(test_log, model)

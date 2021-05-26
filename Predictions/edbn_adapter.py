@@ -1,5 +1,6 @@
 from Utils.LogFile import LogFile
 from EDBN.Execute import train as edbn_train
+from EDBN.Execute import update as edbn_update
 from EDBN.LearnBayesianStructure import Structure_learner
 from Predictions.eDBN_Prediction import predict_next_event, predict_next_event_update
 
@@ -10,8 +11,9 @@ def test(model, log):
     return predict_next_event(model, log)
 
 def update(model, log):
-    model.update_log(log)
-    return model
+    return edbn_update(model, log, False)
+    # model.update_log(log)
+    # return model
 
 def test_and_update(logs, model, dummy=None):
     results = []

@@ -226,7 +226,7 @@ def model_eval_test(modelG, mode, obj):
         # Just taking the last predicted element from each the batch
         y_pred_last = y_pred[0: batch, prefix_len - 1, :]
         y_pred_last = y_pred_last.view((batch, 1, -1))
-        y_pred_last_event = torch.argmax(F.softmax(y_pred_last, dim=2), dim=2)
+        y_pred_last_event = torch.argmax(torch.softmax(y_pred_last, dim=2), dim=2)
 
         y_pred_second_last = y_pred[0: batch, prefix_len - 2, :]
         y_pred_second_last = y_pred_second_last.view((batch, 1, -1))
@@ -354,14 +354,14 @@ def train(rnnG, rnnD, optimizerD, optimizerG, obj, epoch):
 
             # Training Discriminator on realistic dataset
             discriminator_realistic_pred = rnnD(data_realistic)
-            disc_loss_realistic = F.binary_cross_entropy(F.sigmoid(discriminator_realistic_pred),
+            disc_loss_realistic = F.binary_cross_entropy(torch.sigmoid(discriminator_realistic_pred),
                                                          torch.ones((obj.batch, 1)), reduction='sum')
             disc_loss_realistic.backward(retain_graph=True)
 
             # Training Discriminator on synthetic dataset
             discriminator_synthetic_pred = rnnD(data_synthetic)
             # print("disc pred:", discriminator_synthetic_pred)
-            disc_loss_synthetic = F.binary_cross_entropy(F.sigmoid(discriminator_synthetic_pred),
+            disc_loss_synthetic = F.binary_cross_entropy(torch.sigmoid(discriminator_synthetic_pred),
                                                          torch.zeros((obj.batch, 1)), reduction='sum')
             disc_loss_synthetic.backward(retain_graph=True)
 
@@ -388,7 +388,7 @@ def train(rnnG, rnnD, optimizerD, optimizerG, obj, epoch):
             # Fooling the discriminator by presenting the synthetic dataset and considering the labels as the real ones
             discriminator_synthetic_pred = rnnD(data_synthetic)
             # print("disc pred:", discriminator_synthetic_pred)
-            gen_fool_dic_loss = F.binary_cross_entropy(F.sigmoid(discriminator_synthetic_pred), torch.ones((obj.batch, 1)),
+            gen_fool_dic_loss = F.binary_cross_entropy(torch.sigmoid(discriminator_synthetic_pred), torch.ones((obj.batch, 1)),
                                                        reduction='sum')
             gen_fool_dic_loss.backward(retain_graph=True)
 

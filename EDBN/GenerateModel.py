@@ -141,6 +141,63 @@ def generate_model(data, only_activity, remove_attrs = None):
     return cbn
 
 
+def update_model(data, only_activity, model, remove_attrs = None):
+    nodes = []
+
+    # Remove attributes in remove_attrs
+    if remove_attrs is None:
+        remove_attrs = []
+
+    for column in data.attributes():
+        if column not in remove_attrs:
+            nodes.append(column)
+    data.keep_attributes(nodes)
+
+    # Get all normal attributes and remove the trace and time attribute
+    attributes = list(data.attributes())
+
+    if data.trace in attributes:
+        attributes.remove(data.trace)
+        nodes.remove(data.trace)
+
+    if data.time in attributes:
+        attributes.remove(data.time)
+        nodes.remove(data.time)
+
+    # Create list with allowed edges (only from previous -> current and current -> current)
+    restrictions = []
+    for attr1 in attributes:
+        if only_activity and attr1 != data.activity:
+            continue
+        for attr2 in attributes:
+            if attr2 not in data.ignoreHistoryAttributes:
+                for i in range(data.k):
+                    restrictions.append((attr2 + "_Prev%i" % (i), attr1))
+        if "duration_0" in nodes:
+            restrictions.append((attr1, "duration_0"))
+
+    # Calculate Bayesian Network
+    learner = Structure_learner()
+    learner.start_model(data, model, restrictions)
+
+    # relations = learner.learn(restrictions)
+    relations = learner.learn()
+
+    # TODO: update ADD and REMOVE edges
+    print("GENERATE: Found Conditional Dependencies:")
+    # Check if all relations in update model are present in old model
+    for relation in relations:
+        if relation[0] not in [p.attr_name for p in model.get_variable(relation[1]).get_conditional_parents()]:
+            model.get_variable(relation[1]).add_parent(model.get_variable(relation[0]))
+            print("   ADDED:", relation[0], "->", relation[1])
+
+    for var_name, variable in model.iterate_variables():
+        for parent in variable.get_conditional_parents():
+            if (parent.attr_name, var_name) not in relations:
+                variable.remove_parent(parent)
+                print("   REMOVED:", parent, "->", var_name)
+    return model
+
 def get_max_cycle(relations, nodes = None, closure = None):
     """
     Given a list of tuples, return the maximum cycle found in the list

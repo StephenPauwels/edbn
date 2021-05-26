@@ -9,7 +9,7 @@ import itertools
 import multiprocessing as mp
 from functools import partial
 
-import keras.utils as ku
+import tensorflow.keras.utils as ku
 import numpy as np
 import pandas as pd
 from nltk.util import ngrams

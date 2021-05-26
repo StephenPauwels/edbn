@@ -1,6 +1,7 @@
 import traceback
 from copy import copy
 
+import metric
 from data import all_data, get_data
 from method import ALL as ALL_METHODS
 from setting import ALL as ALL_SETTINGS
@@ -63,11 +64,12 @@ def test_split(dataset, m):
     for split in splits:
         d = data.get_data(dataset)
         basic_setting.train_split = split
-        d.prepare(basic_setting)
 
         print(get_full_filename(dataset, m, basic_setting))
         if result_exists(dataset, m, basic_setting):
             continue
+
+        d.prepare(basic_setting)
 
         if split == "k-fold":
             r = m.k_fold_validation(d)
@@ -85,11 +87,12 @@ def test_k(dataset, m):
     for k in ks:
         d = data.get_data(dataset)
         basic_setting.train_k = k
-        d.prepare(basic_setting)
 
         print(get_full_filename(dataset, m, basic_setting))
         if result_exists(dataset, m, basic_setting):
             continue
+
+        d.prepare(basic_setting)
 
         r = m.k_fold_validation(d)
 
@@ -103,11 +106,12 @@ def test_percentage(dataset, m):
     for percentage in train_percentages:
         d = data.get_data(dataset)
         basic_setting.train_percentage = percentage
-        d.prepare(basic_setting)
 
         print(get_full_filename(dataset,m, basic_setting))
         if result_exists(dataset, m, basic_setting):
             continue
+
+        d.prepare(basic_setting)
 
         r = m.test(m.train(d.train), d.test_orig)
 
@@ -121,11 +125,12 @@ def test_end_event(dataset, m):
     for end_event in end_events:
         d = data.get_data(dataset)
         basic_setting.add_end = end_event
-        d.prepare(basic_setting)
 
         print(get_full_filename(dataset,m, basic_setting))
         if result_exists(dataset, m, basic_setting):
             continue
+
+        d.prepare(basic_setting)
 
         r = m.test(m.train(d.train), d.test_orig)
 
@@ -139,11 +144,12 @@ def test_split_cases(dataset, m):
     for split_case in split_cases:
         d = data.get_data(dataset)
         basic_setting.split_cases = split_case
-        d.prepare(basic_setting)
 
         print(get_full_filename(dataset,m, basic_setting))
         if result_exists(dataset, m, basic_setting):
             continue
+
+        d.prepare(basic_setting)
 
         r = m.test(m.train(d.train), d.test_orig)
 
@@ -159,11 +165,12 @@ def test_filter(dataset, m):
         basic_setting.filter_cases = filter
         if filter == 5 and dataset == "Helpdesk":
             basic_setting.filter_cases = 3
-        d.prepare(basic_setting)
 
         print(get_full_filename(dataset,m, basic_setting))
         if result_exists(dataset, m, basic_setting):
             continue
+
+        d.prepare(basic_setting)
 
         r = m.test(m.train(d.train), d.test_orig)
 
@@ -172,16 +179,68 @@ def test_filter(dataset, m):
 
 def test_standard(dataset, m):
     d = data.get_data(dataset)
-    d.prepare(setting.STANDARD)
 
     print(get_full_filename(dataset, m, setting.STANDARD))
     if result_exists(dataset, m, setting.STANDARD):
         return
 
+    d.prepare(setting.STANDARD)
+
     r = m.test(m.train(d.train), d.test_orig)
 
     save_results(r, d.name, m.name, setting.STANDARD)
 
+
+def test_base_comparison():
+    tests = [("LIN", setting.LIN), ("TAX", setting.TAX), ("CAMARGO", setting.CAMARGO),
+             ("PASQUADIBISCEGLIE", setting.PASQUADIBISCEGLIE), ("SDL", setting.STANDARD), ("DBN", setting.CAMARGO),
+             ("TAYMOURI", setting.TAYMOURI)]
+
+    for test in tests:
+        print("Test", test[0])
+        d = data.get_data("Helpdesk")
+        m = method.get_method(test[0])
+        s = test[1]
+        if test[0] == "LIN":
+            s.filter_cases = 3
+
+        if result_exists("Helpdesk", m, s):
+            continue
+
+        d.prepare(s)
+
+        r = m.test(m.train(d.train), d.test_orig)
+
+        save_results(r, d.name, m.name, s)
+
+    # Di Mauro k-fold test
+    d = data.get_data("Helpdesk")
+    m = method.get_method("DIMAURO")
+    s = setting.DIMAURO
+
+    if result_exists("Helpdesk", m, s):
+        return
+
+    d.prepare(s)
+
+    r = m.k_fold_validation(d)
+    save_results(r, d.name, m.name, s)
+
+
+
+def test_stability():
+    results = {}
+    d = data.get_data("Helpdesk")
+    d.prepare(setting.STANDARD)
+    for method_name in ["SDL", "CAMARGO", "DIMAURO", "LIN", "PASQUADIBISCEGLIE", "TAX", "TAYMOURI"]:
+        results[method_name] = []
+        m = method.get_method(method_name)
+        for _ in range(10):
+            r = m.test(m.train(d.train), d.test_orig)
+            results[method_name].append(metric.ACCURACY.calculate(r))
+
+    for m in results:
+        print(m, "\t".join([str(a) for a in results[m]]))
 
 def ranking_experiments(output_file):
     for d in all_data:
@@ -212,16 +271,17 @@ def get_scores(d, m, s):
             for line in finn:
                 results.append(tuple(line.replace("\n", "").split(",")))
 
-        import metric
-        print("/".join(path) + "/" + filename)
-        acc = metric.ACCURACY.calculate(results)
-        print("ACC:", acc)
-        brier = metric.BRIER.calculate(results)
-        print("Brier:", brier)
-        prec = metric.PRECISION.calculate(results)
-        print("Precision:", prec)
-        recall = metric.RECALL.calculate(results)
-        print("Recall:", recall)
+        # import metric
+        # print("/".join(path) + "/" + filename)
+        # acc = metric.ACCURACY.calculate(results)
+        # print("ACC:", acc)
+        # brier = metric.BRIER.calculate(results)
+        # print("Brier:", brier)
+        # prec = metric.PRECISION.calculate(results)
+        # print("Precision:", prec)
+        # recall = metric.RECALL.calculate(results)
+        # print("Recall:", recall)
+        return results
 
 
 def check_result_files():
@@ -229,7 +289,7 @@ def check_result_files():
 
     for d in ["Helpdesk", "BPIC12W", "BPIC12", "BPIC11", "BPIC15_1", "BPIC15_2", "BPIC15_3", "BPIC15_4", "BPIC15_5"]:
         print("DATASET: %s" % d)
-        for m in method.ALL:
+        for m in ["PASQUADIBISCEGLIE"]:
             if m == "DIMAURO":
                 m = "Di Mauro"
             print(" METHOD: %s" % m)
@@ -286,25 +346,27 @@ def check_result_files():
                 print("  TEST END EVENT: %s %s" % ("True" if end_event else "False", "OK" if result_exists(d, m, basic_setting) else ""))
 
 
-if __name__ == "__main__":
-    # check_result_files()
-    # ranking_experiments("ranking_results.txt")
 
+if __name__ == "__main__":
     import method
     import data
 
-    for d in ["BPIC12W"]: #["Helpdesk", "BPIC12W", "BPIC12", "BPIC11", "BPIC15_1", "BPIC15_2", "BPIC15_3", "BPIC15_4", "BPIC15_5"]:
-        for m in ["PASQUADIBISCEGLIE"]:
+    # test_base_comparison()
+    # check_result_files()
+    # ranking_experiments("ranking_results.txt")
+    # test_stability()
+
+    #
+    for d in ["BPIC12", "BPIC11"]:
+        for m in ["LIN"]:
             try:
-                print("TEST Standard")
-                test_standard(d, method.get_method(m))
-                print("TEST k")
+                # test_standard(d, method.get_method(m))
                 test_k(d, method.get_method(m))
-                test_split(d, method.get_method(m))
-                test_filter(d, method.get_method(m))
-                test_percentage(d, method.get_method(m))
-                test_split_cases(d, method.get_method(m))
-                test_end_event(d, method.get_method(m))
+                # test_split(d, method.get_method(m))
+                # test_filter(d, method.get_method(m))
+                # test_percentage(d, method.get_method(m))
+                # test_split_cases(d, method.get_method(m))
+                # test_end_event(d, method.get_method(m))
             except:
                 traceback.print_exc()
 

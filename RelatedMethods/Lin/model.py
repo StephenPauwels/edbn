@@ -9,12 +9,12 @@ import os
 from functools import partial
 
 import jellyfish as jf
-import keras.utils as ku
+import tensorflow.keras.utils as ku
 import numpy as np
-from keras.callbacks import EarlyStopping, ModelCheckpoint
-from keras.layers import Input, Embedding, Dropout, Concatenate, LSTM, Dense, BatchNormalization
-from keras.models import Model, load_model
-from keras.optimizers import Nadam
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
+from tensorflow.keras.layers import Input, Embedding, Dropout, Concatenate, LSTM, Dense, BatchNormalization
+from tensorflow.keras.models import Model, load_model
+from tensorflow.keras.optimizers import Nadam
 
 from RelatedMethods.Lin.Modulator import Modulator
 
@@ -294,10 +294,9 @@ def _predict_next(model, prefixes):
     # Generation of predictions
     results = []
     for prefix in prefixes:
-
         # Activities and roles input shape(1,5)
-        x_ac_ngram = [prefix['ac_pref']]
-        x_rl_ngram = [prefix['rl_pref']]
+        x_ac_ngram = np.array([prefix['ac_pref']])
+        x_rl_ngram = np.array([prefix['rl_pref']])
 
         predictions = model.predict([x_ac_ngram, x_rl_ngram])
 

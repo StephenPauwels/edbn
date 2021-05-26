@@ -12,7 +12,7 @@ import random
 import jellyfish as jf
 import numpy as np
 import pandas as pd
-from keras.models import load_model
+from tensorflow.keras.models import load_model
 
 from RelatedMethods.Camargo.support_modules import support as sup
 
@@ -141,13 +141,13 @@ def predict(model, prefixes):
     results = []
     for prefix in prefixes:
 
-        x_ac_ngram = [prefix['ac_pref']]
-        x_rl_ngram = [prefix['rl_pref']]
+        x_ac_ngram = np.array([prefix['ac_pref']])
+        x_rl_ngram = np.array([prefix['rl_pref']])
 
         predictions = model.predict([x_ac_ngram, x_rl_ngram])
 
         pos = np.argmax(predictions[0][0])
-        random.choice(predictions[0][0], )
+        # pos = np.random.choice(np.arange(0, len(predictions[0][0])), p=predictions[0][0])
 
         results.append((prefix["ac_next"], pos, predictions[0][0][pos], predictions[0][0][prefix["ac_next"]]))
 

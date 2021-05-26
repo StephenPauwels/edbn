@@ -35,9 +35,6 @@ class LogFile:
             type = "int"
         if filename is not None:
             self.data = pd.read_csv(self.filename, header=header, nrows=rows, delimiter=delim, encoding='latin-1', dtype="str")
-            print("PREPROCESSING: Sorting on", self.time)
-            # self.data = self.data.sort_values(by=[self.time]).reset_index()
-
 
             # Determine types for all columns - numerical or categorical
             for col_type in self.data.dtypes.iteritems():
@@ -220,6 +217,9 @@ class LogFile:
 
             with mp.Pool(mp.cpu_count()) as p:
                 result = p.map(self.create_k_context_trace, self.data.groupby([self.trace]))
+
+            # result = map(self.create_k_context_trace, self.data.groupby([self.trace]))
+
             self.contextdata = pd.concat(result, ignore_index=True)
 
     def create_k_context_trace(self, trace):
@@ -319,7 +319,7 @@ class LogFile:
         new_data.append(record)
         return new_data
 
-    def splitTrainTest(self, train_percentage, split_case, method="random"):
+    def splitTrainTest(self, train_percentage, split_case=True, method="train-test"):
         import random
         train_percentage = train_percentage / 100.0
 
@@ -611,3 +611,12 @@ class LogFile:
         # avg_j_measures = [np.mean(j_measures[:,i]) for i in range(len(j_measures[0]))]
         # return avg_j_measures
 
+
+def combine(logfiles):
+    if len(logfiles) == 0:
+        return None
+
+    log = copy.deepcopy(logfiles[0])
+    for i in range(1, len(logfiles)):
+        log = log.extend_data(logfiles[i])
+    return log

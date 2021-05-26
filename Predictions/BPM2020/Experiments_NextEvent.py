@@ -17,6 +17,8 @@ import pickle
 import sys
 import time
 
+from tensorflow.python.keras.models import load_model
+
 from BPM2020.Experiments_Variables import DATA_DESC, DATA_FOLDER, OUTPUT_FOLDER
 from BPM2020.Experiments_Variables import EDBN, CAMARGO, DIMAURO, LIN, TAX
 from BPM2020.Experiments_Variables import K_EDBN
@@ -45,27 +47,43 @@ def test_edbn(dataset_folder, model_folder, k):
     test_log.create_k_context()
 
     acc = predict_next_event(model, test_log)
+    acc = sum([1 if a[0] == a[1] else 0 for a in acc]) / len(acc)
     with open(os.path.join(model_folder, "results_next_event.log"), "a") as fout:
         fout.write("Accuracy: (%s) %s\n" % (time.strftime("%d-%m-%y %H:%M:%S", time.localtime()), acc))
 
 
 def test_camargo(dataset_folder, model_folder, architecture):
-    from predict_next import predict_next
+    from RelatedMethods.Camargo.predict_next import predict_next
 
     model_file = sorted([model_file for model_file in os.listdir(model_folder) if model_file.endswith(".h5")])[-1]
-    predict_next(dataset_folder, model_folder, model_file, False)
+    model = load_model(os.path.join(model_folder, model_file))
+
+    logfile = LogFile(dataset_folder + "full_log.csv", ",", 0, None, None, "case",
+                        activity_attr="event", convert=True, k=5)
+    test_log = LogFile(dataset_folder + "test_log.csv", ",", 0, None, None, "case",
+                        activity_attr="event", convert=True, k=5, values=logfile.values)
+    test_log.create_k_context()
+
+    results = predict_next(test_log, model)
+    acc = sum([1 if a[0] == a[1] else 0 for a in results]) / len(results)
+    with open(os.path.join(model_folder, "results_next_event.log"), "a") as fout:
+        fout.write("Accuracy: (%s) %s\n" % (time.strftime("%d-%m-%y %H:%M:%S", time.localtime()), acc))
 
 
 def test_lin(dataset_folder, model_folder):
-    from RelatedMethods.Lin.model import predict_next
+    from RelatedMethods.Lin.model import predict_next, Modulator
 
     logfile = LogFile(dataset_folder + "full_log.csv", ",", 0, None, None, "case",
-                        activity_attr="event", convert=True, k=0)
+                        activity_attr="event", convert=True, k=5)
     test_log = LogFile(dataset_folder + "test_log.csv", ",", 0, None, None, "case",
-                        activity_attr="event", convert=True, k=0, values=logfile.values)
-    model_file = sorted([model_file for model_file in os.listdir(model_folder) if model_file.endswith(".h5")])[-1]
+                        activity_attr="event", convert=True, k=5, values=logfile.values)
+    test_log.create_k_context()
 
-    acc = predict_next(os.path.join(model_folder, model_file), test_log.data, test_log.trace, test_log.activity)
+    model_file = sorted([model_file for model_file in os.listdir(model_folder) if model_file.endswith(".h5")])[-1]
+    model = load_model(os.path.join(model_folder, model_file), custom_objects={"Modulator": Modulator})
+
+    acc = predict_next(test_log, model)
+    acc = sum([1 if a[0] == a[1] else 0 for a in acc]) / len(acc)
     with open(os.path.join(model_folder, "results_next_event.log"), "a") as fout:
         fout.write("Accuracy: (%s) %s\n" % (time.strftime("%d-%m-%y %H:%M:%S", time.localtime()), acc))
 
@@ -75,8 +93,12 @@ def test_dimauro(dataset_folder, model_folder):
 
     model_file = sorted([model_file for model_file in os.listdir(model_folder) if model_file.endswith(".h5")])[-1]
 
+    logfile = LogFile(dataset_folder + "full_log.csv", ",", 0, None, None, "case",
+                        activity_attr="event", convert=True, k=5)
     train_log = os.path.join(dataset_folder, "train_log.csv")
-    test_log = os.path.join(dataset_folder, "test_log.csv")
+    test_log = LogFile(dataset_folder + "test_log.csv", ",", 0, None, None, "case",
+                        activity_attr="event", convert=True, k=5, values=logfile.values)
+    test_log.create_k_context()
 
     acc = evaluate(train_log, test_log, os.path.join(model_folder, model_file))
     with open(os.path.join(model_folder, "results_next_event.log"), "a") as fout:

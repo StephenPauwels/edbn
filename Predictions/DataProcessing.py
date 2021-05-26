@@ -21,7 +21,8 @@ BPIC12W = "BPIC12W"
 HELPDESK = "HELPDESK"
 BPIC18 = "BPIC18"
 
-LOGFILE_PATH = "../Data/Logfiles"
+DATA_PATH = "../../Data/"
+LOGFILE_PATH = "../../Data/PredictionData/"
 
 def preprocess(logfile, add_end, reduce_tasks, resource_pools, resource_attr, remove_resource):
     # Discover Roles
@@ -107,56 +108,56 @@ def get_data(dataset, dataset_size, k, add_end, reduce_tasks, resource_pools, re
     else:
         resource_attr = None
         if dataset == BPIC15_1 or dataset == BPIC15:
-            logfile = LogFile("../Data/BPIC15_1_sorted_new.csv", ",", 0, dataset_size, "Complete Timestamp", "Case ID", activity_attr="Activity", convert=False, k=k)
+            logfile = LogFile(DATA_PATH + "BPIC15_1_sorted_new.csv", ",", 0, dataset_size, None, "case", activity_attr="Activity", convert=False, k=k)
             resource_attr = "Resource"
-            colTitles = ["Case ID", "Activity", "Resource"]
+            colTitles = ["case", "event", "role"]
             logfile.keep_attributes(colTitles)
             logfile.filter_case_length(5)
         elif dataset == BPIC15_2:
-            logfile = LogFile("../Data/BPIC15_2_sorted_new.csv", ",", 0, dataset_size, "Complete Timestamp", "Case ID",
+            logfile = LogFile(DATA_PATH + "BPIC15_2_sorted_new.csv", ",", 0, dataset_size, None, "case",
                               activity_attr="Activity", convert=False, k=k)
             resource_attr = "Resource"
-            colTitles = ["Case ID", "Activity", "Resource"]
+            colTitles = ["case", "event", "role"]
             logfile.keep_attributes(colTitles)
             logfile.filter_case_length(5)
         elif dataset == BPIC15_3:
-            logfile = LogFile("../Data/BPIC15_3_sorted_new.csv", ",", 0, dataset_size, "Complete Timestamp", "Case ID", activity_attr="Activity", convert=False, k=k)
+            logfile = LogFile(DATA_PATH + "BPIC15_3_sorted_new.csv", ",", 0, dataset_size, None, "case", activity_attr="Activity", convert=False, k=k)
             resource_attr = "Resource"
-            colTitles = ["Case ID", "Activity", "Resource"]
+            colTitles = ["case", "event", "role"]
             logfile.keep_attributes(colTitles)
             logfile.filter_case_length(5)
         elif dataset == BPIC15_4:
-            logfile = LogFile("../Data/BPIC15_4_sorted_new.csv", ",", 0, dataset_size, "Complete Timestamp", "Case ID", activity_attr="Activity", convert=False, k=k)
+            logfile = LogFile(DATA_PATH + "BPIC15_4_sorted_new.csv", ",", 0, dataset_size, None, "case", activity_attr="Activity", convert=False, k=k)
             resource_attr = "Resource"
-            colTitles = ["Case ID", "Activity", "Resource"]
+            colTitles = ["case", "event", "role"]
             logfile.keep_attributes(colTitles)
             logfile.filter_case_length(5)
         elif dataset == BPIC15_5:
-            logfile = LogFile("../Data/BPIC15_5_sorted_new.csv", ",", 0, dataset_size, "Complete Timestamp", "Case ID", activity_attr="Activity", convert=False, k=k)
+            logfile = LogFile(DATA_PATH + "BPIC15_5_sorted_new.csv", ",", 0, dataset_size, None, "case", activity_attr="Activity", convert=False, k=k)
             resource_attr = "Resource"
-            colTitles = ["Case ID", "Activity", "Resource"]
+            colTitles = ["case", "event", "role"]
             logfile.keep_attributes(colTitles)
             logfile.filter_case_length(5)
         elif dataset == BPIC12:
-            logfile = LogFile("../Data/BPIC12.csv", ",", 0, dataset_size, "completeTime", "case", activity_attr="event", convert=False, k=k)
+            logfile = LogFile(DATA_PATH + "BPIC12.csv", ",", 0, dataset_size, None, "case", activity_attr="event", convert=False, k=k)
             resource_attr = "org:resource"
-            colTitles = ["case", "event", "org:resource"]
+            colTitles = ["case", "event", "role"]
             logfile.keep_attributes(colTitles)
             logfile.filter_case_length(5)
         elif dataset == BPIC12W:
-            logfile = LogFile("../Data/BPIC12W.csv", ",", 0, dataset_size, "completeTime", "case", activity_attr="event", convert=False, k=k)
+            logfile = LogFile(DATA_PATH + "BPIC12W.csv", ",", 0, dataset_size, None, "case", activity_attr="event", convert=False, k=k)
             resource_attr = "org:resource"
-            colTitles = ["case", "event", "org:resource"]
+            colTitles = ["case", "event", "role"]
             logfile.keep_attributes(colTitles)
             logfile.filter_case_length(5)
         elif dataset == HELPDESK:
-            logfile = LogFile("../Data/Helpdesk.csv", ",", 0, dataset_size, "completeTime", "case", activity_attr="event", convert=False, k=k)
+            logfile = LogFile(DATA_PATH + "Helpdesk.csv", ",", 0, dataset_size, None, "case", activity_attr="event", convert=False, k=k)
             resource_attr = "Resource"
-            colTitles = ["case", "event", "Resource"]
+            colTitles = ["case", "event", "role"]
             logfile.keep_attributes(colTitles)
             logfile.filter_case_length(3)
         elif dataset == BPIC18:
-            logfile = LogFile("../Data/BPIC18.csv", ",", 0, dataset_size, "startTime", "case", activity_attr="event", convert=False, k=k)
+            logfile = LogFile(DATA_PATH + "BPIC18.csv", ",", 0, dataset_size, None, "case", activity_attr="event", convert=False, k=k)
             colTitles = ["case", "event", "subprocess"]
             logfile.keep_attributes(colTitles)
         else:

@@ -10,8 +10,8 @@ import os
 import random
 
 import numpy as np
-from keras.layers import Input, Embedding, Dot, Reshape
-from keras.models import Model
+from tensorflow.keras.layers import Input, Embedding, Dot, Reshape
+from tensorflow.keras.models import Model
 
 from RelatedMethods.Camargo.support_modules import support as sup
 
@@ -55,12 +55,13 @@ def training_model(log, outfile):
     dim_number = math.ceil(len(list(itertools.product(*[list(ac_index.items()),
                                                         list(rl_index.items())])))**0.25)
 
-    ac_weights, rl_weights = train_embedded(log.data, ac_index, rl_index, dim_number)
+    ac_weights, rl_weights = train_embedded(log.contextdata, len(log.values["event"]) + 1,
+                                               len(log.values["role"]) + 1, dim_number)
 
-    sup.create_file_from_list(reformat_matrix(index_ac, ac_weights), os.path.join(outfile, 'event.emb'))
-    sup.create_file_from_list(reformat_matrix(index_rl, rl_weights), os.path.join(outfile, 'role.emb'))
+    sup.create_file_from_list(reformat_matrix(ac_weights), os.path.join(outfile, 'event.emb'))
+    sup.create_file_from_list(reformat_matrix(rl_weights), os.path.join(outfile, 'role.emb'))
 
-    return reformat_matrix(index_ac, ac_weights), reformat_matrix(index_rl, rl_weights)
+    return reformat_matrix(ac_weights), reformat_matrix(rl_weights)
 
 
 # =============================================================================

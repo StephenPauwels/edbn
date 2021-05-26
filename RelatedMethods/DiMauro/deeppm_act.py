@@ -14,7 +14,7 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.callbacks import EarlyStopping
 
-from RelatedMethods.DiMauro.utils import load_data, load_cases
+from RelatedMethods.DiMauro.utils import load_data_new, load_cases
 from sklearn.metrics import accuracy_score
 
 from hyperopt import Trials, STATUS_OK, tpe, fmin, hp
@@ -176,111 +176,66 @@ def fit_and_score(params):
 
 
 def train(train_log, test_log, model_folder, params):
-    model_type = "ACT"
-    output_file = os.path.join(model_folder, "output.log")
+    X, X_t, y = load_data_new(train_log)
 
-    global X_train, y_train
-
-    (X_train, y_train,
-     X_test, y_test,
-     vocab_size,
-     max_length,
-     n_classes,
-     prefix_sizes) = load_data(train_log, test_log, case_index=0, act_index=1)
-
-    print("vocab_size", vocab_size)
-    print("n_classes", n_classes)
-    # TODO: check vocab_size != n_classes
-
-    emb_size = (vocab_size + 1 ) // 2 # --> ceil(vocab_size/2)
-
-    # categorical output
-    y_train = to_categorical(y_train, num_classes=n_classes)
-
-    n_iter = 20
-
-    space = {'input_length':max_length, 'vocab_size':vocab_size, 'n_classes':n_classes, 'model_type':model_type, 'embedding_size':emb_size,
-             'n_modules':hp.choice('n_modules', [1,2,3]),
-             'batch_size': hp.choice('batch_size', [4,5]),
-             'learning_rate': hp.loguniform("learning_rate", np.log(0.00001), np.log(0.01))}
-
-    # model selection
-    print('Starting model selection...')
-    global best_score, best_model, best_time, best_numparameters
+    emb_size = (len(train_log.values["event"]) + 1) // 2  # --> ceil(vocab_size/2)
+    y = to_categorical(y, num_classes=len(train_log.values["event"]) + 1)
 
     if params is None:
-        current_time = time.strftime("%d.%m.%y-%H.%M", time.localtime())
-        outfile = open(output_file, 'w')
+        n_iter = 3
 
-        outfile.write("Starting time: %s\n" % current_time)
+        space = {'input_length': train_log.k, 'vocab_size': len(train_log.values["event"]) + 1,
+                 'n_classes': len(train_log.values["event"]) + 1, 'model_type': "ACT",
+                 'embedding_size': emb_size,
+                 'n_modules': hp.choice('n_modules', [1, 2, 3]),
+                 'batch_size': 5,
+                 'learning_rate': 0.002, 'X': X, 'X_t': X_t, 'y': y,
+                 'epochs': 200}
 
-        print("No params given, starting parameter search")
         trials = Trials()
-        best = fmin(fit_and_score, space, algo=tpe.suggest, max_evals=n_iter, trials=trials, rstate= np.random.RandomState(seed))
-        best_params = hyperopt.space_eval(space, best)
+        best = fmin(fit_and_score, space, algo=tpe.suggest, max_evals=n_iter, trials=trials,
+                    rstate=np.random.RandomState(123))
+        params = hyperopt.space_eval(space, best)
 
-        fit_and_score(best_params)
+    model = get_model(train_log.k, 3, len(train_log.values["event"]) + 1,
+                      len(train_log.values["event"]) + 1, emb_size, params["n_modules"], "ACT", 0.002)
+    early_stopping = EarlyStopping(monitor='val_loss', patience=42)
 
-        outfile.write("\nHyperopt trials")
-        outfile.write("\ntid,loss,learning_rate,n_modules,batch_size,time,n_epochs,n_params,perf_time")
-        for trial in trials.trials:
-            outfile.write("\n%d,%f,%f,%d,%d,%s,%d,%d,%f"%(trial['tid'],
-                                                    trial['result']['loss'],
-                                                    trial['misc']['vals']['learning_rate'][0],
-                                                    int(trial['misc']['vals']['n_modules'][0]+1),
-                                                    trial['misc']['vals']['batch_size'][0]+7,
-                                                    (trial['refresh_time']-trial['book_time']).total_seconds(),
-                                                    trial['result']['n_epochs'],
-                                                    trial['result']['n_params'],
-                                                    trial['result']['time']))
+    output_file_path = os.path.join("tmp", 'model_{epoch:03d}-{val_loss:.2f}.h5')
 
-        outfile.write("\n\nBest parameters:")
-        print(best_params, file=outfile)
-        outfile.write("\nModel parameters: %d" % best_numparameters)
-        outfile.write('\nBest Time taken: %f'%best_time)
-        best_model.save(os.path.join(model_folder, "model.h5"))
+    # Saving
+    model_checkpoint = ModelCheckpoint(output_file_path,
+                                       monitor='val_loss',
+                                       verbose=1,
+                                       save_best_only=True,
+                                       save_weights_only=False,
+                                       mode='auto')
+
+    if len(y) < 10:
+        split = 0
     else:
-        model = get_model(max_length, 3, vocab_size,
-                          n_classes, emb_size, params["n_modules"], params["model_type"]
-                          , params["learning_rate"])
-        early_stopping = EarlyStopping(monitor='val_loss', patience=42)
+        split = 0.2
+    model.fit([X, X_t], y, epochs=200, verbose=2, validation_split=split, callbacks=[early_stopping],
+              batch_size=2 ** 5)
+    model.save(os.path.join(model_folder, "model.h5"))
 
-        output_file_path = os.path.join(model_folder, 'model_rd_{epoch:03d}-{val_loss:.2f}.h5')
-
-        # Saving
-        model_checkpoint = ModelCheckpoint(output_file_path,
-                                           monitor='val_loss',
-                                           verbose=1,
-                                           save_best_only=True,
-                                           save_weights_only=False,
-                                           mode='auto')
-
-        model.fit(X_train, y_train, epochs=200, verbose=2,
-                      validation_split=0.2, callbacks=[early_stopping, model_checkpoint], batch_size=2**params['batch_size'])
 
 def evaluate(train_log, test_log, model_folder):
     print("MODEL", model_folder)
     model = load_model(model_folder)
 
-    (X_train, y_train,
-     X_test, y_test,
-     vocab_size,
-     max_length,
-     n_classes,
-     prefix_sizes) = load_data(train_log, test_log, case_index=0, act_index=1)
+    X, X_t, y = load_data_new(test_log)
+
 
     # evaluate
     print('Evaluating final model...')
-    preds_a = model.predict([X_test])
+    preds_a = model.predict([X, X_t])
 
-   # y_a_test = np.argmax(y_test, axis=1)
-    preds_a = np.argmax(preds_a, axis=1)
-
-    print(preds_a)
-    print(y_test)
-
-    accuracy = accuracy_score(y_test, preds_a)
-    return accuracy
+    predict_vals = np.argmax(preds_a, axis=1)
+    predict_probs = preds_a[np.arange(preds_a.shape[0]), predict_vals]
+    expect_probs = preds_a[np.arange(preds_a.shape[0]), y]
+    result = zip(y, predict_vals, predict_probs, expect_probs)
+    return sum([1 if a[0] == a[1] else 0 for a in result]) / len(predict_vals)
 
 def predict_suffix(train_log, test_log, model_folder):
     (train_cases,

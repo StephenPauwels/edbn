@@ -87,11 +87,13 @@ def train_camargo(data_folder, model_folder, architecture):
     import RelatedMethods.Camargo.model_training as mo
 
     logfile = LogFile(data_folder + "full_log.csv", ",", 0, None, None, "case",
-                        activity_attr="event", convert=False, k=0)
+                        activity_attr="event", convert=True, k=5)
+    logfile.create_k_context()
     train_log = LogFile(data_folder + "train_log.csv", ",", 0, None, None, "case",
-                        activity_attr="event", convert=False, k=0)
+                        activity_attr="event", values=logfile.values, convert=False, k=5)
+    train_log.create_k_context()
     test_log = LogFile(data_folder + "test_log.csv", ",", 0, None, None, "case",
-                        activity_attr="event", convert=False, k=0)
+                        activity_attr="event", convert=False, k=5)
 
     args = {}
     args["file_name"] = "data"
@@ -104,29 +106,40 @@ def train_camargo(data_folder, model_folder, architecture):
     args['dense_act'] = None # optimization function see keras doc
     args['optim'] = 'Nadam' # optimization function see keras doc
 
-    em.training_model(logfile, model_folder)
-    mo.training_model(logfile, train_log, test_log, model_folder, args)
+    event_emb, role_emb = em.training_model(logfile, model_folder)
+    model = mo.training_model(train_log, event_emb, role_emb, args, 200, 10)
+    model.save(os.path.join(model_folder, "model.h5"))
+
 
 
 def train_lin(data_folder, model_folder):
-    from RelatedMethods.Lin.model import train
+    from RelatedMethods.Lin.model import create_model
 
     logfile = LogFile(data_folder + "full_log.csv", ",", 0, None, None, "case",
-                        activity_attr="event", convert=False, k=0)
+                        activity_attr="event", convert=False, k=5)
     logfile.add_end_events()
     logfile.convert2int()
     train_log = LogFile(data_folder + "train_log.csv", ",", 0, None, None, "case",
-                        activity_attr="event", convert=False, k=0, values=logfile.values)
+                        activity_attr="event", convert=False, k=5, values=logfile.values)
     train_log.add_end_events()
     train_log.convert2int()
+    train_log.create_k_context()
 
-    train(logfile, train_log, model_folder)
+    create_model(train_log, model_folder, 200, 10)
 
 
 def train_dimauro(data_folder, model_folder, params = None):
     from RelatedMethods.DiMauro.deeppm_act import train
+    logfile = LogFile(data_folder + "full_log.csv", ",", 0, None, None, "case",
+                        activity_attr="event", convert=False, k=5)
+    logfile.add_end_events()
+    logfile.convert2int()
+    train_log = LogFile(data_folder + "train_log.csv", ",", 0, None, None, "case",
+                        activity_attr="event", convert=False, k=5, values=logfile.values)
+    train_log.add_end_events()
+    train_log.convert2int()
+    train_log.create_k_context()
 
-    train_log = os.path.join(data_folder, "train_log.csv")
     test_log = os.path.join(data_folder, "test_log.csv")
 
     train(train_log, test_log, model_folder, params)
@@ -162,7 +175,11 @@ def main(argv):
             os.mkdir(dataset_folder)
 
             full_logfile, _ = get_data(train["data"], None, 2, False, False, False, False)
-            full_logfile.data.columns = ["case","event","role"]
+            print(full_logfile.data)
+            if len(full_logfile.data.columns) == 4:
+                full_logfile.data.columns = ["case","event","role", "time"]
+            else:
+                full_logfile.data.columns = ["case","event","role"]
             full_logfile.trace = "case"
             full_logfile.activity = "event"
             create_csv_file_header(full_logfile.data.to_dict('records'), os.path.join(dataset_folder,'full_log.csv'))
