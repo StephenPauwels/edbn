@@ -6,7 +6,8 @@
 import os
 
 import Methods.Bohmer.Execute as bmr
-import Methods.EDBN.Execute as edbn
+from Methods.EDBN.Train import train as edbn_train
+from Methods.EDBN.Anomalies import test as edbn_test
 import Utils.BPIPreProcess as preprocess
 import Utils.PlotResults as plt
 from Utils.LogFile import LogFile
@@ -35,8 +36,8 @@ def compare_bpics(path):
         train_data.convert2int()
         test_data.convert2int()
 
-        edbn_model = edbn.train(train_data, only_activity=False)
-        edbn.test(test_data, output_edbn, edbn_model, label = "Anomaly", normal_val = "0")
+        edbn_model = edbn_train(train_data)
+        edbn_test(test_data, output_edbn, edbn_model, label = "Anomaly", normal_val = "0")
 
         plt.plot_compare_prec_recall_curve([output, output_edbn], ["Likelihood Graph", "EDBN"], save_file=prec_recall)
         plt.plot_compare_roc_curve([output, output_edbn], ["Likelihood Graph", "EDBN"], save_file=roc)
@@ -62,8 +63,8 @@ def compare_bpic_total(path):
     train_data.convert2int()
     test_data.convert2int()
 
-    edbn_model = edbn.train(train_data, only_activity=False)
-    edbn.test(test_data, output_edbn, edbn_model, label = "Anomaly", normal_val = "0")
+    edbn_model = edbn_train(train_data)
+    edbn_test(test_data, output_edbn, edbn_model, label = "Anomaly", normal_val = "0")
 
     plt.plot_compare_prec_recall_curve([output, output_edbn], ["Likelihood Graph", "EDBN"], save_file=prec_recall)
     plt.plot_compare_roc_curve([output, output_edbn], ["Likelihood Graph", "EDBN"], roc)

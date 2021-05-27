@@ -23,7 +23,7 @@ OUTPUT_FOLDER = "Output/"
 def main(argv):
     from Data import get_data
     from Predictions.setting import Setting
-    from Methods import get_method
+    from Methods import get_prediction_method
     from Predictions.metric import ACCURACY
 
     if len(argv) < 2:
@@ -37,7 +37,7 @@ def main(argv):
     # Load data, setting and method
     ###
     basic_setting = Setting(None, "test-train", False, True, 70, filter_cases=5)
-    m = get_method(method)
+    m = get_prediction_method(method)
     d = get_data(data)
 
     model_folder = os.path.join(OUTPUT_FOLDER, str.lower(d.name), "models", str.lower(method))

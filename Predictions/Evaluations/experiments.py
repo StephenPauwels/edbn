@@ -198,7 +198,7 @@ def test_base_comparison():
     for test in tests:
         print("Test", test[0])
         d = get_data("Helpdesk")
-        m = Methods.get_method(test[0])
+        m = Methods.get_prediction_method(test[0])
         s = test[1]
         if test[0] == "LIN":
             s.filter_cases = 3
@@ -214,7 +214,7 @@ def test_base_comparison():
 
     # Di Mauro k-fold test
     d = get_data("Helpdesk")
-    m = Methods.get_method("DIMAURO")
+    m = Methods.get_prediction_method("DIMAURO")
     s = setting.DIMAURO
 
     if result_exists("Helpdesk", m, s):
@@ -233,7 +233,7 @@ def test_stability():
     d.prepare(setting.STANDARD)
     for method_name in ["SDL", "CAMARGO", "DIMAURO", "LIN", "PASQUADIBISCEGLIE", "TAX", "TAYMOURI"]:
         results[method_name] = []
-        m = Methods.get_method(method_name)
+        m = Methods.get_prediction_method(method_name)
         for _ in range(10):
             r = m.test(m.train(d.train), d.test_orig)
             results[method_name].append(ACCURACY.calculate(r))
@@ -356,13 +356,13 @@ if __name__ == "__main__":
     for d in ["Helpdesk", "BPIC12W", "BPIC12", "BPIC11", "BPIC15_1", "BPIC15_2", "BPIC15_3", "BPIC15_4", "BPIC15_5"]:
         for m in ["SDL", "CAMARGO", "DIMAURO", "LIN", "PASQUADIBISCEGLIE", "TAX", "TAYMOURI"]:
             try:
-                test_standard(d, method.get_method(m))
-                test_k(d, method.get_method(m))
-                test_split(d, method.get_method(m))
-                test_filter(d, method.get_method(m))
-                test_percentage(d, method.get_method(m))
-                test_split_cases(d, method.get_method(m))
-                test_end_event(d, method.get_method(m))
+                test_standard(d, Methods.get_prediction_method(m))
+                test_k(d, Methods.get_prediction_method(m))
+                test_split(d, Methods.get_prediction_method(m))
+                test_filter(d, Methods.get_prediction_method(m))
+                test_percentage(d, Methods.get_prediction_method(m))
+                test_split_cases(d, Methods.get_prediction_method(m))
+                test_end_event(d, Methods.get_prediction_method(m))
             except:
                 traceback.print_exc()
 

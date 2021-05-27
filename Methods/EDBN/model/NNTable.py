@@ -1,4 +1,4 @@
-from Methods.EDBN.ConditionalTable import ConditionalTable
+from Methods.EDBN.model.ConditionalTable import ConditionalTable
 
 from keras.layers import Input, Embedding, Concatenate, Dense, Softmax, Flatten, Dropout
 from keras.models import Model

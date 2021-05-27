@@ -2,8 +2,8 @@
     Author: Stephen Pauwels
 """
 
-from Methods.EDBN.ExtendedDynamicBayesianNetwork import ExtendedDynamicBayesianNetwork
-from Methods.EDBN.LearnBayesianStructure import Structure_learner
+from Methods.EDBN.model.ExtendedDynamicBayesianNetwork import ExtendedDynamicBayesianNetwork
+from Methods.EDBN.model.LearnBayesianStructure import Structure_learner
 from Utils import Uncertainty_Coefficient as uc
 
 

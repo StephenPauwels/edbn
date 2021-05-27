@@ -4,11 +4,72 @@
 
 import functools
 import itertools
-import multiprocessing as mp
 import re
 import numpy as np
 
 LAMBDA = 1
+
+
+def test(model, log):
+    return predict_next_event(model, log)
+
+
+def test_and_update(logs, model):
+    results = []
+    i = 0
+    for t in logs:
+        print(i, "/", len(logs))
+        i += 1
+        results.extend(predict_next_event_update(model, logs[t]["data"]))
+    return results
+
+
+def test_and_update_retain(test_logs, model, train_log):
+    from Methods.EDBN.model.LearnBayesianStructure import Structure_learner
+
+    # Create the list of allowed edges
+    restrictions = []
+    attributes = list(train_log.attributes())
+    for attr1 in attributes:
+        if attr1 != train_log.activity:
+            continue
+        for attr2 in attributes:
+            if attr2 not in train_log.ignoreHistoryAttributes:
+                for i in range(train_log.k):
+                    restrictions.append((attr2 + "_Prev%i" % i, attr1))
+
+    learner = Structure_learner()
+
+    results = []
+    i = 0
+    for t in test_logs:
+        print(i, "/", len(test_logs))
+        i += 1
+        test_log = test_logs[t]["data"]
+        results.extend(predict_next_event_update(model, test_log))
+
+        train_log = train_log.extend_data(test_log)
+        # print("Length train:", train_log.contextdata.shape)
+
+        learner.start_model(train_log, model, restrictions)
+        relations = learner.learn()
+
+        updated = False
+        activity_var = model.get_variable(train_log.activity)
+        for relation in relations:
+            if relation[0] not in [p.attr_name for p in activity_var.get_conditional_parents()]:
+                activity_var.add_parent(model.get_variable(relation[0]))
+                print("   ", relation[0], "->", relation[1])
+                updated = True
+        for parent in activity_var.get_conditional_parents():
+            if parent.attr_name not in [r[0] for r in relations]:
+                print("Removing", parent, "->", train_log.activity)
+                activity_var.remove_parent(parent)
+                updated = True
+        if updated:
+            model.train(train_log)
+    return results
+
 
 def cond_prob(a,b):
     """

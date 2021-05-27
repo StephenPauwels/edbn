@@ -1,3 +1,5 @@
 /venv/
 /venv/Lib/site-packages/
 /venv/*
+/Data/BPIC16.csv
+/Data/BPIC17.csv

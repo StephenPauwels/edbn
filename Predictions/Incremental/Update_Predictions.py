@@ -25,7 +25,7 @@ def dbn_adaptive_window(dataset):
     d.prepare(setting.STANDARD)
     d.create_batch("week", "%Y-%m-%d %H:%M:%S")
 
-    dbn = Methods.get_method("DBN")
+    dbn = Methods.get_prediction_method("DBN")
 
     batch_ids = d.get_batch_ids()
 
@@ -77,7 +77,7 @@ def dbn_adaptive_window(dataset):
 
 def main():
     d = data.get_data("BPIC15_1")
-    m = Methods.get_method("DIMAURO")
+    m = Methods.get_prediction_method("DIMAURO")
     s = setting.STANDARD
     e = metric.CUMM_ACCURACY
 

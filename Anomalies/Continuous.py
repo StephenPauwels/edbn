@@ -3,7 +3,7 @@
 """
 import pandas as pd
 
-import Methods.EDBN.Execute as edbn
+import Methods.EDBN.Anomalies as edbn
 import Utils.PlotResults as plot
 from Utils.LogFile import LogFile
 

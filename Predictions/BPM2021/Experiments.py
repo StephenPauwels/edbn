@@ -1,3 +1,4 @@
+import Predictions.setting
 import Predictions.setting as setting
 import Data
 import Methods
@@ -42,7 +43,7 @@ if __name__ == "__main__":
 
         for m in METHODS:
             d = Data.get_data(data_name)
-            m = Methods.get_method(m)
+            m = Methods.get_prediction_method(m)
             s = setting.STANDARD
             s.train_percentage = 50
 

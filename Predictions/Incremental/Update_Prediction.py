@@ -1,6 +1,6 @@
 from Utils.LogFile import LogFile
-from Methods.EDBN.Execute import train as edbn_train
-from Methods.EDBN.eDBN_Prediction import predict_next_event, predict_next_event_update
+from Methods.EDBN.Anomalies import train as edbn_train
+from Methods.EDBN.Predictions import predict_next_event, predict_next_event_update
 
 import matplotlib.pyplot as plt
 

@@ -4,7 +4,7 @@ from Utils.LogFile import LogFile
 
 def run_edbn():
     from eDBN_Prediction import get_probabilities
-    from Methods.EDBN.edbn_adapter import train
+    from Methods.EDBN.Train import train
 
     labeled_logfile = "../Data/Outcome_Prediction/BPIC15_1_f2.csv"
 

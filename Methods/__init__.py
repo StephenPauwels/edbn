@@ -1,13 +1,14 @@
 from Methods.method import Method
 
 
-def get_method(method_name):
+def get_prediction_method(method_name):
     if method_name == "SDL":
         from Methods.SDL import sdl
         return Method("SDL", sdl.train, sdl.test, sdl.update, {"epochs": 200, "early_stop": 10})
     elif method_name == "DBN":
-        from Methods.EDBN import edbn_adapter as edbn
-        return Method("DBN", edbn.train, edbn.test, edbn.update)
+        from Methods.EDBN.Train import train, update
+        from Methods.EDBN.Predictions import test
+        return Method("DBN", train, test, update)
     elif method_name == "CAMARGO":
         from Methods.Camargo import adapter as camargo
         return Method("Camargo", camargo.train, camargo.test, camargo.update, {"epochs": 200, "early_stop": 10})

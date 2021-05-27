@@ -4,19 +4,7 @@
 
 import numpy as np
 
-import Methods.EDBN.GenerateModel as gm
-
-
-def train(data, only_activity=True):
-    cbn = gm.generate_model(data, only_activity)
-    cbn.train(data)
-    return cbn
-
-
-def update(model, data, only_activity=True):
-    cbn = gm.update_model(data, only_activity, model)
-    cbn.train(data)
-    return cbn
+import Methods.EDBN.model.GenerateModel as gm
 
 
 def test(test_data, output_file, model, label, normal_val, train_data=None):

@@ -10,7 +10,7 @@ import pandas as pd
 from joblib import Parallel, delayed
 
 # from CPT_inverted_index import CPT_inverted_index
-from Methods.EDBN.CPT import CPT
+from Methods.EDBN.model.CPT import CPT
 # from EDBN.NNTable import NNT
 import Utils.Result as Result
 

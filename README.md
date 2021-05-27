@@ -17,7 +17,7 @@ All experiments in the papers can be reproduced using the files in the Anomalies
     - [DiMauro](https://github.com/StephenPauwels/edbn/tree/master/Methods/DiMauro): Implementation used in [9]
     - [EDBN](https://github.com/StephenPauwels/edbn/tree/master/Methods/EDBN): Contains our implementation of our Extended Dynamic Bayesian Network model
     - [Lin](https://github.com/StephenPauwels/edbn/tree/master/Methods/Lin): Our implementation of the method described in [10]
-    - [Nolle](https://github.com/StephenPauwels/edbn/tree/master/Methods/Nolle): Contains the original implementations used by Nolle et al in [7]
+    - [Nolle](https://github.com/StephenPauwels/edbn/tree/master/Methods/Nolle): Contains the original implementations used by Nolle et al in [7], [extra libraries needed](https://github.com/tnolle/binet)
     - [Tax](https://github.com/StephenPauwels/edbn/tree/master/Methods/Tax): Adapted implementation used in [11]
     - [Pasquadibisceglie](https://github.com/StephenPauwels/edbn/tree/master/Methods/Pasquadibisceglie): Adapted implementation used in [12]
     - [Premiere](https://github.com/StephenPauwels/edbn/tree/master/Methods/Premiere): Adapted implementation used in [14]
@@ -29,9 +29,48 @@ All experiments in the papers can be reproduced using the files in the Anomalies
 
 ## How To Use
 ### Anomaly detection
-
+- Load data using the Logfile class
+  ```python
+    data_object = Logfile(...)
+  ```
+- Use EDBN.Train to train model
+  ```python
+    model = EDBN.Train.train(data_object)
+  ```
+- Use EDBN.Anomalies to check for anomalies
+  ```python
+    EDBN.Anomalies.test(data_object, output_file, model, label_attribute, normal_val)
+  ```
+  
 ### Predictive monitoring
-
+- Use Data package to load data d = Data.get_data(data_name)
+  ```python
+    data_object = Data.get_data("Helpdesk")
+  ```
+- Select preprocessing settings using Predictions.settings
+  ```python
+    settings = Predictions.setting.STANDARD
+  ```
+- use d.prepare(setting) for preparing data for training and testing
+  ```python
+    data_object.prepare(settings)
+  ```
+- Use Methods.get_prediction_method to get adapter class for all methods
+  ```python
+    m = Methods.get_prediction_method("SDL")
+  ```
+- Use method.train(logfile) for training a model
+  ```python
+    model = m.train(data_object)
+  ```
+- Use res = method.test(model, logfile) for testing the model
+  ```python
+    results = m.test(model, data_object)
+  ```
+- Use the package Predictions.metric to calculate score from results
+  ```python
+    accuracy = Predictions.metric.ACCURACY.calculate(results)
+  ```
 
 ## References
 1. [Pauwels, Stephen, and Toon Calders. "An Anomaly Detection Technique for Business Processes based on Extended Dynamic Bayesian Networks." (2019)](http://adrem.uantwerpen.be/bibrem/pubs/PauwelsSAC19.pdf)
