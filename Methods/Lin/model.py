@@ -11,15 +11,17 @@ from functools import partial
 import jellyfish as jf
 import tensorflow.keras.utils as ku
 import numpy as np
-from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
-from tensorflow.keras.layers import Input, Embedding, Dropout, Concatenate, LSTM, Dense, BatchNormalization
-from tensorflow.keras.models import Model, load_model
-from tensorflow.keras.optimizers import Nadam
+
 
 from Methods.Lin.Modulator import Modulator
 
 
 def create_model_cudnn(vec, vocab_act_size, vocab_role_size, output_folder):
+    from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
+    from tensorflow.keras.layers import Input, Embedding, Dropout, Concatenate, LSTM, Dense, BatchNormalization
+    from tensorflow.keras.models import Model, load_model
+    from tensorflow.keras.optimizers import Nadam
+
     # Create embeddings + Concat
     act_input = Input(shape = (vec['prefixes']['x_ac_inp'].shape[1],), name="act_input")
     role_input = Input(shape = (vec['prefixes']['x_rl_inp'].shape[1],), name="role_input")
@@ -82,6 +84,11 @@ def create_model_cudnn(vec, vocab_act_size, vocab_role_size, output_folder):
               epochs=200)
 
 def create_model(log, output_folder, epochs, early_stop):
+    from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
+    from tensorflow.keras.layers import Input, Embedding, Dropout, Concatenate, LSTM, Dense, BatchNormalization
+    from tensorflow.keras.models import Model, load_model
+    from tensorflow.keras.optimizers import Nadam
+
     vec = vectorization(log)
     vocab_act_size = len(log.values["event"]) + 1
     vocab_role_size = len(log.values["role"]) + 1
@@ -153,17 +160,10 @@ def predict_next(log, model):
     prefixes = create_pref_next(log)
     return _predict_next(model, prefixes)
 
-    # accuracy = (np.sum([x['ac_true'] for x in prefixes]) / len(prefixes))
-    #
-    # print("Accuracy:", accuracy)
-    # return accuracy
 
-
-def predict_suffix(model_file, df_test, end):
-    model = load_model(os.path.join(model_file), custom_objects={'Modulator':Modulator})
-
-    prefixes = create_pref_suff(df_test, end)
-    prefixes = _predict_suffix(model, prefixes, 100, end)
+def predict_suffix(model, data):
+    prefixes = create_pref_suf(data.test_orig)
+    prefixes = _predict_suffix(model, prefixes, 100, data.logfile.convert_string2int(data.logfile.activity, "end"))
     prefixes = dl_measure(prefixes)
 
     average_dl = (np.sum([x['suffix_dl'] for x in prefixes]) / len(prefixes))
@@ -258,31 +258,31 @@ def create_pref_next(log):
                                  t_pref=t_pref))
     return prefixes
 
-def create_pref_suff(df_test, end):
-    """Extraction of prefixes and expected suffixes from event log.
-    Args:
-        df_test (dataframe): testing dataframe in pandas format.
-        end: value representing the END token
-    Returns:
-        list: list of prefixes and expected sufixes.
-    """
-    prefixes = list()
-    cases = df_test.case.unique()
+def create_pref_suf(log):
+    prefixes = []
+    cases = log.get_cases()
     for case in cases:
-        trace = df_test[df_test.case == case].to_dict('records')
-        ac_pref = list()
-        rl_pref = list()
-        for i in range(0, len(trace)-1):
-            ac_pref.append(trace[i]['event'])
-            rl_pref.append(trace[i]['role'])
-            prefixes.append(dict(ac_pref=ac_pref.copy(),
-                                 suff=[x['event'] for x in trace[i + 1:]],
-                                 rl_pref=rl_pref.copy(),
-                                 rl_suff=[x['role'] for x in trace[i + 1:]],
-                                 pref_size=i + 1))
-    for x in prefixes:
-        x['suff'].append(end)
-        # x['rl_suff'].append(rl_index['end'])
+        trace = case[1]
+
+        trace_ac = list(trace["event"])
+        trace_rl = list(trace["role"])
+
+        j = 0
+        for row in trace.iterrows():
+            row = row[1]
+            ac_pref = []
+            rl_pref = []
+            t_pref = []
+            for i in range(log.k - 1, -1, -1):
+                ac_pref.append(row["event_Prev%i" % i])
+                rl_pref.append(row["role_Prev%i" % i])
+                t_pref.append(0)
+            prefixes.append(dict(ac_pref=ac_pref,
+                                 ac_suff=[x for x in trace_ac[j + 1:]],
+                                 rl_pref=rl_pref,
+                                 rl_suff=[x for x in trace_rl[j + 1:]],
+                                 t_pref=t_pref))
+            j += 1
     return prefixes
 
 def _predict_next(model, prefixes):

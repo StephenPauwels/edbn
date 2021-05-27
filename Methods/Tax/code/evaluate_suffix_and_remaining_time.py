@@ -18,7 +18,7 @@ from jellyfish._jellyfish import damerau_levenshtein_distance
 from keras.models import load_model
 
 
-def evaluate(train_log, test_log, model_folder, model_file):
+def evaluate(model, data):
     caseid_col = 0
     role_col = 2
     task_col = 1

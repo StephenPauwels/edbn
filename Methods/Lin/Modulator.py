@@ -4,13 +4,12 @@
     Author: Stephen Pauwels
 """
 
-import tensorflow as tf
 from tensorflow.keras.layers import Layer
+from tensorflow import multiply, sigmoid, concat, transpose, matmul
 
 REPR_DIM = 100
 
 class Modulator(Layer):
-
     def __init__(self, attr_idx, num_attrs, time, **kwargs):
         self.attr_idx = attr_idx
         self.num_attrs = num_attrs  # Number of extra attributes used in the modulator (other than the event)
@@ -35,17 +34,17 @@ class Modulator(Layer):
         tmp = []
         for elem_product in range(self.num_attrs + 1):
             if elem_product != self.attr_idx:
-                tmp.append(tf.multiply(representations[self.attr_idx],representations[elem_product], name="Modulator_repr_mult_" + str(elem_product)))
+                tmp.append(multiply(representations[self.attr_idx],representations[elem_product], name="Modulator_repr_mult_" + str(elem_product)))
         for attr_idx in range(self.num_attrs + 1):
             tmp.append(representations[attr_idx])
-        z = tf.concat(tmp, axis=1, name="Modulator_concatz")
+        z = concat(tmp, axis=1, name="Modulator_concatz")
         # Calculate b-vectors
-        b = tf.sigmoid(tf.matmul(self.W,tf.transpose(z), name="Modulator_matmulb") + self.b, name="Modulator_sigmoid")
+        b = sigmoid(matmul(self.W,transpose(z), name="Modulator_matmulb") + self.b, name="Modulator_sigmoid")
 
         # Use b-vectors to output
-        tmp = tf.transpose(tf.multiply(b[0,:], tf.transpose(x[:,(self.attr_idx * self.time_step):((self.attr_idx+1) * self.time_step),:])), name="Modulator_mult_0")
+        tmp = transpose(multiply(b[0,:], transpose(x[:,(self.attr_idx * self.time_step):((self.attr_idx+1) * self.time_step),:])), name="Modulator_mult_0")
         for i in range(1, self.num_attrs + 1):
-             tmp = tmp + tf.transpose(tf.multiply(b[i,:], tf.transpose(x[:,(i * self.time_step):((i+1) * self.time_step),:])), name="Modulator_mult_" + str(i))
+             tmp = tmp + transpose(multiply(b[i,:], transpose(x[:,(i * self.time_step):((i+1) * self.time_step),:])), name="Modulator_mult_" + str(i))
 
         return tmp
 

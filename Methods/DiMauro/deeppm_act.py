@@ -14,7 +14,7 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.callbacks import EarlyStopping
 
-from Methods.DiMauro.utils import load_data_new, load_cases
+from Methods.DiMauro.utils import load_data_new, load_cases_new
 from sklearn.metrics import accuracy_score
 
 from hyperopt import Trials, STATUS_OK, tpe, fmin, hp
@@ -237,26 +237,18 @@ def evaluate(train_log, test_log, model_folder):
     result = zip(y, predict_vals, predict_probs, expect_probs)
     return sum([1 if a[0] == a[1] else 0 for a in result]) / len(predict_vals)
 
-def predict_suffix(train_log, test_log, model_folder):
-    (train_cases,
-     test_cases_X, test_cases_y,
-     vocab_size,
-     max_length,
-     prefix_sizes) = load_cases(train_log, test_log, case_index=0, act_index=1)
 
-    model = load_model(model_folder)
+def predict_suffix(model, data):
+    X, X_t, y = load_cases_new(data.test_orig)
 
-    suffix = [np.array([]) for _ in range(len(test_cases_X))]
-    cases_X_to_test = test_cases_X[:]
+    suffix = [np.array([]) for _ in range(len(y))]
 
     length = 0
-    finished_cases = []
-    while length < max_length:
-        print(length)
-        predictions = model.predict(cases_X_to_test)
+    while length < 100:
+        predictions = model.predict([X, X_t])
         pred_a = np.argmax(predictions, axis=1)
-        cases_X_to_test = np.roll(cases_X_to_test, -1, axis=1)
-        cases_X_to_test[:,-1] = pred_a
+        X = np.roll(X, -1, axis=1)
+        X[:, -1] = pred_a
         suffix = np.concatenate((suffix, [[i] for i in pred_a]), axis=1)
         length += 1
 
@@ -264,7 +256,7 @@ def predict_suffix(train_log, test_log, model_folder):
     for i, suf in enumerate(suffix):
         if 0 in suf:
             suf = suf[:np.where(suf == 0)[0][0]]
-        results.append(1 - (damerau_levenshtein_distance(suf, test_cases_y[i])) / max(len(suf), len(test_cases_y[i])))
+        results.append(1 - (damerau_levenshtein_distance(suf, y[i])) / max(len(suf), len(y[i])))
     return np.average(results)
 
 

@@ -17,104 +17,8 @@ import pickle
 import sys
 import time
 
-from tensorflow.python.keras.models import load_model
-
-from Utils.LogFile import LogFile
-
 OUTPUT_FOLDER = "Output/"
 
-
-def test_edbn(dataset_folder, model_folder, k):
-    from eDBN_Prediction import predict_next_event
-
-    model_file = os.path.join(model_folder, "model")
-
-    with open(model_file, "rb") as pickle_file:
-        model = pickle.load(pickle_file)
-    model.print_parents()
-
-    if k is None:
-        with open(os.path.join(model_folder, "k")) as finn:
-            k = int(finn.readline())
-            print("K=", k)
-
-    train_log = LogFile(dataset_folder + "train_log.csv", ",", 0, None, None, "case",
-                        activity_attr="event", convert=True, k=k)
-
-    test_log = LogFile(dataset_folder + "test_log.csv",",", 0, None, None, "case",
-                       activity_attr="event", convert=True, k=k, values=train_log.values)
-    test_log.create_k_context()
-
-    acc = predict_next_event(model, test_log)
-    acc = sum([1 if a[0] == a[1] else 0 for a in acc]) / len(acc)
-    with open(os.path.join(model_folder, "results_next_event.log"), "a") as fout:
-        fout.write("Accuracy: (%s) %s\n" % (time.strftime("%d-%m-%y %H:%M:%S", time.localtime()), acc))
-
-
-def test_camargo(dataset_folder, model_folder, architecture):
-    from Methods.Camargo.predict_next import predict_next
-
-    model_file = sorted([model_file for model_file in os.listdir(model_folder) if model_file.endswith(".h5")])[-1]
-    model = load_model(os.path.join(model_folder, model_file))
-
-    logfile = LogFile(dataset_folder + "full_log.csv", ",", 0, None, None, "case",
-                        activity_attr="event", convert=True, k=5)
-    test_log = LogFile(dataset_folder + "test_log.csv", ",", 0, None, None, "case",
-                        activity_attr="event", convert=True, k=5, values=logfile.values)
-    test_log.create_k_context()
-
-    results = predict_next(test_log, model)
-    acc = sum([1 if a[0] == a[1] else 0 for a in results]) / len(results)
-    with open(os.path.join(model_folder, "results_next_event.log"), "a") as fout:
-        fout.write("Accuracy: (%s) %s\n" % (time.strftime("%d-%m-%y %H:%M:%S", time.localtime()), acc))
-
-
-def test_lin(dataset_folder, model_folder):
-    from Methods.Lin.model import predict_next, Modulator
-
-    logfile = LogFile(dataset_folder + "full_log.csv", ",", 0, None, None, "case",
-                        activity_attr="event", convert=True, k=5)
-    test_log = LogFile(dataset_folder + "test_log.csv", ",", 0, None, None, "case",
-                        activity_attr="event", convert=True, k=5, values=logfile.values)
-    test_log.create_k_context()
-
-    model_file = sorted([model_file for model_file in os.listdir(model_folder) if model_file.endswith(".h5")])[-1]
-    model = load_model(os.path.join(model_folder, model_file), custom_objects={"Modulator": Modulator})
-
-    acc = predict_next(test_log, model)
-    acc = sum([1 if a[0] == a[1] else 0 for a in acc]) / len(acc)
-    with open(os.path.join(model_folder, "results_next_event.log"), "a") as fout:
-        fout.write("Accuracy: (%s) %s\n" % (time.strftime("%d-%m-%y %H:%M:%S", time.localtime()), acc))
-
-
-def test_dimauro(dataset_folder, model_folder):
-    from Methods.DiMauro.deeppm_act import evaluate
-
-    model_file = sorted([model_file for model_file in os.listdir(model_folder) if model_file.endswith(".h5")])[-1]
-
-    logfile = LogFile(dataset_folder + "full_log.csv", ",", 0, None, None, "case",
-                        activity_attr="event", convert=True, k=5)
-    train_log = os.path.join(dataset_folder, "train_log.csv")
-    test_log = LogFile(dataset_folder + "test_log.csv", ",", 0, None, None, "case",
-                        activity_attr="event", convert=True, k=5, values=logfile.values)
-    test_log.create_k_context()
-
-    acc = evaluate(train_log, test_log, os.path.join(model_folder, model_file))
-    with open(os.path.join(model_folder, "results_next_event.log"), "a") as fout:
-        fout.write("Accuracy: (%s) %s\n" % (time.strftime("%d-%m-%y %H:%M:%S", time.localtime()), acc))
-
-def test_tax(dataset_folder, model_folder):
-    from Methods.Tax.code.evaluate_next_activity_and_time import evaluate
-    from Methods.Tax.code.calculate_accuracy_on_next_event import calc_accuracy
-
-    train_log = os.path.join(dataset_folder, "train_log.csv")
-    test_log = os.path.join(dataset_folder, "test_log.csv")
-    model_file = sorted([model_file for model_file in os.listdir(model_folder) if model_file.endswith(".h5")])[-1]
-
-    evaluate(train_log, test_log, model_folder, model_file)
-    acc = calc_accuracy(os.path.join(model_folder))
-    with open(os.path.join(model_folder, "results_next_event.log"), "a") as fout:
-        fout.write("Accuracy: (%s) %s\n" % (time.strftime("%d-%m-%y %H:%M:%S", time.localtime()), acc))
 
 def main(argv):
     from Data import get_data
@@ -128,22 +32,43 @@ def main(argv):
 
     method = argv[0]
     data = argv[1]
+
+    ###
+    # Load data, setting and method
+    ###
+    basic_setting = Setting(None, "test-train", False, True, 70, filter_cases=5)
+    m = get_method(method)
     d = get_data(data)
-
-    basic_setting = Setting(2, "test-train", False, True, 70, filter_cases=5)
-
-    if not os.path.exists(OUTPUT_FOLDER):
-        os.mkdir(OUTPUT_FOLDER)
 
     model_folder = os.path.join(OUTPUT_FOLDER, str.lower(d.name), "models", str.lower(method))
 
-    if method == "DBN":
-        if method == "DBN":
-            if len(argv) >= 3:
-                basic_setting.k = int(argv[2])
+    ###
+    # Check if all required folders exist
+    ###
+    if not os.path.exists(OUTPUT_FOLDER):
+        os.mkdir(OUTPUT_FOLDER)
 
+    # Perform some method specific checks
+    if method == "DBN":
+        if len(argv) >= 3:
+            basic_setting.prefixsize = int(argv[2])
+        else:
+            basic_setting.prefixsize = 2
+    elif method == "CAMARGO":
+        if len(argv) < 3:
+            print("Please indicate the architecture to use: shared_cat or specialized")
+            return
+        architecture = str.lower(argv[2])
+        m.def_params["model_type"] = architecture
+        basic_setting.prefixsize = 5
+    elif method == "LIN":
+        basic_setting.prefixsize = 5
+
+    # Perform some data specific checks
     if data == "Helpdesk":
         basic_setting.filter_cases = 3
+
+    d.prepare(basic_setting)
 
     ###
     # Register Start time
@@ -157,27 +82,23 @@ def main(argv):
     # Execute chosen method
     ###
     print("EXPERIMENT NEXT ACTIVITY PREDICTION:", argv)
-    d.prepare(basic_setting)
-
-    m = get_method(method)
-
-    if method == "CAMARGO":
-        if len(argv) < 3:
-            print("Please indicate the architecture to use: shared_cat or specialized")
-            return
-        architecture = str.lower(argv[2])
-
-        m.def_params["model_type"] = architecture
-
+    # Load model
     if method == "DBN":
         model_file = os.path.join(model_folder, "model")
         with open(model_file, "rb") as pickle_file:
             model = pickle.load(pickle_file)
         model.print_parents()
     else:
-        model = load_model(os.path.join(model_folder, "model.h5"))
+        from tensorflow.python.keras.models import load_model
+        if method == "LIN":
+            import Methods
 
+            model = load_model(os.path.join(model_folder, "model.h5"),
+                               custom_objects={"Modulator": Methods.Lin.Modulator.Modulator})
+        else:
+            model = load_model(os.path.join(model_folder, "model.h5"))
 
+    # Evaluate model and calculate accuracy
     results = m.test(model, d.test_orig)
     acc = ACCURACY.calculate(results)
     with open(os.path.join(model_folder, "results_next_event.log"), "a") as fout:

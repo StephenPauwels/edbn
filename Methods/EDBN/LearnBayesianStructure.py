@@ -7,9 +7,6 @@ import multiprocessing as mp
 from multiprocessing import Manager, Process, Queue
 
 import numpy as np
-import sklearn.metrics as skm
-from sklearn.model_selection import GridSearchCV
-from sklearn.neighbors import KernelDensity
 
 
 class Structure_learner():
@@ -202,6 +199,9 @@ class Structure_learner():
 
 
     def calc_kde_score(self, cols, disc_parents, bandwidth_cache, n_jobs = 1):
+        from sklearn.model_selection import GridSearchCV
+        from sklearn.neighbors import KernelDensity
+
         partitions = []
         if len(disc_parents) > 0:
             partitions = self.data.groupby(disc_parents)
@@ -398,6 +398,8 @@ def would_cause_cycle(graph, u, v, visited = None):
     return False
 
 def mutual_information(data):
+    from sklearn.metrics import mutual_info_score
+
     cols = len(data.columns)
     data = data.values
     if cols == 1:
@@ -405,12 +407,12 @@ def mutual_information(data):
         #return skm.mutual_info_score(data[:,0], data[:,0])
         return 0
     if cols == 2:
-        return skm.mutual_info_score(data[:,0], data[:,1])
+        return mutual_info_score(data[:,0], data[:,1])
     elif cols > 2:
         data = data.astype('str')
         for i in range(len(data)):
             data[i,1] = data[i,1:cols].tostring()
-        return skm.mutual_info_score(data[:,0].astype('str'), data[:,1])
+        return mutual_info_score(data[:,0].astype('str'), data[:,1])
 
 
 
@@ -438,6 +440,8 @@ def score_continuous_net(model, test, label_attr, output_file=None, title=None):
     plot.plot_single_prec_recall_curve(output_file, title)
 
 if __name__ == "__main__":
+    from sklearn.neighbors import KernelDensity
+
     vals = [1,1,1,1,2,4,5,5,7,8,10]
     input = []
     for v in vals:

@@ -159,47 +159,25 @@ def main(argv):
     if len(argv) < 2:
         print("Missing arguments, expected: METHOD and DATA")
         return
-    else:
-        method = argv[0]
-        data = argv[1]
 
-    if not os.path.exists(OUTPUT_FOLDER):
-        os.mkdir(OUTPUT_FOLDER)
+    method = argv[0]
+    data = argv[1]
 
-    basic_setting = Setting(2, "test-train", False, True, 70, filter_cases=5)
-
-
-    # Check for all input data if already exist. Otherwise, create data
-    # for train in DATA_DESC:
-    #     dataset_folder = os.path.join(DATA_FOLDER, train["folder"])
-    #     if not os.path.exists(dataset_folder):
-    #         os.mkdir(dataset_folder)
-    #
-    #         full_logfile, _ = get_data(train["data"], None, 2, False, False, False, False)
-    #         print(full_logfile.data)
-    #         if len(full_logfile.data.columns) == 4:
-    #             full_logfile.data.columns = ["case","event","role", "time"]
-    #         else:
-    #             full_logfile.data.columns = ["case","event","role"]
-    #         full_logfile.trace = "case"
-    #         full_logfile.activity = "event"
-    #         create_csv_file_header(full_logfile.data.to_dict('records'), os.path.join(dataset_folder,'full_log.csv'))
-    #
-    #         train_logfile, test_logfile = full_logfile.splitTrainTest(70)
-    #         create_csv_file_header(train_logfile.data.to_dict('records'), os.path.join(dataset_folder,'train_log.csv'))
-    #         create_csv_file_header(test_logfile.data.to_dict('records'), os.path.join(dataset_folder,'test_log.csv'))
-    #
-    #     output_folder = os.path.join(OUTPUT_FOLDER, train["folder"])
-    #     if not os.path.exists(output_folder):
-    #         os.mkdir(output_folder)
-    #         os.mkdir(os.path.join(output_folder, "models"))
-
+    ###
+    # Load data, setting and method
+    ###
+    basic_setting = Setting(None, "test-train", False, True, 70, filter_cases=5)
+    m = get_method(method)
     d = get_data(data)
 
+    model_folder = os.path.join(OUTPUT_FOLDER, str.lower(d.name), "models", str.lower(method))
+
+    ###
+    # Check if all required folders exist
+    ###
     if not os.path.exists(OUTPUT_FOLDER):
         os.mkdir(OUTPUT_FOLDER)
 
-    model_folder = os.path.join(OUTPUT_FOLDER, str.lower(d.name), "models", str.lower(method))
     if not os.path.exists(os.path.join(OUTPUT_FOLDER, str.lower(d.name))):
         os.mkdir(os.path.join(OUTPUT_FOLDER, str.lower(d.name)))
 
@@ -209,22 +187,28 @@ def main(argv):
     if not os.path.exists(model_folder):
         os.mkdir(model_folder)
 
-    # if method == CAMARGO:
-    #     if len(argv) < 3:
-    #         print("Please indicate the architecture to use: shared_cat or specialized")
-    #         return
-    #     else:
-    #         model_folder = os.path.join(model_folder, argv[2])
-    #         if not os.path.exists(model_folder):
-    #             os.mkdir(model_folder)
-    # elif method == EDBN:
-    #     if len(argv) >= 3:
-    #         edbn_k = int(argv[2])
-    #     else:
-    #         edbn_k = None
-    #     model_folder = os.path.join(model_folder, str(edbn_k))
-    #     if not os.path.exists(model_folder):
-    #         os.mkdir(model_folder)
+    # Perform some method specific checks
+    if method == "DBN":
+        if len(argv) >= 3:
+            basic_setting.prefixsize = int(argv[2])
+        else:
+            basic_setting.prefixsize = 2
+    elif method == "CAMARGO":
+        if len(argv) < 3:
+            print("Please indicate the architecture to use: shared_cat or specialized")
+            return
+        architecture = str.lower(argv[2])
+        m.def_params["model_type"] = architecture
+        basic_setting.prefixsize = 5
+    elif method == "LIN":
+        basic_setting.prefixsize = 5
+
+    # Perform some data specific checks
+    if data == "Helpdesk":
+        basic_setting.filter_cases = 3
+
+    d.prepare(basic_setting)
+
     ###
     # Register Start time
     ###
@@ -234,30 +218,13 @@ def main(argv):
     time_output.write("Starting time: %s\n" % start_time_str)
 
     ###
-    # Execute chosen method
+    # Train and save model using chosen data and method
     ###
     print("EXPERIMENT TRAINING MODEL:", argv)
-
-    if method == "DBN":
-        if len(argv) >= 3:
-            basic_setting.k = int(argv[2])
-
-    if data == "Helpdesk":
-        basic_setting.filter_cases = 3
-
-    d.prepare(basic_setting)
-
-    m = get_method(method)
-
-    if method == "CAMARGO":
-        if len(argv) < 3:
-            print("Please indicate the architecture to use: shared_cat or specialized")
-            return
-        architecture = str.lower(argv[2])
-
-        m.def_params["model_type"] = architecture
-
+    # Train model
     model = m.train(d.train)
+
+    # Save model
     if method == "DBN":
         with open(os.path.join(model_folder, "model"), "wb") as pickle_file:
             pickle.dump(model, pickle_file)

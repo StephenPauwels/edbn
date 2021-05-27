@@ -1,4 +1,4 @@
-from Prediction_Testbed.Evaluations.bise_experiments import get_scores
+from Predictions.Evaluations.experiments import get_scores
 import setting
 import metric
 
@@ -153,7 +153,7 @@ def check_variance_k_folds(k_fold=3):
 
 
 if __name__ == "__main__":
-    RESULT_FOLDER = "bise_results"
+    RESULT_FOLDER = "results"
 
     # check_result_files()
     # process_standard()

@@ -1,6 +1,3 @@
-from tensorflow.keras.models import load_model
-
-from Methods.Lin.Modulator import Modulator
 from Methods.Lin.model import create_model, predict_next, vectorization
 from Utils.LogFile import LogFile
 

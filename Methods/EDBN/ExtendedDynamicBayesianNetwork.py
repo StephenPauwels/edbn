@@ -8,8 +8,6 @@ import re
 import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
-from sklearn.model_selection import GridSearchCV
-from sklearn.neighbors import KernelDensity
 
 # from CPT_inverted_index import CPT_inverted_index
 from Methods.EDBN.CPT import CPT
@@ -411,6 +409,9 @@ class Numerical_Variable(Variable):
         self.train_relations(log)
 
     def train_relations(self, log):
+        from sklearn.model_selection import GridSearchCV
+        from sklearn.neighbors import KernelDensity
+
         if len(self.discrete_parents) > 0: # Split log in partitions according to the discrete parents
             partitions = log.groupby([p.attr_name for p in self.discrete_parents])
         else: # If no discrete parents -> split log in just one partition

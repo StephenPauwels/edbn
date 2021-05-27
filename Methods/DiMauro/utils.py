@@ -230,6 +230,73 @@ def load_data(train, test, case_index = 0, act_index = 1):
 
     return ( padded_X_train, y_train, padded_X_test, y_test, vocab_size, max_length, n_classes, prefix_sizes_train)
 
+
+def load_cases_new(log):
+    X = []
+    X_t = []
+    y = []
+
+    casestarttime = None
+    lasteventtime = None
+
+    for case in log.get_cases():
+        trace = case[1]
+
+        trace_ac = list(trace["event"])
+
+        j = 0
+        for row in trace.iterrows():
+            row = row[1]
+            if log.time is None:
+                t_raw = 0
+            else:
+                t_raw = row[log.time + "_Prev%i" % (log.k-1)]
+            if t_raw != 0:
+                try:
+                    t = datetime.strptime(t_raw, "%Y-%m-%d %H:%M:%S")
+                except ValueError:
+                    t = datetime.strptime(t_raw, "%Y/%m/%d %H:%M:%S.%f")
+                lasteventtime = t
+            line = []
+            times = []
+            for i in range(log.k - 1, -1, -1):
+                line.append(row["event_Prev%i" % i])
+                if log.time is None:
+                    t_raw = 0
+                else:
+                    t_raw = row[log.time + "_Prev%i" % i]
+                if t_raw != 0:
+                    try:
+                        t = datetime.strptime(t_raw, "%Y-%m-%d %H:%M:%S")
+                    except ValueError:
+                        t = datetime.strptime(t_raw, "%Y/%m/%d %H:%M:%S.%f")
+                    if lasteventtime is None:
+                        times.append(1)
+                    else:
+                        timesincelastevent = t - lasteventtime
+                        timediff = 86400 * timesincelastevent.days + timesincelastevent.seconds + timesincelastevent.microseconds/1000000
+                        if timediff + 1 <= 0:
+                            times.append(1)
+                        else:
+                            times.append(timediff+1)
+                    lasteventtime = t
+                else:
+                    times.append(1) #to avoid zero
+            X.append(line)
+            X_t.append(times)
+            y.append(trace_ac[j:])
+
+            j += 1
+
+    X = np.array(X)
+    X_t = np.array(X_t)
+    y = np.array(y)
+
+    X_t = np.log(X_t)
+
+    return X, X_t, y
+
+
 def load_cases(train, test, case_index = 0, act_index = 1):
     import numpy as np
     import csv
@@ -356,7 +423,7 @@ def load_cases(train, test, case_index = 0, act_index = 1):
     padded_cases_train = pad_sequences(cases_train, maxlen=max_length, padding='pre', dtype='float64')
     padded_cases_test_X = pad_sequences(test_cases_X, maxlen=max_length, padding='pre', dtype='float64')
 
-    return ( padded_cases_train, padded_cases_test_X, test_cases_y, vocab_size, max_length, prefix_sizes_train)
+    return (padded_cases_train, padded_cases_test_X, test_cases_y, vocab_size, max_length, prefix_sizes_train)
 
 if __name__ == "__main__":
     print("Testing load data")

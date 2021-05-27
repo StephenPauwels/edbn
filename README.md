@@ -10,21 +10,28 @@ All experiments in the papers can be reproduced using the files in the Anomalies
 ## Project Structure
 - [Anomalies](https://github.com/StephenPauwels/edbn/tree/master/Anomalies): Contains all files used for the experiments found in [1] and [3]
 - [Concept Drift](https://github.com/StephenPauwels/edbn/tree/master/Concept%20Drift): Contains the files used for the BPI Challenge 2018 [2]
-- [Predictions](https://github.com/StephenPauwels/edbn/tree/master/Predictions): Contains all files used for the Prediction experiments for BPM 2020 [4] and ICPM [5]
-- [EDBN](https://github.com/StephenPauwels/edbn/tree/master/eDBN): Contains our implementation of our Extended Dynamic Bayesian Network model
-- [Utils](https://github.com/StephenPauwels/edbn/tree/master/Utils): Some extra implementations regarding datastructures, preprocessing and data generation
 - [Data](https://github.com/StephenPauwels/edbn/tree/master/Data): Data used for the experiments
-- [Prediction Testbed](https://github.com/StephenPauwels/edbn/tree/master/Prediction%20Testbed): Testbed used for [5]  
-- [RelatedMethods](https://github.com/StephenPauwels/edbn/tree/master/RelatedMethods): Implementations of the other methods used to run the comparison experiments with
-    - [Bohmer](https://github.com/StephenPauwels/edbn/tree/master/RelatedMethods/Bohmer): Contains our own implementation of the Likelihood Graphs introduced by Bohmer et al in [6]
-    - [Camargo](https://github.com/StephenPauwels/edbn/tree/master/RelatedMethods/Camargo): Contains the slightly adapted implementation used in [8]
-    - [DiMauro](https://github.com/StephenPauwels/edbn/tree/master/RelatedMethods/DiMauro): Implementation used in [9]
-    - [Lin](https://github.com/StephenPauwels/edbn/tree/master/RelatedMethods/Lin): Our implementation of the method described in [10]
-    - [Nolle](https://github.com/StephenPauwels/edbn/tree/master/RelatedMethods/Nolle): Contains the original implementations used by Nolle et al in [7]
-    - [Tax](https://github.com/StephenPauwels/edbn/tree/master/RelatedMethods/Tax): Adapted implementation used in [11]
-    - [Pasquadibisceglie](https://github.com/StephenPauwels/edbn/tree/master/RelatedMethods/Pasquadibisceglie): Adapted implementation used in [12]
-    - [Taymouri](https://github.com/StephenPauwels/edbn/tree/master/RelatedMethods/Taymouri): Adapted implementation used in [13]
-    - [Premiere](https://github.com/StephenPauwels/edbn/tree/master/RelatedMethods/Premiere): Adapted implementation used in [14]
+- [Methods](https://github.com/StephenPauwels/edbn/tree/master/Methods): Implementations of all methods used
+    - [Bohmer](https://github.com/StephenPauwels/edbn/tree/master/Methods/Bohmer): Contains our own implementation of the Likelihood Graphs introduced by Bohmer et al in [6]
+    - [Camargo](https://github.com/StephenPauwels/edbn/tree/master/Methods/Camargo): Contains the slightly adapted implementation used in [8]
+    - [DiMauro](https://github.com/StephenPauwels/edbn/tree/master/Methods/DiMauro): Implementation used in [9]
+    - [EDBN](https://github.com/StephenPauwels/edbn/tree/master/Methods/EDBN): Contains our implementation of our Extended Dynamic Bayesian Network model
+    - [Lin](https://github.com/StephenPauwels/edbn/tree/master/Methods/Lin): Our implementation of the method described in [10]
+    - [Nolle](https://github.com/StephenPauwels/edbn/tree/master/Methods/Nolle): Contains the original implementations used by Nolle et al in [7]
+    - [Tax](https://github.com/StephenPauwels/edbn/tree/master/Methods/Tax): Adapted implementation used in [11]
+    - [Pasquadibisceglie](https://github.com/StephenPauwels/edbn/tree/master/Methods/Pasquadibisceglie): Adapted implementation used in [12]
+    - [Premiere](https://github.com/StephenPauwels/edbn/tree/master/Methods/Premiere): Adapted implementation used in [14]
+    - [SDL](https://github.com/StephenPauwels/edbn/tree/master/Methods/SDL): Implementation of our Single Dense Layer architecture [5]
+    - [Taymouri](https://github.com/StephenPauwels/edbn/tree/master/Methods/Taymouri): Adapted implementation used in [13]
+- [Predictions](https://github.com/StephenPauwels/edbn/tree/master/Predictions): Contains all experiments using predictions [4,5]
+- [Utils](https://github.com/StephenPauwels/edbn/tree/master/Utils): Some extra implementations regarding datastructures, preprocessing and data generation
+
+
+## How To Use
+### Anomaly detection
+
+### Predictive monitoring
+
 
 ## References
 1. [Pauwels, Stephen, and Toon Calders. "An Anomaly Detection Technique for Business Processes based on Extended Dynamic Bayesian Networks." (2019)](http://adrem.uantwerpen.be/bibrem/pubs/PauwelsSAC19.pdf)
