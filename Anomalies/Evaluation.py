@@ -6,7 +6,7 @@
 
 import numpy as np
 
-import EDBN.Execute as edbn
+import Methods.EDBN.Execute as edbn
 import Utils.DataDurationGenerator as duration_generator
 import Utils.DataGenerator as generator
 import Utils.PlotResults as plt

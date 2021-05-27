@@ -5,7 +5,7 @@ import numpy as np
 from scipy import stats
 from statsmodels import robust
 
-import EDBN.GenerateModel as gm
+import Methods.EDBN.GenerateModel as gm
 
 
 # Import LogFile for representing the data

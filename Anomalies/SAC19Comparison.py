@@ -3,9 +3,10 @@
 
     Author: Stephen Pauwels
 """
+import os
 
-import RelatedMethods.Bohmer.Execute as bmr
-import EDBN.Execute as edbn
+import Methods.Bohmer.Execute as bmr
+import Methods.EDBN.Execute as edbn
 import Utils.BPIPreProcess as preprocess
 import Utils.PlotResults as plt
 from Utils.LogFile import LogFile
@@ -20,6 +21,9 @@ def compare_bpics(path):
         output_edbn = path + "Output/BPIC15_edbn_output_%i.csv" % (i)
         prec_recall = path + "Output/prec_recall_%i.png" % (i)
         roc = path + "Output/roc_%i.png" % (i)
+
+        if not os.path.exists(path + "Output"):
+            os.mkdir(path + "Output")
 
         train_data = LogFile(train, ",", 0, 500000, "Time", "Case", activity_attr="Activity", convert=False)
         train_data.remove_attributes(["Anomaly", "Type", "Time"])
@@ -45,6 +49,9 @@ def compare_bpic_total(path):
     prec_recall = path + "Output/prec_recall_total.png"
     roc = path + "Output/roc_total.png"
 
+    if not os.path.exists(path + "Output"):
+        os.mkdir(path + "Output")
+
     train_data = LogFile(train, ",", 0, 500000, "Time", "Case", activity_attr="Activity", convert=False)
     train_data.remove_attributes(["Anomaly", "Type", "Time"])
     test_data = LogFile(test, ",", 0, 500000, "Time", "Case", activity_attr="Activity", values=train_data.values, convert=False)
@@ -64,8 +71,8 @@ def compare_bpic_total(path):
 if __name__  == "__main__":
     path = "../Data/"
 
-    # preprocess.preProcessData(path)
-    # preprocess.preProcessData_total(path)
+    preprocess.preProcessData(path)
+    preprocess.preProcessData_total(path)
 
     compare_bpics(path)
     compare_bpic_total(path)
