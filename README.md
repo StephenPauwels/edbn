@@ -33,41 +33,41 @@ All experiments in the papers can be reproduced using the files in the Anomalies
   ```python
     data_object = Logfile(...)
   ```
-- Use EDBN.Train to train model
+- Train the EDBN model
   ```python
     model = EDBN.Train.train(data_object)
   ```
-- Use EDBN.Anomalies to check for anomalies
+- Check for anomalies
   ```python
     EDBN.Anomalies.test(data_object, output_file, model, label_attribute, normal_val)
   ```
   
 ### Predictive monitoring
-- Use Data package to load data d = Data.get_data(data_name)
+- Load data
   ```python
     data_object = Data.get_data("Helpdesk")
   ```
-- Select preprocessing settings using Predictions.settings
+- Select preprocessing settings
   ```python
     settings = Predictions.setting.STANDARD
   ```
-- use d.prepare(setting) for preparing data for training and testing
+- Prepare loaded data with selected settings
   ```python
     data_object.prepare(settings)
   ```
-- Use Methods.get_prediction_method to get adapter class for all methods
+- Get prediction method
   ```python
     m = Methods.get_prediction_method("SDL")
   ```
-- Use method.train(logfile) for training a model
+- Train the model
   ```python
     model = m.train(data_object)
   ```
-- Use res = method.test(model, logfile) for testing the model
+- Test the model
   ```python
     results = m.test(model, data_object)
   ```
-- Use the package Predictions.metric to calculate score from results
+- Get the score obtained by the model
   ```python
     accuracy = Predictions.metric.ACCURACY.calculate(results)
   ```
