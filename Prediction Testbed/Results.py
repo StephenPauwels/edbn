@@ -258,10 +258,11 @@ def create_latex_full_table(results):
 
 def create_baseline_dataset_plot(list_results, windowsize = 1000):
     plt.rcParams["text.usetex"] = True
-    plt.rcParams["text.latex.preamble"] = [r"\usepackage{lmodern}"]
+    plt.rcParams["text.latex.preamble"] = r"\usepackage{lmodern}"
+    plt.rc('font', size=15)
 
     plt.figure(figsize=(15, 12))
-    plt.subplots_adjust(wspace=1, hspace=5)
+    plt.subplots_adjust(wspace=1, hspace=10)
 
     fig_num = 1
 
@@ -270,7 +271,7 @@ def create_baseline_dataset_plot(list_results, windowsize = 1000):
             filename = "%s_%s_normal" % (m, d)
             if filename in list_results:
                 result_list = list_results[filename]
-                plt.subplot(5,2,fig_num)
+                plt.subplot(4,2,fig_num)
                 plt.title(d.replace("_", "\_"))
                 plt.ylim(0,1)
 
@@ -285,7 +286,7 @@ def create_baseline_dataset_plot(list_results, windowsize = 1000):
         fig_num += 1
 
     plt.tight_layout()
-    leg = plt.legend(loc="lower center", bbox_to_anchor=(0, -0.5), ncol=4, fontsize="xx-large")
+    leg = plt.legend(loc="lower center", bbox_to_anchor=(0, -0.5), ncol=4) #, fontsize="xx-large")
     for line in leg.get_lines():
         line.set_linewidth(2)
     plt.savefig("dataset_overview.eps")
@@ -294,7 +295,8 @@ def create_baseline_dataset_plot(list_results, windowsize = 1000):
 
 def create_strategy_plot_new(results, dataset, windowsize = 2500):
     plt.rcParams["text.usetex"] = True
-    plt.rcParams["text.latex.preamble"] = [r"\usepackage{lmodern}"]
+    plt.rcParams["text.latex.preamble"] = r"\usepackage{lmodern}"
+    plt.rc('font', size=15)
 
     plt.figure(figsize=(15, 10))
     plt.subplots_adjust(wspace=1, hspace=5)
@@ -318,7 +320,7 @@ def create_strategy_plot_new(results, dataset, windowsize = 2500):
                         x.append(len(x))
                         y.append(sum(result_list[x_i - windowsize:x_i]) / windowsize)
 
-                    plt.subplot(3, 2, fig_num)
+                    plt.subplot(2, 2, fig_num)
                     plt.title(m)
                     plt.ylim(0.2, 1)
                     plt.plot(x, y, color=tableau20[i], label=l, linewidth=0.5)
@@ -336,7 +338,7 @@ def create_strategy_plot_new(results, dataset, windowsize = 2500):
                     x.append(len(x))
                     y.append(sum(result_list[x_i - windowsize:x_i]) / windowsize)
 
-                plt.subplot(3, 2, fig_num)
+                plt.subplot(2, 2, fig_num)
                 plt.title(m)
                 plt.ylim(0.2, 1)
                 plt.plot(x, y, color=tableau20[i], label=l, linewidth=0.5)
@@ -344,9 +346,10 @@ def create_strategy_plot_new(results, dataset, windowsize = 2500):
         fig_num += 1
 
     plt.tight_layout()
-    leg = plt.legend(loc="lower center", bbox_to_anchor=(0, -0.5), ncol=4, fontsize="xx-large")
+    leg = plt.legend(loc="lower center", bbox_to_anchor=(-0.1, -0.35), ncol=4)
     for line in leg.get_lines():
         line.set_linewidth(2)
+    plt.subplots_adjust(bottom=0.15)
     plt.savefig("strategy_overview.eps")
     plt.show()
 
@@ -383,7 +386,7 @@ def create_strategy_plot(results, windowsize = 2500):
         fig_num += 1
 
     plt.tight_layout()
-    plt.legend(loc="lower center", bbox_to_anchor=(0, -1), ncol=4, fontsize="xx-large")
+    leg = plt.legend(loc="upper center", bbox_to_anchor=(-0.1, -0.15), ncol=4, borderaxespad=0.1)
     plt.savefig("strategy_overview.eps")
     plt.show()
 
@@ -420,7 +423,8 @@ def create_batch_plot(results):
 
 def create_compare_normal_plot(results, windowsize = 1000):
     plt.rcParams["text.usetex"] = True
-    plt.rcParams["text.latex.preamble"] = [r"\usepackage{lmodern}"]
+    plt.rcParams["text.latex.preamble"] = r"\usepackage{lmodern}"
+    plt.rc('font', size=15)
 
     plt.figure(figsize=(15, 12))
     plt.subplots_adjust(wspace=1, hspace=5)
@@ -438,7 +442,7 @@ def create_compare_normal_plot(results, windowsize = 1000):
                     x.append(len(x))
                     y.append(sum(result_list[x_i - windowsize:x_i]) / windowsize)
 
-                plt.subplot(5, 2, fig_num)
+                plt.subplot(4, 2, fig_num)
                 plt.title(d.replace("_","\_"))
                 plt.ylim(0, 1)
                 plt.plot(x, y, label="%s (No-update)" % m, color=colors[m][0], linewidth=0.5)
@@ -453,7 +457,7 @@ def create_compare_normal_plot(results, windowsize = 1000):
                     x.append(len(x))
                     y.append(sum(result_list[x_i - windowsize:x_i]) / windowsize)
 
-                plt.subplot(5, 2, fig_num)
+                plt.subplot(4, 2, fig_num)
                 plt.title(d.replace("_","\_"))
                 plt.ylim(0, 1)
                 plt.plot(x, y, label="%s (Update W=1)" % m, color=colors[m][1], linewidth=0.5)
@@ -461,9 +465,10 @@ def create_compare_normal_plot(results, windowsize = 1000):
         fig_num += 1
 
     plt.tight_layout()
-    leg = plt.legend(loc="lower center", bbox_to_anchor=(0, -0.7), ncol=4, fontsize="xx-large")
+    leg = plt.legend(loc="upper center", bbox_to_anchor=(-0.1, -0.15), ncol=4, borderaxespad=0.1)
     for line in leg.get_lines():
         line.set_linewidth(2)
+    plt.subplots_adjust(bottom=0.1)
     plt.savefig("normal_compare.eps")
     plt.show()
 
@@ -522,13 +527,13 @@ def create_timing_table(timings, dataset):
 
 
 if __name__ == "__main__":
-    # results = load_results_new()
-    timings = load_timings()
-    create_timing_table(timings, "BPIC15_1")
+    results = load_results_new()
+    # timings = load_timings()
+    # create_timing_table(timings, "BPIC15_1")
     # list_results = result_list()
     # create_baseline_dataset_plot(results)
-    # create_strategy_plot_new(results, "BPIC15_1")
+    create_strategy_plot_new(results, "BPIC15_1")
     # create_batch_plot(results)
-    # create_compare_normal_plot(results)
+    create_compare_normal_plot(results)
     # create_latex_full_table_new(results)
     # create_cold_plot(results)

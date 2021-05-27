@@ -159,10 +159,10 @@ if __name__ == "__main__":
 
     # check_result_files()
     # process_standard()
-    # process_k()
+    process_k()
     # process_split()
     # process_percentage()
     # process_end_event()
     # process_split_cases()
     # process_filter_cases()
-    check_variance_k_folds(3)
+    # check_variance_k_folds(3)

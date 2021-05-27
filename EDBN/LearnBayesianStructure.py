@@ -276,12 +276,14 @@ class Structure_learner():
         max_delta = 0
         max_operation = None
         return_queue = Queue()
-        p_add = Process(target=self.test_arc_additions, args=(cache, bandwidth_cache, return_queue))
-        p_rem = Process(target=self.test_arc_deletions, args=(cache, bandwidth_cache, return_queue))
-        p_add.start()
-        p_rem.start()
-        p_add.join()
-        p_rem.join()
+        # p_add = Process(target=self.test_arc_additions, args=(cache, bandwidth_cache, return_queue))
+        # p_rem = Process(target=self.test_arc_deletions, args=(cache, bandwidth_cache, return_queue))
+        # p_add.start()
+        # p_rem.start()
+        # p_add.join()
+        # p_rem.join()
+        self.test_arc_additions(cache, bandwidth_cache, return_queue)
+        self.test_arc_deletions(cache, bandwidth_cache, return_queue)
         while not return_queue.empty():
             results = return_queue.get()
             if results[1] > max_delta:

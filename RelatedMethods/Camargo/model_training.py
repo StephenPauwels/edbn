@@ -9,18 +9,17 @@ import itertools
 import multiprocessing as mp
 from functools import partial
 
-import tensorflow.keras.utils as ku
 import numpy as np
 import pandas as pd
-from nltk.util import ngrams
 
-from RelatedMethods.Camargo.models import model_shared_cat as mshcat
-from RelatedMethods.Camargo.models import model_specialized as msp
+
 
 
 def training_model(log, event_emb, role_emb, args, epochs, early_stop):
     """Main method of the training module.
     """
+    from RelatedMethods.Camargo.models import model_shared_cat as mshcat
+    from RelatedMethods.Camargo.models import model_specialized as msp
 
     # Load embedded matrix
     ac_weights = np.array(event_emb)
@@ -81,6 +80,8 @@ def vectorization(log):
     Returns:
         dict: Dictionary that contains all the LSTM inputs.
     """
+    import tensorflow.keras.utils as ku
+
     print("Start Vectorization")
 
     vec = {'prefixes': dict(), 'next_evt': dict()}
