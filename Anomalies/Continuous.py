@@ -3,9 +3,9 @@
 """
 import pandas as pd
 
-import EDBN.Execute as edbn
+import Methods.EDBN.Execute as edbn
 import Utils.PlotResults as plot
-from LogFile import LogFile
+from Utils.LogFile import LogFile
 
 
 def cardio_exec():

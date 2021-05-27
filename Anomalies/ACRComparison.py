@@ -5,10 +5,10 @@
 """
 import pandas as pd
 
-import Execute as bohmer
-import EDBN.Execute as edbn
+import Methods.Bohmer.Execute as bohmer
+import Methods.EDBN.Execute as edbn
 import Utils.PlotResults as plot
-from LogFile import LogFile
+from Utils.LogFile import LogFile
 from april.dataset import Dataset
 from april.fs import get_event_log_files
 

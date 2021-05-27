@@ -62,7 +62,7 @@ def test_camargo(dataset_folder, model_folder, architecture):
 
 
 def test_lin(dataset_folder, model_folder):
-    from RelatedMethods.Lin.model import predict_suffix
+    from Methods.Lin.model import predict_suffix
 
     logfile = LogFile(dataset_folder + "full_log.csv", ",", 0, None, None, "case",
                         activity_attr="event", convert=False, k=0)
@@ -82,7 +82,7 @@ def test_lin(dataset_folder, model_folder):
 
 
 def test_dimauro(dataset_folder, model_folder):
-    from RelatedMethods.DiMauro.deeppm_act import predict_suffix
+    from Methods.DiMauro.deeppm_act import predict_suffix
 
     model_file = sorted([model_file for model_file in os.listdir(model_folder) if model_file.endswith(".h5")])[-1]
     acc = predict_suffix(dataset_folder + "train_log.csv", dataset_folder + "test_log.csv", os.path.join(model_folder, model_file))
@@ -90,8 +90,8 @@ def test_dimauro(dataset_folder, model_folder):
         fout.write("Accuracy: (%s) %s\n" % (time.strftime("%d-%m-%y %H:%M:%S", time.localtime()), acc))
 
 def test_tax(dataset_folder, model_folder):
-    from RelatedMethods.Tax.code.evaluate_suffix_and_remaining_time import evaluate
-    from RelatedMethods.Tax.code.calculate_dl_on_suffix import calc_dl
+    from Methods.Tax.code.evaluate_suffix_and_remaining_time import evaluate
+    from Methods.Tax.code.calculate_dl_on_suffix import calc_dl
 
     train_log = os.path.join(dataset_folder, "train_log.csv")
     test_log = os.path.join(dataset_folder, "test_log.csv")

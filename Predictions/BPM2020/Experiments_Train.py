@@ -17,17 +17,14 @@ import pickle
 import sys
 import time
 
-from RelatedMethods.Camargo.support_modules.support import create_csv_file_header
-from BPM2020.Experiments_Variables import DATA_DESC, DATA_FOLDER, OUTPUT_FOLDER
-from BPM2020.Experiments_Variables import EDBN, CAMARGO, DIMAURO, LIN, TAX
-from BPM2020.Experiments_Variables import K_EDBN, DIMAURO_PARAMS
-from Predictions.DataProcessing import get_data
 from Utils.LogFile import LogFile
+
+OUTPUT_FOLDER = "Output/"
 
 
 def train_edbn(data_folder, model_folder, k = None, next_event = True):
-    from EDBN.Execute import train
-    from Predictions.eDBN_Prediction import learn_duplicated_events, predict_next_event, predict_suffix
+    from Methods.EDBN.Execute import train
+    from Methods.EDBN.eDBN_Prediction import learn_duplicated_events, predict_next_event, predict_suffix
 
     if k is None:
         best_model = {}
@@ -83,8 +80,8 @@ def train_edbn(data_folder, model_folder, k = None, next_event = True):
 
 
 def train_camargo(data_folder, model_folder, architecture):
-    import RelatedMethods.Camargo.embedding_training as em
-    import RelatedMethods.Camargo.model_training as mo
+    import Methods.Camargo.embedding_training as em
+    import Methods.Camargo.model_training as mo
 
     logfile = LogFile(data_folder + "full_log.csv", ",", 0, None, None, "case",
                         activity_attr="event", convert=True, k=5)
@@ -113,7 +110,7 @@ def train_camargo(data_folder, model_folder, architecture):
 
 
 def train_lin(data_folder, model_folder):
-    from RelatedMethods.Lin.model import create_model
+    from Methods.Lin.model import create_model
 
     logfile = LogFile(data_folder + "full_log.csv", ",", 0, None, None, "case",
                         activity_attr="event", convert=False, k=5)
@@ -129,7 +126,7 @@ def train_lin(data_folder, model_folder):
 
 
 def train_dimauro(data_folder, model_folder, params = None):
-    from RelatedMethods.DiMauro.deeppm_act import train
+    from Methods.DiMauro.deeppm_act import train
     logfile = LogFile(data_folder + "full_log.csv", ",", 0, None, None, "case",
                         activity_attr="event", convert=False, k=5)
     logfile.add_end_events()
@@ -146,7 +143,7 @@ def train_dimauro(data_folder, model_folder, params = None):
 
 
 def train_tax(data_folder, model_folder):
-    from RelatedMethods.Tax.code.train import train
+    from Methods.Tax.code.train import train
 
     train_log = os.path.join(data_folder, "train_log.csv")
     test_log = os.path.join(data_folder, "test_log.csv")
@@ -155,6 +152,10 @@ def train_tax(data_folder, model_folder):
 
 
 def main(argv):
+    from Predictions.setting import Setting
+    from Methods import get_method
+    from Data import get_data
+
     if len(argv) < 2:
         print("Missing arguments, expected: METHOD and DATA")
         return
@@ -162,62 +163,68 @@ def main(argv):
         method = argv[0]
         data = argv[1]
 
-    if not os.path.exists(DATA_FOLDER):
-        os.mkdir(DATA_FOLDER)
+    if not os.path.exists(OUTPUT_FOLDER):
+        os.mkdir(OUTPUT_FOLDER)
+
+    basic_setting = Setting(2, "test-train", False, True, 70, filter_cases=5)
+
+
+    # Check for all input data if already exist. Otherwise, create data
+    # for train in DATA_DESC:
+    #     dataset_folder = os.path.join(DATA_FOLDER, train["folder"])
+    #     if not os.path.exists(dataset_folder):
+    #         os.mkdir(dataset_folder)
+    #
+    #         full_logfile, _ = get_data(train["data"], None, 2, False, False, False, False)
+    #         print(full_logfile.data)
+    #         if len(full_logfile.data.columns) == 4:
+    #             full_logfile.data.columns = ["case","event","role", "time"]
+    #         else:
+    #             full_logfile.data.columns = ["case","event","role"]
+    #         full_logfile.trace = "case"
+    #         full_logfile.activity = "event"
+    #         create_csv_file_header(full_logfile.data.to_dict('records'), os.path.join(dataset_folder,'full_log.csv'))
+    #
+    #         train_logfile, test_logfile = full_logfile.splitTrainTest(70)
+    #         create_csv_file_header(train_logfile.data.to_dict('records'), os.path.join(dataset_folder,'train_log.csv'))
+    #         create_csv_file_header(test_logfile.data.to_dict('records'), os.path.join(dataset_folder,'test_log.csv'))
+    #
+    #     output_folder = os.path.join(OUTPUT_FOLDER, train["folder"])
+    #     if not os.path.exists(output_folder):
+    #         os.mkdir(output_folder)
+    #         os.mkdir(os.path.join(output_folder, "models"))
+
+    d = get_data(data)
 
     if not os.path.exists(OUTPUT_FOLDER):
         os.mkdir(OUTPUT_FOLDER)
 
-    # Check for all input data if already exist. Otherwise, create data
-    for train in DATA_DESC:
-        dataset_folder = os.path.join(DATA_FOLDER, train["folder"])
-        if not os.path.exists(dataset_folder):
-            os.mkdir(dataset_folder)
+    model_folder = os.path.join(OUTPUT_FOLDER, str.lower(d.name), "models", str.lower(method))
+    if not os.path.exists(os.path.join(OUTPUT_FOLDER, str.lower(d.name))):
+        os.mkdir(os.path.join(OUTPUT_FOLDER, str.lower(d.name)))
 
-            full_logfile, _ = get_data(train["data"], None, 2, False, False, False, False)
-            print(full_logfile.data)
-            if len(full_logfile.data.columns) == 4:
-                full_logfile.data.columns = ["case","event","role", "time"]
-            else:
-                full_logfile.data.columns = ["case","event","role"]
-            full_logfile.trace = "case"
-            full_logfile.activity = "event"
-            create_csv_file_header(full_logfile.data.to_dict('records'), os.path.join(dataset_folder,'full_log.csv'))
-
-            train_logfile, test_logfile = full_logfile.splitTrainTest(70)
-            create_csv_file_header(train_logfile.data.to_dict('records'), os.path.join(dataset_folder,'train_log.csv'))
-            create_csv_file_header(test_logfile.data.to_dict('records'), os.path.join(dataset_folder,'test_log.csv'))
-
-        output_folder = os.path.join(OUTPUT_FOLDER, train["folder"])
-        if not os.path.exists(output_folder):
-            os.mkdir(output_folder)
-            os.mkdir(os.path.join(output_folder, "models"))
-
-    train = [train for train in DATA_DESC if train["data"] == data][0]
-    dataset_folder = os.path.join(DATA_FOLDER, train["folder"])
-    model_folder = os.path.join(OUTPUT_FOLDER, str.lower(train["data"]), "models", str.lower(method))
+    if not os.path.exists(os.path.join(OUTPUT_FOLDER, str.lower(d.name), "models")):
+        os.mkdir(os.path.join(OUTPUT_FOLDER, str.lower(d.name), "models"))
 
     if not os.path.exists(model_folder):
         os.mkdir(model_folder)
 
-    edbn_k = K_EDBN
-
-    if method == CAMARGO:
-        if len(argv) < 3:
-            print("Please indicate the architecture to use: shared_cat or specialized")
-            return
-        else:
-            model_folder = os.path.join(model_folder, argv[2])
-            if not os.path.exists(model_folder):
-                os.mkdir(model_folder)
-    elif method == EDBN:
-        if len(argv) >= 3:
-            edbn_k = int(argv[2])
-        else:
-            edbn_k = None
-        model_folder = os.path.join(model_folder, str(edbn_k))
-        if not os.path.exists(model_folder):
-            os.mkdir(model_folder)
+    # if method == CAMARGO:
+    #     if len(argv) < 3:
+    #         print("Please indicate the architecture to use: shared_cat or specialized")
+    #         return
+    #     else:
+    #         model_folder = os.path.join(model_folder, argv[2])
+    #         if not os.path.exists(model_folder):
+    #             os.mkdir(model_folder)
+    # elif method == EDBN:
+    #     if len(argv) >= 3:
+    #         edbn_k = int(argv[2])
+    #     else:
+    #         edbn_k = None
+    #     model_folder = os.path.join(model_folder, str(edbn_k))
+    #     if not os.path.exists(model_folder):
+    #         os.mkdir(model_folder)
     ###
     # Register Start time
     ###
@@ -230,25 +237,32 @@ def main(argv):
     # Execute chosen method
     ###
     print("EXPERIMENT TRAINING MODEL:", argv)
-    if method == EDBN:
-        if len(argv) == 4:
-            train_edbn(dataset_folder, model_folder, edbn_k, argv[3] == "next")
-        else:
-            train_edbn(dataset_folder, model_folder, edbn_k)
-    elif method == CAMARGO:
+
+    if method == "DBN":
+        if len(argv) >= 3:
+            basic_setting.k = int(argv[2])
+
+    if data == "Helpdesk":
+        basic_setting.filter_cases = 3
+
+    d.prepare(basic_setting)
+
+    m = get_method(method)
+
+    if method == "CAMARGO":
         if len(argv) < 3:
             print("Please indicate the architecture to use: shared_cat or specialized")
             return
         architecture = str.lower(argv[2])
-        train_camargo(dataset_folder, model_folder, architecture)
-    elif method == LIN:
-        train_lin(dataset_folder, model_folder)
-    elif method == DIMAURO:
-        if len(argv) == 3:
-            os.environ["CUDA_VISIBLE_DEVICES"] = argv[2]
-        train_dimauro(dataset_folder, model_folder, DIMAURO_PARAMS.get(data, None))
-    elif method == TAX:
-        train_tax(dataset_folder, model_folder)
+
+        m.def_params["model_type"] = architecture
+
+    model = m.train(d.train)
+    if method == "DBN":
+        with open(os.path.join(model_folder, "model"), "wb") as pickle_file:
+            pickle.dump(model, pickle_file)
+    else:
+        model.save(os.path.join(model_folder, "model.h5"))
 
     ###
     # Register End time
