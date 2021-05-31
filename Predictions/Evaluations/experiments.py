@@ -241,25 +241,19 @@ def test_stability():
     for m in results:
         print(m, "\t".join([str(a) for a in results[m]]))
 
-def ranking_experiments(output_file):
-    for d in all_data:
+
+def ranking_experiments():
+    for d in ["Helpdesk", "BPIC12W", "BPIC12", "BPIC11", "BPIC15_1", "BPIC15_2", "BPIC15_3", "BPIC15_4", "BPIC15_5"]:
         event_data = get_data(d)
         for s in ALL_SETTINGS:
             event_data.prepare(s)
 
-            with open(output_file, "a") as fout:
-                fout.write("Data: " + event_data.name + "\n")
-                fout.write(s.to_file_str())
-                fout.write("Date: " + time.strftime("%d.%m.%y-%H.%M", time.localtime()) + "\n")
-                fout.write("------------------------------------\n")
-
             for m in ALL_METHODS:
-                m.train(event_data)
-                acc = m.test(event_data, ACCURACY)
-                with open(output_file, "a") as fout:
-                    fout.write(m.name + ": " + str(acc) + "\n")
-            with open(output_file, "a") as fout:
-                fout.write("====================================\n\n")
+                if result_exists(d, m, s):
+                    continue
+
+            r = m.test(m.train(d.train), d.test_orig)
+            save_results(r, d.name, m.name, s)
 
 
 def get_scores(d, m, s):
@@ -349,20 +343,22 @@ if __name__ == "__main__":
 
     # test_base_comparison()
     # check_result_files()
-    # ranking_experiments("ranking_results.txt")
+    ranking_experiments("ranking_results.txt")
     # test_stability()
 
     #
-    for d in ["Helpdesk", "BPIC12W", "BPIC12", "BPIC11", "BPIC15_1", "BPIC15_2", "BPIC15_3", "BPIC15_4", "BPIC15_5"]:
-        for m in ["SDL", "CAMARGO", "DIMAURO", "LIN", "PASQUADIBISCEGLIE", "TAX", "TAYMOURI"]:
+    # for d in ["Helpdesk", "BPIC12W", "BPIC12", "BPIC11", "BPIC15_1", "BPIC15_2", "BPIC15_3", "BPIC15_4", "BPIC15_5"]:
+    #     for m in ["SDL", "CAMARGO", "DIMAURO", "LIN", "PASQUADIBISCEGLIE", "TAX", "TAYMOURI"]:
+    for d in ["BPIC11"]:
+        for m in ["LIN"]:
             try:
-                test_standard(d, Methods.get_prediction_method(m))
-                test_k(d, Methods.get_prediction_method(m))
+                # test_standard(d, Methods.get_prediction_method(m))
+                # test_k(d, Methods.get_prediction_method(m))
                 test_split(d, Methods.get_prediction_method(m))
-                test_filter(d, Methods.get_prediction_method(m))
-                test_percentage(d, Methods.get_prediction_method(m))
-                test_split_cases(d, Methods.get_prediction_method(m))
-                test_end_event(d, Methods.get_prediction_method(m))
+                # test_filter(d, Methods.get_prediction_method(m))
+                # test_percentage(d, Methods.get_prediction_method(m))
+                # test_split_cases(d, Methods.get_prediction_method(m))
+                # test_end_event(d, Methods.get_prediction_method(m))
             except:
                 traceback.print_exc()
 
