@@ -109,10 +109,24 @@ class Method:
         return results, timings
 
     def k_fold_validation(self, data):
-        results = []
-        for i in range(len(data.folds)):
+        import pickle
+
+        for i in range(1,len(data.folds)):
+            print(i, "/", len(data.folds))
             data.get_fold(i)
             model = self.train(data.train, self.def_params)
-            results.extend(self.test(model, data.test))
+            # with open("k_result_%i" % i, "rb") as finn:
+            #     new_results = pickle.load(finn)
+            # results.extend(new_results)
+            # results.extend()
+            results = self.test(model, data.test)
+            with open("k_result_%i" % i, "wb") as fout:
+                pickle.dump(results, fout)
+
+        results = []
+        for i in range(len(data.folds)):
+            with open("k_result_%i" % i, "rb") as finn:
+                new_results = pickle.load(finn)
+            results.extend(new_results)
         return results
 

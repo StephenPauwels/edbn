@@ -9,7 +9,6 @@ import os
 from functools import partial
 
 import jellyfish as jf
-import tensorflow.keras.utils as ku
 import numpy as np
 
 
@@ -181,6 +180,8 @@ def vectorization(log):
     Returns:
         dict: Dictionary that contains all the LSTM inputs.
     """
+    from tensorflow.keras.utils import to_categorical
+
     print("Start Vectorization")
 
     vec = {'prefixes': dict(), 'next_evt': dict()}
@@ -195,8 +196,8 @@ def vectorization(log):
     vec['next_evt']['y_ac_inp'] = np.concatenate(result[:, 2])
     vec['next_evt']['y_rl_inp'] = np.concatenate(result[:, 3])
 
-    vec['next_evt']['y_ac_inp'] = ku.to_categorical(vec['next_evt']['y_ac_inp'], num_classes=len(log.values["event"])+1)
-    vec['next_evt']['y_rl_inp'] = ku.to_categorical(vec['next_evt']['y_rl_inp'], num_classes=len(log.values["role"])+1)
+    vec['next_evt']['y_ac_inp'] = to_categorical(vec['next_evt']['y_ac_inp'], num_classes=len(log.values["event"])+1)
+    vec['next_evt']['y_rl_inp'] = to_categorical(vec['next_evt']['y_rl_inp'], num_classes=len(log.values["role"])+1)
     return vec
 
 

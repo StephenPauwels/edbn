@@ -10,8 +10,12 @@ class Setting:
         self.filter_cases = filter_cases
 
     def __str__(self):
-        return "Prefixsize: %i, Train percentage: %i, Split_data: %r, Split_cases: %r, Add_end: %r" \
-               % (self.prefixsize, self.train_percentage, self.train_split, self.split_cases, self.add_end)
+        if self.prefixsize:
+            return "Prefixsize: %i, Train percentage: %i, Split_data: %r, Split_cases: %r, Add_end: %r" \
+                   % (self.prefixsize, self.train_percentage, self.train_split, self.split_cases, self.add_end)
+        else:
+            return "Prefixsize: None, Train percentage: %i, Split_data: %r, Split_cases: %r, Add_end: %r" \
+                   % (self.train_percentage, self.train_split, self.split_cases, self.add_end)
 
     def to_file_str(self):
         if self.prefixsize:

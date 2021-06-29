@@ -3,7 +3,6 @@
 """
 
 import numpy as np
-from keras.callbacks import ModelCheckpoint
 
 seed = 123
 np.random.seed(seed)
@@ -12,7 +11,7 @@ from tensorflow.keras.models import Model, load_model
 from tensorflow.keras.layers import Input, Concatenate, Conv1D, GlobalMaxPooling1D, MaxPooling1D, Dense, Embedding, Reshape
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import to_categorical
-from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 
 from Methods.DiMauro.utils import load_data_new, load_cases_new
 from sklearn.metrics import accuracy_score

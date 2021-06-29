@@ -11,4 +11,4 @@ TAYMOURI = Setting(10, "train-test", True, True, 80)
 SDL = Setting(10, "train-test", True, False, 70)
 DBN = Setting(5, "test-train", False, True, 70, filter_cases=5)
 
-ALL = [TAX, LIN, CAMARGO, DIMAURO, PASQUADIBISCEGLIE, TAYMOURI, SDL, DBN]
+ALL = [TAX, CAMARGO, LIN, DIMAURO, PASQUADIBISCEGLIE, TAYMOURI, DBN, SDL]

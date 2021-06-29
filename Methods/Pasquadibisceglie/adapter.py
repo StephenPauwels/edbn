@@ -178,7 +178,7 @@ def train(log, epochs=500, early_stop=42):
     model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
 
-    if trace_size >= 8 and log.filename != "../Data/BPIC12W.csv":
+    if trace_size >= 8 and "BPIC12W" not in log.filename:
         model.add(Conv2D(128, (8, 8), padding='same', kernel_regularizer=regularizers.l2(reg), ))
         model.add(BatchNormalization())
         model.add(Activation('relu'))
@@ -214,8 +214,6 @@ def update(model, log):
     return model
 
 def test(model, log):
-    from keras.utils import np_utils
-
     X_test = get_image_from_log(log)
     y_test = get_label_from_log(log)
 
@@ -234,7 +232,7 @@ def test(model, log):
 
 
 def test_and_update(logs, model):
-    from keras.utils import np_utils
+    from tensorflow.keras.utils import to_categorical
 
     results = []
     i = 0
@@ -250,7 +248,7 @@ def test_and_update(logs, model):
         X_train = np.asarray(X_train)
         y_train = np.asarray(y_train)
 
-        train_Y_one_hot = np_utils.to_categorical(y_train, len(log.values[log.activity]) + 1)
+        train_Y_one_hot = to_categorical(y_train, len(log.values[log.activity]) + 1)
         model.fit(X_train, {'act_output': train_Y_one_hot}, validation_split=0.2, verbose=1
                   , batch_size=128, epochs=1)
 
@@ -258,7 +256,7 @@ def test_and_update(logs, model):
 
 
 def test_and_update_retain(test_logs, model, train_log):
-    from tensorflow.keras import utils
+    from tensorflow.keras.utils import to_categorical
 
     results = []
     i = 0
@@ -268,7 +266,7 @@ def test_and_update_retain(test_logs, model, train_log):
     X_train = np.asarray(X_train)
     y_train = np.asarray(y_train)
 
-    y_train = utils.to_categorical(y_train, len(train_log.values[train_log.activity]) + 1)
+    y_train = to_categorical(y_train, len(train_log.values[train_log.activity]) + 1)
 
     for t in test_logs:
         print(i, "/", len(test_logs))
@@ -282,7 +280,7 @@ def test_and_update_retain(test_logs, model, train_log):
         X = np.asarray(X)
         y = np.asarray(y)
 
-        Y_one_hot = utils.to_categorical(y, len(test_log.values[test_log.activity]) + 1)
+        Y_one_hot = to_categorical(y, len(test_log.values[test_log.activity]) + 1)
 
         X_train = np.concatenate((X_train, X))
         y_train = np.concatenate((y_train, Y_one_hot))

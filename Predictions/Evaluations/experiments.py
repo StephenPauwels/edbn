@@ -1,9 +1,8 @@
 import traceback
 from copy import copy
-import time
 import os
 
-from Data import all_data, get_data
+from Data import get_data
 from Methods import ALL as ALL_METHODS
 import Predictions.setting as setting
 from Predictions.setting import ALL as ALL_SETTINGS
@@ -45,6 +44,7 @@ def get_full_filename(data, method, s):
 def result_exists(data, method, s):
     return os.path.exists(get_full_filename(data, method, s))
 
+
 def save_results(results, data, method, setting):
     path, filename = get_filename(data, method, setting)
     for i in range(1, len(path)+1):
@@ -63,6 +63,8 @@ def test_split(dataset, m):
     for split in splits:
         d = get_data(dataset)
         basic_setting.train_split = split
+        if split == "k-fold":
+            basic_setting.train_k = 3
 
         print(get_full_filename(dataset, m, basic_setting))
         if result_exists(dataset, m, basic_setting):
@@ -79,7 +81,7 @@ def test_split(dataset, m):
 
 
 def test_k(dataset, m):
-    ks = [3, 5, 10]
+    ks = [10]
     basic_setting = copy(setting.STANDARD)
     basic_setting.train_split = "k-fold"
 
@@ -92,8 +94,10 @@ def test_k(dataset, m):
             continue
 
         d.prepare(basic_setting)
-
-        r = m.k_fold_validation(d)
+        try:
+            r = m.k_fold_validation(d)
+        except:
+            pass
 
         save_results(r, d.name, m.name, basic_setting)
 
@@ -226,7 +230,6 @@ def test_base_comparison():
     save_results(r, d.name, m.name, s)
 
 
-
 def test_stability():
     results = {}
     d = get_data("Helpdesk")
@@ -243,17 +246,23 @@ def test_stability():
 
 
 def ranking_experiments():
-    for d in ["Helpdesk", "BPIC12W", "BPIC12", "BPIC11", "BPIC15_1", "BPIC15_2", "BPIC15_3", "BPIC15_4", "BPIC15_5"]:
-        event_data = get_data(d)
+    for d in ["BPIC11"]:
         for s in ALL_SETTINGS:
+            event_data = get_data(d)
             event_data.prepare(s)
 
-            for m in ALL_METHODS:
-                if result_exists(d, m, s):
-                    continue
-
-            r = m.test(m.train(d.train), d.test_orig)
-            save_results(r, d.name, m.name, s)
+            for method in ALL_METHODS:
+                try:
+                    m = Methods.get_prediction_method(method)
+                    if result_exists(d, m, s):
+                        continue
+                    if s.train_split == "k-fold":
+                        r = m.k_fold_validation(event_data)
+                    else:
+                        r = m.test(m.train(event_data.train), event_data.test_orig)
+                    save_results(r, d, m.name, s)
+                except:
+                    traceback.print_exc()
 
 
 def get_scores(d, m, s):
@@ -263,24 +272,13 @@ def get_scores(d, m, s):
         with open("/".join(path) + "/" + filename) as finn:
             for line in finn:
                 results.append(tuple(line.replace("\n", "").split(",")))
-
-        # import metric
-        # print("/".join(path) + "/" + filename)
-        # acc = metric.ACCURACY.calculate(results)
-        # print("ACC:", acc)
-        # brier = metric.BRIER.calculate(results)
-        # print("Brier:", brier)
-        # prec = metric.PRECISION.calculate(results)
-        # print("Precision:", prec)
-        # recall = metric.RECALL.calculate(results)
-        # print("Recall:", recall)
         return results
 
 
 def check_result_files():
     for d in ["Helpdesk", "BPIC12W", "BPIC12", "BPIC11", "BPIC15_1", "BPIC15_2", "BPIC15_3", "BPIC15_4", "BPIC15_5"]:
         print("DATASET: %s" % d)
-        for m in method.ALL:
+        for m in ALL_METHODS:
             if m == "DIMAURO":
                 m = "Di Mauro"
             print(" METHOD: %s" % m)
@@ -337,40 +335,25 @@ def check_result_files():
                 print("  TEST END EVENT: %s %s" % ("True" if end_event else "False", "OK" if result_exists(d, m, basic_setting) else ""))
 
 
-
 if __name__ == "__main__":
     import Methods
 
-    # test_base_comparison()
-    # check_result_files()
-    ranking_experiments("ranking_results.txt")
-    # test_stability()
+    test_base_comparison()
+    check_result_files()
+    ranking_experiments()
+    test_stability()
 
-    #
-    # for d in ["Helpdesk", "BPIC12W", "BPIC12", "BPIC11", "BPIC15_1", "BPIC15_2", "BPIC15_3", "BPIC15_4", "BPIC15_5"]:
-    #     for m in ["SDL", "CAMARGO", "DIMAURO", "LIN", "PASQUADIBISCEGLIE", "TAX", "TAYMOURI"]:
-    for d in ["BPIC11"]:
-        for m in ["LIN"]:
+    for d in ["Helpdesk", "BPIC12W", "BPIC12", "BPIC11", "BPIC15_1", "BPIC15_2", "BPIC15_3", "BPIC15_4", "BPIC15_5"]:
+        for m in ["SDL", "CAMARGO", "DBN", "DIMAURO", "LIN", "PASQUADIBISCEGLIE", "TAX", "TAYMOURI"]:
             try:
-                # test_standard(d, Methods.get_prediction_method(m))
-                # test_k(d, Methods.get_prediction_method(m))
+                test_standard(d, Methods.get_prediction_method(m))
+                test_k(d, Methods.get_prediction_method(m))
                 test_split(d, Methods.get_prediction_method(m))
-                # test_filter(d, Methods.get_prediction_method(m))
-                # test_percentage(d, Methods.get_prediction_method(m))
-                # test_split_cases(d, Methods.get_prediction_method(m))
-                # test_end_event(d, Methods.get_prediction_method(m))
+                test_filter(d, Methods.get_prediction_method(m))
+                test_percentage(d, Methods.get_prediction_method(m))
+                test_split_cases(d, Methods.get_prediction_method(m))
+                test_end_event(d, Methods.get_prediction_method(m))
             except:
                 traceback.print_exc()
 
-    # s = setting.STANDARD
-    # s.train_split = "k-fold"
-    # s.train_k = 10
-    # get_scores("Helpdesk", "DBN", s)
-    # get_scores("Helpdesk", "LIN", s)
-    # get_scores("Helpdesk", "DIMAURO", s)
-    # get_scores("Helpdesk", "CAMARGO", s)
-    # get_scores("Helpdesk", "PASQUADIBISCEGLIE", s)
-    # get_scores("Helpdesk", "TAX", s)
-    # get_scores("Helpdesk", "SDL", s)
-    # get_scores("Helpdesk", "TAYMOURI", s)
 

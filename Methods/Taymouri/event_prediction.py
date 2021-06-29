@@ -381,7 +381,7 @@ def train(rnnG, rnnD, optimizerD, optimizerG, obj, epoch):
             optimizerG.zero_grad()
 
             # Computing the loss of prediction
-            lstm_loss_pred = F.binary_cross_entropy(F.sigmoid(y_pred_last), y_truth_one_hot, reduction='sum')
+            lstm_loss_pred = F.binary_cross_entropy(torch.sigmoid(y_pred_last), y_truth_one_hot, reduction='sum')
             gen_loss_pred.append(lstm_loss_pred.detach())
             lstm_loss_pred.backward(retain_graph=True)
 
