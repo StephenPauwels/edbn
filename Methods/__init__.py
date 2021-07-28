@@ -30,7 +30,7 @@ def get_prediction_method(method_name):
         return Method("Taymouri", taymouri.train, taymouri.test, {"epoch": 10})
     else:
         print("ERROR: method name not found!")
-        print("ERROR: Possible methods are:" + ",".join("SDL"))
+        print("ERROR: Possible methods are:" + ",".join(ALL))
         raise NotImplementedError()
 
 

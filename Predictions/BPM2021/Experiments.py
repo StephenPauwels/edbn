@@ -18,7 +18,7 @@ def store_timings(file, timings):
 
 if __name__ == "__main__":
     DATASETS = ["Helpdesk", "BPIC11", "BPIC12", "BPIC15_1", "BPIC15_2", "BPIC15_3", "BPIC15_4", "BPIC15_5"]
-    METHODS = ["SDL", "EDBN", "DIMAURO", "TAX"]
+    METHODS = ["SDL", "DBN", "DIMAURO", "TAX"]
     DRIFT = True
     RESET = [False, True]
     WINDOW = [0, 1, 5]
