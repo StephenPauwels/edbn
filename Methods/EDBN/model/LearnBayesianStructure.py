@@ -329,11 +329,12 @@ class Structure_learner():
                     if new_cache_cols not in cache:
                         cache[new_cache_cols] = self.categoricalScore(v, [i for i in self.p_dict[v] if i != u])
                     new_score, new_qi = cache[new_cache_cols]
+                    delta_score = (new_score - new_qi) - (old_score - old_qi)
                 elif self.log.isNumericAttribute(v):
                     old_score = self.numericalDelta(v, [par for par in self.p_dict[v]], cache, bandwidth_cache)
                     new_score = self.numericalDelta(v, [par for par in self.p_dict[v]], cache, bandwidth_cache)
                     new_qi = None
-                delta_score = (new_score - new_qi) - (old_score - old_qi)
+                    delta_score = new_score - old_score
 
                 if delta_score - max_delta > 10 ** (-10):
                     max_delta = delta_score
@@ -374,11 +375,12 @@ class Structure_learner():
             if new_cache_cols not in cache:
                 cache[new_cache_cols] = self.categoricalScore(v, self.p_dict[v] + [u])
             new_score, new_qi = cache[new_cache_cols]
+            delta_score = (new_score - new_qi) - (old_score - old_qi)
         elif self.log.isNumericAttribute(v):
             old_score = self.numericalDelta(v, [par for par in self.p_dict[v]], cache, bandwidth_cache)
             new_score = self.numericalDelta(v, [par for par in self.p_dict[v] + [u]], cache, bandwidth_cache)
             new_qi = None
-        delta_score = (new_score - new_qi) - (old_score - old_qi)
+            delta_score = new_score - old_score
         return delta_score, "Addition", (u, v), new_qi
 
 

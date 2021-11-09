@@ -119,6 +119,7 @@ def generate_model(data, only_activity, remove_attrs = None):
             if attr2 not in data.ignoreHistoryAttributes:
                 for i in range(data.k):
                     restrictions.append((attr2 + "_Prev%i" % (i), attr1))
+            restrictions.append((attr2, attr1))
         if "duration_0" in nodes:
             restrictions.append((attr1, "duration_0"))
 
