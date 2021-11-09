@@ -218,7 +218,7 @@ class Structure_learner():
                 # Calculate best bandwith for KDE
                 if vals_hash not in bandwidth_cache:
                     params = {'bandwidth': np.logspace(-2, 5, 20)}
-                    grid = GridSearchCV(KernelDensity(kernel='gaussian', rtol=1E-6), params, cv=2, verbose=0, n_jobs=n_jobs, iid=False)
+                    grid = GridSearchCV(KernelDensity(kernel='gaussian', rtol=1E-6), params, cv=2, verbose=0, n_jobs=n_jobs)
                     grid.fit(vals)
                     bandwidth_cache[vals_hash] = grid.best_estimator_.bandwidth
                 score += KernelDensity(kernel='gaussian', bandwidth=bandwidth_cache[vals_hash], rtol=1E-6).fit(vals).score(vals)
@@ -231,7 +231,7 @@ class Structure_learner():
             # Calculate best bandwith for KDE
             if vals_hash not in bandwidth_cache:
                 params = {'bandwidth': np.logspace(-2, 5, 20)}
-                grid = GridSearchCV(KernelDensity(kernel='gaussian', rtol=1E-6), params, cv=2, verbose=0, n_jobs=n_jobs, iid=False)
+                grid = GridSearchCV(KernelDensity(kernel='gaussian', rtol=1E-6), params, cv=2, verbose=0, n_jobs=n_jobs)
                 grid.fit(vals)
                 bandwidth_cache[vals_hash] = grid.best_estimator_.bandwidth
             score += KernelDensity(kernel='gaussian', bandwidth=bandwidth_cache[vals_hash], rtol=1E-6).fit(vals).score(to_check)

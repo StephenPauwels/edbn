@@ -3,6 +3,7 @@
 """
 import pandas as pd
 
+from Methods.EDBN.Train import train as edbn_train
 import Methods.EDBN.Anomalies as edbn
 import Utils.PlotResults as plot
 from Utils.LogFile import LogFile
@@ -28,10 +29,10 @@ def cardio_exec():
     train.to_csv("../Data/cardio_train.csv", index=False)
     test.to_csv("../Data/cardio_test.csv", index=False)
 
-    train_data = LogFile("../Data/cardio_train.csv", ",", 0, 100000, time_attr=None, trace_attr=None, convert=False)
-    test_data = LogFile("../Data/cardio_test.csv", ",", 0, 100000, time_attr=None, trace_attr=None, convert=False)
+    train_data = LogFile("../Data/cardio_train.csv", ",", 0, 100000, time_attr=None, trace_attr=None, convert=False, dtype="float64")
+    test_data = LogFile("../Data/cardio_test.csv", ",", 0, 100000, time_attr=None, trace_attr=None, convert=False, dtype="float64")
 
-    """ Discretization
+    """ # Discretization
     attr_bins = {}
     bins = 10
     labels = [str(i) for i in range(1, bins + 1)]
@@ -42,8 +43,9 @@ def cardio_exec():
         train_data.categoricalAttributes.add(attr)
 
     for attr in test_data.numericalAttributes:
-        labels = [str(i) for i in range(1, len(attr_bins[attr]))]
-        test_data.data[attr] = pd.cut(test_data.data[attr], attr_bins[attr], retbins=False, labels=labels)
+        if attr != "VLabel":
+            labels = [str(i) for i in range(1, len(attr_bins[attr]))]
+            test_data.data[attr] = pd.cut(test_data.data[attr], attr_bins[attr], retbins=False, labels=labels)
 
     for attr in test_data.numericalAttributes:
         test_data.categoricalAttributes.add(attr)
@@ -52,7 +54,7 @@ def cardio_exec():
     test_data.numericalAttributes = set()
     """
 
-    model = edbn.train(train_data)
+    model = edbn_train(train_data)
     edbn.test(test_data, "../Data/cardio_output_num.csv", model, label="VLabel", normal_val=0)
 
 
@@ -78,10 +80,10 @@ def mammo_exec():
     train.to_csv("../Data/mammo_train.csv", index=False)
     test.to_csv("../Data/mammo_test.csv", index=False)
 
-    train_data = LogFile("../Data/mammo_train.csv", ",", 0, 100000, time_attr=None, trace_attr=None, convert=False)
-    test_data = LogFile("../Data/mammo_test.csv", ",", 0, 100000, time_attr=None, trace_attr=None, convert=False)
+    train_data = LogFile("../Data/mammo_train.csv", ",", 0, 100000, time_attr=None, trace_attr=None, convert=False, dtype="float64")
+    test_data = LogFile("../Data/mammo_test.csv", ",", 0, 100000, time_attr=None, trace_attr=None, convert=False, dtype="float64")
 
-    """ Discretization
+    """ # Discretization
     attr_bins = {}
     bins = 10
     labels = [str(i) for i in range(1, bins + 1)]
@@ -92,8 +94,9 @@ def mammo_exec():
         train_data.categoricalAttributes.add(attr)
 
     for attr in test_data.numericalAttributes:
-        labels = [str(i) for i in range(1, len(attr_bins[attr]))]
-        test_data.data[attr] = pd.cut(test_data.data[attr], attr_bins[attr], retbins=False, labels=labels)
+        if attr != "VLabel":
+            labels = [str(i) for i in range(1, len(attr_bins[attr]))]
+            test_data.data[attr] = pd.cut(test_data.data[attr], attr_bins[attr], retbins=False, labels=labels)
 
     for attr in test_data.numericalAttributes:
         test_data.categoricalAttributes.add(attr)
@@ -102,7 +105,7 @@ def mammo_exec():
     test_data.numericalAttributes = set()
     """
 
-    model = edbn.train(train_data)
+    model = edbn_train(train_data)
     edbn.test(test_data, "../Data/mammo_output_num.csv", model, label="VLabel", normal_val=0)
 
 
@@ -128,18 +131,10 @@ def breast_exec():
     train.to_csv("../Data/breast_train.csv", index=False)
     test.to_csv("../Data/breast_test.csv", index=False)
 
-    train_data = LogFile("../Data/breast_train.csv", ",", 0, 100000, time_attr=None, trace_attr=None, convert=False)
-    test_data = LogFile("../Data/breast_test.csv", ",", 0, 100000, time_attr=None, trace_attr=None, convert=False)
+    train_data = LogFile("../Data/breast_train.csv", ",", 0, 100000, time_attr=None, trace_attr=None, convert=False, dtype="float64")
+    test_data = LogFile("../Data/breast_test.csv", ",", 0, 100000, time_attr=None, trace_attr=None, convert=False, dtype="float64")
 
-    for attr in train_data.categoricalAttributes:
-        train_data.numericalAttributes.add(attr)
-    train_data.categoricalAttributes = set()
-
-    for attr in test_data.categoricalAttributes:
-        test_data.numericalAttributes.add(attr)
-    test_data.categoricalAttributes = set()
-
-    """ Discretization
+    """ # Discretization
     attr_bins = {}
     bins = 10
     labels = [str(i) for i in range(1, bins + 1)]
@@ -151,16 +146,17 @@ def breast_exec():
     train_data.numericalAttributes = set()
 
     for attr in test_data.numericalAttributes:
-        labels = [str(i) for i in range(1, len(attr_bins[attr]))]
-        test_data.data[attr] = pd.cut(test_data.data[attr], attr_bins[attr], retbins=False, labels=labels)
+        if attr != "VLabel":
+            labels = [str(i) for i in range(1, len(attr_bins[attr]))]
+            test_data.data[attr] = pd.cut(test_data.data[attr], attr_bins[attr], retbins=False, labels=labels)
 
     for attr in test_data.numericalAttributes:
         test_data.categoricalAttributes.add(attr)
     test_data.numericalAttributes = set()
     """
 
-    model = edbn.train(train_data)
-    edbn.test(test_data, "../Data/breast_output.csv", model, label="VLabel", normal_val=0)
+    model = edbn_train(train_data)
+    edbn.test(test_data, "../Data/breast_output_num.csv", model, label="VLabel", normal_val=0)
 
 if __name__ == "__main__":
     cardio_exec()

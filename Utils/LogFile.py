@@ -13,7 +13,7 @@ import math
 
 class LogFile:
 
-    def __init__(self, filename, delim, header, rows, time_attr, trace_attr, activity_attr = None, values = None, integer_input = False, convert = True, k = 1):
+    def __init__(self, filename, delim, header, rows, time_attr, trace_attr, activity_attr = None, values = None, integer_input = False, convert = True, k = 1, dtype=None):
         self.filename = filename
         self.time = time_attr
         self.trace = trace_attr
@@ -34,13 +34,16 @@ class LogFile:
         if integer_input:
             type = "int"
         if filename is not None:
-            self.data = pd.read_csv(self.filename, header=header, nrows=rows, delimiter=delim, encoding='latin-1', dtype="str")
+            if dtype is not None:
+                self.data = pd.read_csv(self.filename, header=header, nrows=rows, delimiter=delim, encoding='latin-1', dtype=dtype)
+            else:
+                self.data = pd.read_csv(self.filename, header=header, nrows=rows, delimiter=delim, encoding='latin-1')
 
             # Determine types for all columns - numerical or categorical
             for col_type in self.data.dtypes.iteritems():
-                #if col_type[1] == 'float64':
-                #    self.numericalAttributes.add(col_type[0])
-                #else:
+                if col_type[1] == 'float64':
+                   self.numericalAttributes.add(col_type[0])
+                else:
                     self.categoricalAttributes.add(col_type[0])
 
             if convert:

@@ -17,7 +17,8 @@ def learn_model(log, attributes, epochs, early_stop):
             for k in range(log.k):
                 i = Input(shape=(1,), name=attr.replace(" ", "_").replace("(", "").replace(")","").replace(":","_") + "_Prev%i" % k)
                 input_layers.append(i)
-                e = Embedding(len(log.values[attr]) + 1, 32, embeddings_initializer="zeros")(i)
+                # e = Embedding(len(log.values[attr]) + 1, 32, embeddings_initializer="zeros")(i)
+                e = Embedding(len(log.values[attr]) + 1, len(log.values[attr]) + 1, embeddings_initializer="zeros")(i)
                 embedding_layers.append(e)
     concat = Concatenate()(embedding_layers)
 
@@ -195,3 +196,20 @@ def test_and_update_full(test_log, model, train_logs):
     #               batch_size=32,
     #               epochs=10)
     # return results
+
+if __name__ == "__main__":
+    import Predictions.setting
+    import Predictions.setting as setting
+    import Data
+    import Methods
+    from Predictions.metric import ACCURACY
+
+    d = Data.get_data("BPIC12")
+    m = Methods.get_prediction_method("SDL")
+    s = setting.STANDARD
+    d.prepare(s)
+
+    basic_model = m.train(d.train)
+    res = m.test(basic_model, d.test_orig)
+    print("Acc:", ACCURACY.calculate(res))
+

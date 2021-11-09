@@ -96,7 +96,7 @@ class ExtendedDynamicBayesianNetwork():
 
         # TODO: instead of training all variables, just copy current values to previous variables
         for (_, value) in self.iterate_variables():
-            value.train_variable(self.log)
+            value.train(self.log)
 
         print("GENERATE: Training Done")
 
@@ -358,7 +358,8 @@ class Discrete_Variable(Variable):
                 if getattr(row, parent.attr_name) not in self.fdt[i]:
                     scores[parent.attr_name] = 1 - self.fdt_violation[i]
                     self.fdt[i][getattr(row, parent.attr_name)] = getattr(row, self.attr_name)
-                    self.values.add(getattr(row, self.attr_name))
+                    # TODO: check if still needed
+                    # self.values.add(getattr(row, self.attr_name))
                 elif self.fdt[i][getattr(row, parent.attr_name)] == getattr(row, self.attr_name) or getattr(row, parent.attr_name) == 0:
                     scores[parent.attr_name] = 1 - self.fdt_violation[i]
                 else:
@@ -431,7 +432,7 @@ class Numerical_Variable(Variable):
             nom_vals = partition[1][cont_par + [self.attr_name]].values
             # Calculate best bandwith for KDE
             params = {'bandwidth': np.logspace(-2, 1, 20)}
-            grid = GridSearchCV(KernelDensity(), params, cv=2, n_jobs=mp.cpu_count(), iid=False)
+            grid = GridSearchCV(KernelDensity(), params, cv=2, n_jobs=mp.cpu_count())
             grid.fit(nom_vals)
 
             self.kernels_nom[disc_parent] = KernelDensity(kernel='gaussian', bandwidth=grid.best_estimator_.bandwidth).fit(nom_vals)
@@ -440,7 +441,7 @@ class Numerical_Variable(Variable):
                 denom_vals = partition[1][cont_par].values
                 # Calculate best bandwith for KDE
                 params = {'bandwidth': np.logspace(-2, 1, 20)}
-                grid = GridSearchCV(KernelDensity(), params, cv=2, n_jobs=mp.cpu_count(), iid=False)
+                grid = GridSearchCV(KernelDensity(), params, cv=2, n_jobs=mp.cpu_count())
                 grid.fit(denom_vals)
 
                 self.kernels_denom[disc_parent] = KernelDensity(kernel='gaussian', bandwidth=grid.best_estimator_.bandwidth).fit(denom_vals)
@@ -448,7 +449,7 @@ class Numerical_Variable(Variable):
         vals = log[cont_par + [self.attr_name]].values
         # Calculate best bandwith for KDE
         params = {'bandwidth': np.logspace(-2, 1, 20)}
-        grid = GridSearchCV(KernelDensity(), params, cv=2, n_jobs=mp.cpu_count(), iid=False)
+        grid = GridSearchCV(KernelDensity(), params, cv=2, n_jobs=mp.cpu_count())
         grid.fit(vals)
 
         self.kernel_nominator = KernelDensity(kernel='gaussian', bandwidth=grid.best_estimator_.bandwidth).fit(vals)
@@ -457,7 +458,7 @@ class Numerical_Variable(Variable):
             vals = log[cont_par].values
             # Calculate best bandwith for KDE
             params = {'bandwidth': np.logspace(-2, 1, 20)}
-            grid = GridSearchCV(KernelDensity(), params, cv=2, n_jobs=mp.cpu_count(), iid=False)
+            grid = GridSearchCV(KernelDensity(), params, cv=2, n_jobs=mp.cpu_count(), return_train_score=False)
             grid.fit(vals)
 
             self.kernel_denominator = KernelDensity(kernel='gaussian', bandwidth=grid.best_estimator_.bandwidth).fit(vals)
