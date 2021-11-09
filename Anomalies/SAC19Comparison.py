@@ -31,7 +31,7 @@ def compare_bpics(path):
         test_data = LogFile(test, ",", 0, 500000, "Time", "Case", activity_attr="Activity", values=train_data.values, convert=False)
 
         bohmer_model = bmr.train(train_data, 0, 1, 2)
-        bmr.test(test_data, output, bohmer_model, label = "Anomaly", normal_val = "0")
+        bmr.test(test_data, output, bohmer_model, label = "Anomaly", normal_val = 0)
 
         train_data.convert2int()
         test_data.convert2int()
@@ -58,7 +58,7 @@ def compare_bpic_total(path):
     test_data = LogFile(test, ",", 0, 500000, "Time", "Case", activity_attr="Activity", values=train_data.values, convert=False)
 
     bohmer_model = bmr.train(train_data)
-    bmr.test(test_data, output, bohmer_model, label = "Anomaly", normal_val = "0")
+    bmr.test(test_data, output, bohmer_model, label = "Anomaly", normal_val = 0)
 
     train_data.convert2int()
     test_data.convert2int()
